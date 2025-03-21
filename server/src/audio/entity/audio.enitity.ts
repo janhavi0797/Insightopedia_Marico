@@ -1,6 +1,6 @@
 import { CosmosPartitionKey } from "@nestjs/azure-database";
 
-@CosmosPartitionKey('projectId')
+@CosmosPartitionKey('audioId')
 export class Audio {
     /** Cosmos DB document id */
     //id: string;
@@ -16,6 +16,13 @@ export class Audio {
   
     /** Tags related to the audio */
     tags: string[];
+    primaryLang: string;
+
+  /** List of secondary languages spoken in the audio */
+    secondaryLang: string[];
+
+  /** Number of speakers in the audio */
+    noOfSpek: number;
   
     /** URL to access the audio */
     audioUrl: string;
