@@ -3,6 +3,8 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import { BullModule } from '@nestjs/bullmq';
+import { AzureCosmosDbModule } from '@nestjs/azure-database';
+
 @Module({
   imports: [
     // Import ConfigModule to make ConfigService available
@@ -15,6 +17,12 @@ import { BullModule } from '@nestjs/bullmq';
         host: process.env.QUEUE_HOST,
         port: +process.env.QUEUE_PORT,
       },
+    }),
+
+    AzureCosmosDbModule.forRoot({
+      dbName: process.env.COSMOS_DBNAME,
+      endpoint: process.env.COSMOS_DB_ENDPOINT,
+      key: process.env.COSMOS_DB_KEY,
     }),
   ],
   controllers: [AppController],
