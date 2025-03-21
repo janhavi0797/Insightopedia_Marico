@@ -5,6 +5,7 @@ import { ConfigModule } from '@nestjs/config';
 import { BullModule } from '@nestjs/bullmq';
 import { AzureCosmosDbModule } from '@nestjs/azure-database';
 import { AudioModule } from './audio/audio.module';
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
@@ -26,7 +27,7 @@ import { AudioModule } from './audio/audio.module';
       key: process.env.COSMOS_DB_KEY,
     }),
 
-    AudioModule,
+    AudioModule,UserModule
   ],
   controllers: [AppController],
   providers: [AppService],
