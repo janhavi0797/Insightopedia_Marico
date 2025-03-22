@@ -1,11 +1,15 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { BullModule } from '@nestjs/bullmq';
 import { AzureCosmosDbModule } from '@nestjs/azure-database';
 import { AudioModule } from './audio/audio.module';
+import { Container, CosmosClient } from '@azure/cosmos';
+import { UserModule } from './user/user.module';
+import { ProjectModule } from './project/project.module';
 
+const C = new ConfigService();
 @Module({
   imports: [
     // Import ConfigModule to make ConfigService available
@@ -20,15 +24,37 @@ import { AudioModule } from './audio/audio.module';
       },
     }),
 
-    AzureCosmosDbModule.forRoot({
-      dbName: process.env.COSMOS_DBNAME,
-      endpoint: process.env.COSMOS_DB_ENDPOINT,
-      key: process.env.COSMOS_DB_KEY,
+    AzureCosmosDbModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        endpoint: configService.get<string>('COSMOS_DB_ENDPOINT'),
+        key: configService.get<string>('COSMOS_DB_KEY'),
+        database: configService.get<string>('COSMOS_DBNAME'),
+        dbName: configService.get<string>('COSMOS_DBNAME'),
+      }),
+      inject: [ConfigService],
     }),
 
     AudioModule,
+    UserModule,
+    ProjectModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: 'AUDIO_CONTAINER',
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService): Container => {
+        const client = new CosmosClient({
+          endpoint: configService.get<string>('COSMOS_DB_ENDPOINT'),
+          key: configService.get<string>('COSMOS_DB_KEY'),
+        });
+        return client
+          .database(configService.get<string>('COSMOS_DBNAME'))
+          .container('Audio');
+      },
+    },
+  ],
 })
 export class AppModule {}
