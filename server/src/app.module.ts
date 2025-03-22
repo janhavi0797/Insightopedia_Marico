@@ -8,9 +8,8 @@ import { AudioModule } from './audio/audio.module';
 import { UserModule } from './user/user.module';
 import { ProjectModule } from './project/project.module';
 
-
-const C = new ConfigService()
-console.log(C.get<string>('COSMOS_DBNAME'))
+const C = new ConfigService();
+console.log(C.get<string>('COSMOS_DBNAME'));
 @Module({
   imports: [
     // Import ConfigModule to make ConfigService available
@@ -31,15 +30,16 @@ console.log(C.get<string>('COSMOS_DBNAME'))
         endpoint: configService.get<string>('COSMOS_DB_ENDPOINT'),
         key: configService.get<string>('COSMOS_DB_KEY'),
         database: configService.get<string>('COSMOS_DBNAME'),
-        dbName: configService.get<string>('COSMOS_DBNAME')
+        dbName: configService.get<string>('COSMOS_DBNAME'),
       }),
       inject: [ConfigService],
     }),
 
-    AudioModule,UserModule,
+    AudioModule,
+    UserModule,
     ProjectModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}

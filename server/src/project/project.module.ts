@@ -6,13 +6,15 @@ import { ProjectEntity } from './entity';
 
 @Module({
   imports: [
-    AzureCosmosDbModule.forFeature([{
-      dto: ProjectEntity,
-      collection: 'Projects',
-    }]),
+    AzureCosmosDbModule.forFeature([
+      {
+        dto: ProjectEntity,
+        collection: 'Projects',
+      },
+    ]),
   ],
 
   controllers: [ProjectController],
   providers: [ProjectService],
 })
-export class ProjectModule { }
+export class ProjectModule {}
