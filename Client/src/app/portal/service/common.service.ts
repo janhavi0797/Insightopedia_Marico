@@ -16,6 +16,7 @@ export class CommonService {
   }
 
   getAPI(url: string, userCode?:string): Observable<any> {
+    debugger
     if(userCode) {
       let params = new HttpParams().set('userId', userCode)
       return this.http.get(this.baseUrl + url,{

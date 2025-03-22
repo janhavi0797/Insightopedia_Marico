@@ -28,6 +28,8 @@ import { CreateProjectComponent } from './create-project/create-project.componen
 import { ProjectAnalysisComponent } from './project-analysis/project-analysis.component';
 import { UserListComponent } from './user-list/user-list.component';
 import { ProjectDetailsComponent } from './project-details/project-details.component';
+import { MatPaginatorModule } from '@angular/material/paginator';
+import { MatTableModule } from '@angular/material/table';
 
 
 @NgModule({
@@ -65,6 +67,8 @@ import { ProjectDetailsComponent } from './project-details/project-details.compo
     MatAutocompleteModule,
     MatGridListModule,
     MatProgressSpinnerModule,
+    MatTableModule,
+    MatPaginatorModule
   ],
   providers: []
 })
