@@ -5,6 +5,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { BullModule } from '@nestjs/bullmq';
 import { AzureCosmosDbModule } from '@nestjs/azure-database';
 import { AudioModule } from './audio/audio.module';
+import { Container, CosmosClient } from '@azure/cosmos';
 import { UserModule } from './user/user.module';
 import { ProjectModule } from './project/project.module';
 
@@ -40,6 +41,21 @@ console.log(C.get<string>('COSMOS_DBNAME'))
     ProjectModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: 'AUDIO_CONTAINER',
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService): Container => {
+        const client = new CosmosClient({
+          endpoint: configService.get<string>('COSMOS_DB_ENDPOINT'),
+          key: configService.get<string>('COSMOS_DB_KEY'),
+        });
+        return client
+          .database(configService.get<string>('COSMOS_DBNAME'))
+          .container('Audio');
+      },
+    },
+  ],
 })
 export class AppModule { }
