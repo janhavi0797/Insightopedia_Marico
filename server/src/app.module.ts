@@ -6,7 +6,12 @@ import { BullModule } from '@nestjs/bullmq';
 import { AzureCosmosDbModule } from '@nestjs/azure-database';
 import { AudioModule } from './audio/audio.module';
 import { Container, CosmosClient } from '@azure/cosmos';
+import { UserModule } from './user/user.module';
+import { ProjectModule } from './project/project.module';
 
+
+const C = new ConfigService()
+console.log(C.get<string>('COSMOS_DBNAME'))
 @Module({
   imports: [
     // Import ConfigModule to make ConfigService available
@@ -21,13 +26,19 @@ import { Container, CosmosClient } from '@azure/cosmos';
       },
     }),
 
-    AzureCosmosDbModule.forRoot({
-      dbName: process.env.COSMOS_DBNAME,
-      endpoint: process.env.COSMOS_DB_ENDPOINT,
-      key: process.env.COSMOS_DB_KEY,
+    AzureCosmosDbModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        endpoint: configService.get<string>('COSMOS_DB_ENDPOINT'),
+        key: configService.get<string>('COSMOS_DB_KEY'),
+        database: configService.get<string>('COSMOS_DBNAME'),
+        dbName: configService.get<string>('COSMOS_DBNAME')
+      }),
+      inject: [ConfigService],
     }),
 
-    AudioModule,
+    AudioModule,UserModule,
+    ProjectModule,
   ],
   controllers: [AppController],
   providers: [
@@ -47,4 +58,4 @@ import { Container, CosmosClient } from '@azure/cosmos';
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }

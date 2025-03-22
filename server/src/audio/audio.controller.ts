@@ -6,13 +6,16 @@ import {
   Post,
   UploadedFiles,
   UseInterceptors,
+  Get, 
+  Param, 
+  Query
 } from '@nestjs/common';
 import { AudioService } from './audio.service';
 import { ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express';
 
+@ApiTags('Audio Management')
 @Controller('audio')
-@ApiTags('Audio')
 export class AudioController {
   constructor(private readonly audioService: AudioService) {}
 
@@ -71,4 +74,10 @@ export class AudioController {
       message: 'File Uploaded successfully.',
     };
   }
+
+      @Get('all')
+      @ApiOperation({ summary: 'Get All audio and unique tag' })
+      async getAudio(@Query('userId') userId?: string) {
+          return this.audioService.getAudio(userId);
+      }
 }
