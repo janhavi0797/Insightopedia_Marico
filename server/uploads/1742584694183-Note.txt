@@ -1,0 +1,88 @@
+ Polyfills -> 
+
+A polyfill is a piece of code (usually JavaScript) that provides modern functionality on older browsers that do not natively support it.
+A polyfill ensures modern JavaScript or web API features work in older browsers.
+Use libraries like core-js or babel to leverage pre-built polyfills for complex features.
+
+
+difference between library and framework ->
+
+Library: A library is a collection of pre-written code that you can use to perform common tasks. It provides specific functionalities that you can call in your code whenever needed.
+
+Framework: A framework is a complete structure that defines the architecture of your application. It provides a skeleton and controls the flow of your application by calling your code at predefined points.
+
+Memoization -> 
+
+Memoization is a programming technique used to optimize function performance by caching the results of expensive function calls and returning the cached result when the same inputs occur again.
+
+Deep or Shallow Copy -> 
+
+Shallow Copy ->
+
+The difference between deep copy and shallow copy lies in how they duplicate the elements of an object, especially when the object contains nested structures like arrays or other objects.
+
+A shallow copy creates a new object but only copies the references to nested objects or arrays, not their actual content. Therefore, if the original object is modified, the changes may reflect in the copied object (and vice versa) for any nested objects.
+
+
+const original = { a: 1, b: { c: 2 } };
+
+// Shallow Copy
+const shallowCopy = { ...original };
+
+// Modify nested property
+shallowCopy.b.c = 42;
+
+console.log(original.b.c); // 42 (both point to the same nested object)
+
+
+Deep Copy ->
+
+A deep copy creates a completely independent copy of an object, including all nested objects and arrays. Any changes to the original object or its nested structures do not affect the copied object, and vice versa.
+
+const original = { a: 1, b: { c: 2 } };
+
+// Deep Copy (using JSON methods)
+const deepCopy = JSON.parse(JSON.stringify(original));
+
+// Modify nested property
+deepCopy.b.c = 42;
+
+console.log(original.b.c); // 2 (original remains unchanged)
+
+
+Microtask and Macrotask -> 
+
+In JavaScript, microtasks and macrotasks are types of tasks used in the event loop, which manages how asynchronous operations are executed and prioritized.
+
+1. Microtasks
+
+Definition: Microtasks are tasks that need to be executed after the current JavaScript code execution and before any macrotask.
+Examples:
+Promise callbacks (e.g., .then, .catch, .finally)
+MutationObserver callbacks
+queueMicrotask()
+Priority: Always executed before macrotasks.
+
+2. Macrotasks
+Definition: Macrotasks are tasks that are executed after the microtasks in the event loop.
+Examples:
+setTimeout, setInterval
+setImmediate (Node.js)
+I/O operations
+UI rendering tasks
+Priority: Executed after all microtasks in the current event loop iteration are completed.
+
+
+Throttling and Rate Limiting are two ways to control how often people can use an API.
+
+Throttling helps keep the API from getting overloaded by too many requests at once. It does this by limiting the number of requests that a single client or user can make within a certain period of time.
+
+Rate limiting is similar to throttling, but it focuses on controlling the rate of requests per client or user over a longer period of time, such as a minute, hour, or day. The goal is to make sure that everyone has a fair chance to use the API, and that no one client or user can use it too much.
+
+Imagine you’re running a restaurant. You have a limited number of tables, so you need to control how many customers can come in and eat at once.
+
+Throttling would be like saying: “Each customer can only order one meal at a time.” This would help prevent the kitchen from getting overloaded.
+
+Rate limiting would be like saying: “Each customer can only order one meal every hour.” This would help ensure that everyone has a fair chance to eat, and that no one customer can order too much food.
+
+
