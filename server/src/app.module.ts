@@ -1,24 +1,31 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { BullModule } from '@nestjs/bullmq';
+import { BullModule } from '@nestjs/bull';
 import { AzureCosmosDbModule } from '@nestjs/azure-database';
 import { AudioModule } from './audio/audio.module';
 import { ProjectModule } from './project/project.module';
+import { BullQueues, ContainersEnum } from './utils/enums';
+import { AudioUtils } from './utils';
+import { TranscriptionProcessor } from './processors/transcription.processor';
+import { AudioEntity, ProjectEntity } from './project/entity';
+import { ChatModule } from './chat/chat.module';
+import { ChatService } from './chat/chat.service';
 
 
 const C = new ConfigService()
 console.log(C.get<string>('COSMOS_DBNAME'))
+
+@Global()
 @Module({
   imports: [
     // Import ConfigModule to make ConfigService available
     ConfigModule.forRoot({
       isGlobal: true, // Makes ConfigService available globally in the app
     }),
-
     BullModule.forRoot({
-      connection: {
+      redis: {
         host: process.env.QUEUE_HOST,
         port: +process.env.QUEUE_PORT,
       },
@@ -30,14 +37,30 @@ console.log(C.get<string>('COSMOS_DBNAME'))
         endpoint: configService.get<string>('COSMOS_DB_ENDPOINT'),
         key: configService.get<string>('COSMOS_DB_KEY'),
         database: configService.get<string>('COSMOS_DBNAME'),
-        dbName: configService.get<string>('COSMOS_DBNAME')
+        dbName: configService.get<string>('COSMOS_DBNAME'),
       }),
       inject: [ConfigService],
     }),
+    AzureCosmosDbModule.forFeature([{
+      dto: ProjectEntity,
+      collection: ContainersEnum.PROJECTS,
+    },
+    {
+      dto: AudioEntity,
+      collection: ContainersEnum.AUDIO,
+    }
+    ]),
+    BullModule.registerQueue({
+      name: BullQueues.TRANSCRIPTION,
+    }),
+    BullModule.registerQueue({
+      name: BullQueues.TRANSLATION,
+    }),
     AudioModule,
     ProjectModule,
+    ChatModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, TranscriptionProcessor, AudioUtils],
 })
 export class AppModule { }

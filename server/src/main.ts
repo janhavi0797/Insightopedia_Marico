@@ -1,9 +1,13 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import { ExpressAdapter } from '@bull-board/express';
-import { createBullBoard } from '@bull-board/api';
 import { ValidationPipe } from '@nestjs/common';
+import { ExpressAdapter } from '@bull-board/express';
+import { Queue } from 'bull';
+import { getQueueToken } from '@nestjs/bull';
+import { createBullBoard } from '@bull-board/api';
+import { BullAdapter } from '@bull-board/api/bullAdapter';
+import { BullQueues } from './utils/enums';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -23,10 +27,15 @@ async function bootstrap() {
   // Use ValidationPipe globally to automatically validate incoming requests
   app.useGlobalPipes(new ValidationPipe());
 
-  // Setup Bull-Board to monitor the queue
+
+  const transcriptionQueue = app.get<Queue>(getQueueToken(BullQueues.TRANSCRIPTION));
+  const translationQueue = app.get<Queue>(getQueueToken(BullQueues.TRANSLATION));
+
+
   createBullBoard({
     queues: [
-      // new BullAdapter(audioQueue), // Add your queues here (e.g., audioQueue)
+      new BullAdapter(transcriptionQueue),
+      new BullAdapter(translationQueue),
     ],
     serverAdapter,
   });
