@@ -6,7 +6,6 @@ import { ProjectEntity } from './entity';
 import { AudioEntity } from './entity/audio.entity';
 import { BullModule } from '@nestjs/bull';
 import { BullQueues, ContainersEnum } from 'src/utils/enums';
-import { TranscriptionProcessor } from 'src/processors/transcription.processor';
 import { AudioUtils } from 'src/utils';
 import { ChatService } from 'src/chat/chat.service';
 
@@ -22,10 +21,10 @@ import { ChatService } from 'src/chat/chat.service';
     }
     ]),
     BullModule.registerQueue({
-      name: BullQueues.TRANSCRIPTION,
+      name: BullQueues.TRANSLATION,
     }),
     BullModule.registerQueue({
-      name: BullQueues.TRANSLATION,
+      name: BullQueues.TRANSCRIPTION,
     }),
   ],
   controllers: [ProjectController],

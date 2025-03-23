@@ -3,7 +3,7 @@ import { Translate } from "@google-cloud/translate/build/src/v2";
 import { AzureOpenAI } from "openai";
 import { AzureKeyCredential, SearchClient } from "@azure/search-documents";
 import { InjectModel } from "@nestjs/azure-database";
-import { ProjectEntity } from 'src/project/entity';
+import { AudioEntity, ProjectEntity } from 'src/project/entity';
 import { ConfigService } from "@nestjs/config";
 import { Container } from "@azure/cosmos";
 import axios from "axios";
@@ -24,11 +24,14 @@ export class AudioUtils {
   private readonly translateClient: Translate;
   private readonly azureOpenAIClient: AzureOpenAI;
   private readonly azureSearchClient: SearchClient<any>;
+  private readonly logger = new Logger(AudioUtils.name);
 
   constructor(
     @InjectModel(ProjectEntity) private readonly transcriptionContainer: Container,
+    @InjectModel(AudioEntity) private readonly AudioContainer: Container,
     private readonly chatService: ChatService,
-    private readonly configService: ConfigService
+    private readonly configService: ConfigService,
+
   ) {
     this.translateClient = new Translate({ key: this.configService.get<string>('TRANSALATION_APIKEY') });
     this.azureSearchClient = new SearchClient(
@@ -53,9 +56,6 @@ export class AudioUtils {
 
   async transcribeAudio(audioId, sasToken, mainLang, SecondaryLang, noOfSpek) {
     try {
-      //const transcriptionPromises = audioProcessDtoArray.map(async (audioData) => {
-      //const { TGId, TGName, sasToken, mainLang, SecondaryLang, noOfSpek } = audioData;
-      // Call the transcribe function for each audio file
 
       Logger.log(`Transcribing audio ${audioId}`);
       const transcriptionResult = await this.transcribe(
@@ -134,7 +134,6 @@ export class AudioUtils {
     while (!isCompleted) {
       const statusResponse = await axios.get(transcriptionUrl, { headers });
       transcriptionData = statusResponse.data;
-      console.log(statusResponse)
 
       if (transcriptionData.status === 'Succeeded') {
         isCompleted = true;
@@ -226,17 +225,34 @@ export class AudioUtils {
     }
   }
 
-  async saveTranscriptionDocument(transcriptionDocument) {
+  async saveTranscriptionDocument(transcriptionDocument: Partial<AudioEntity>) {
     try {
-      // Attempt to insert the document
-      const response = await this.transcriptionContainer.items.create(transcriptionDocument);
-      // Check if the document was successfully inserted
-      if (response.resource) {
-        // console.log('Document successfully created in Cosmos DB');
-      } else {
-        //console.error('Document was not inserted successfully');
+      // Update the  Audio Container with the audioId
+      const query = {
+        query: 'SELECT * FROM c WHERE c.audioId = @audioId',
+        parameters: [{ name: '@audioId', value: transcriptionDocument.audioId }]
       }
-      return transcriptionDocument;
+      const { resources: existingDocuments } = await this.AudioContainer.items.query(query).fetchAll();
+
+      if (existingDocuments.length > 0) {
+        const existingDocument = existingDocuments[0];
+        existingDocument.audioId = transcriptionDocument.audioId;
+        existingDocument.audiodata = transcriptionDocument.audiodata;
+        existingDocument.summary = transcriptionDocument.summary;
+        existingDocument.sentiment_analysis = transcriptionDocument.sentiment_analysis;
+        existingDocument.combinedTranslation = transcriptionDocument.combinedTranslation;
+        existingDocument.vectorIds = transcriptionDocument.vectorIds;
+        const response = await this.AudioContainer.items.upsert(existingDocument);
+        console.log('Document updated successfully:');
+      } else {
+        const response = await this.AudioContainer.items.create(transcriptionDocument);
+        console.log('Document created successfully:');
+        return response;
+      }
+
+      return response;
+
+
     } catch (error) {
       // Log any errors that occurred during the insertion
       console.error('Error inserting document into Cosmos DB:', error.message);
@@ -244,27 +260,19 @@ export class AudioUtils {
     }
   }
 
-  async updateTranscriptionDocument(TGId: string, updateData: Partial<any>, audioName: any) {
+  async updateTranscriptionDocument(audioId: string, updateData: Partial<any>, audioName: any) {
     try {
-      console.log(TGId, audioName);
       const querySpec = {
-        query: 'SELECT * FROM c WHERE c.TGId = @TGId AND c.audioName= @audioName',
-        parameters: [{ name: '@TGId', value: TGId }, { name: '@audioName', value: audioName }
-        ],
+        query: 'SELECT * FROM c WHERE  c.audioId= @audioId',
+        parameters: [{ name: '@audioId', value: audioId }],
       };
-      const { resources: existingDocuments } = await this.transcriptionContainer.items.query(querySpec).fetchAll();
-      console.log(existingDocuments);
-      // const { resource: existingDocument } = await this.transcriptionContainer.item(TGId).read();
+      const { resources: existingDocuments } = await this.AudioContainer.items.query(querySpec).fetchAll();
 
       if (existingDocuments.length > 0) {
-        const existingDocument = existingDocuments[0]; // Assuming only one document is returned         
-        // Update the vectorId field (append, replace, etc., depending on your use case)
-        existingDocument.vectorId = updateData; // Assuming `updatedVectorIdArray` is the new value         
-        // Upsert (insert or update) the modified document back into Cosmos DB
-        const response = await this.transcriptionContainer.items.upsert(existingDocument);
-        // console.log('Document updated successfully:');
+        const existingDocument = existingDocuments[0];
+        existingDocument.vectorIds = updateData;
+        const response = await this.AudioContainer.items.upsert(existingDocument);
       } else {
-        // console.log('Document not found');
         return response;
       }
     } catch (error) {

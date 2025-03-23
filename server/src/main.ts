@@ -30,12 +30,15 @@ async function bootstrap() {
 
   const transcriptionQueue = app.get<Queue>(getQueueToken(BullQueues.TRANSCRIPTION));
   const translationQueue = app.get<Queue>(getQueueToken(BullQueues.TRANSLATION));
-
+  const summaryQueue = app.get<Queue>(getQueueToken(BullQueues.SUMMARY));
+  const embeddingQueue = app.get<Queue>(getQueueToken(BullQueues.EMBEDDING));
 
   createBullBoard({
     queues: [
       new BullAdapter(transcriptionQueue),
       new BullAdapter(translationQueue),
+      new BullAdapter(summaryQueue),
+      new BullAdapter(embeddingQueue),
     ],
     serverAdapter,
   });

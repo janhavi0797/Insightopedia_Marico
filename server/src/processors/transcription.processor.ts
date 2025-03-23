@@ -2,30 +2,27 @@ import { InjectQueue, Process, Processor } from "@nestjs/bull";
 import { Job, Queue } from 'bull';
 import { AudioUtils } from "src/utils"
 import { Logger } from "@nestjs/common";
-import { QueueProcess } from "src/utils/enums";
-import { ITransalationAudioProcessor } from "src/utils/interfaces";
+import { BullQueues, QueueProcess } from "src/utils/enums";
+import { ITransalationAudioProcessor, ITranscriptionProcessor } from "src/utils/interfaces";
 // import { AudioService } from "../audio.service";
+import { test } from "src/test";
 
 
-@Processor('transcription')
+@Processor(BullQueues.TRANSCRIPTION)
 export class TranscriptionProcessor {
   private readonly logger = new Logger(TranscriptionProcessor.name);
 
   constructor(private readonly audioUtils: AudioUtils,
-    @InjectQueue('translation') private readonly translationQueue: Queue,
+    @InjectQueue(BullQueues.TRANSLATION) private readonly translationQueue: Queue,
     // private readonly audioService: AudioService
-
   ) { }
   @Process({ name: QueueProcess.TRANSCRIPTION_AUDIO, concurrency: 5 })
   async handleTranscriptionJob(job: Job) {
-    const { audioId, sasToken, primaryLang, secondaryLang, noOfSpek, fileName } = job.data;
-    await job.log(`Processing transcription job for audioId ${audioId}`);
-    console.log(audioId, sasToken, primaryLang, secondaryLang, noOfSpek);
+    const { audioId, sasToken, primaryLang, secondaryLang, noOfSpek, fileName }: ITranscriptionProcessor = job.data;
     try {
-      await job.log(`Transcription job for audio array ${audioId} started`);
+      job.log(`Transcription job for audioId ${audioId} started - Stage: Started`);
       const transcriptionResults = await this.audioUtils.transcribeAudio(audioId, sasToken, primaryLang, secondaryLang, noOfSpek);
-      // console.log(transcriptionResults);
-      await job.log(`Transcription job for audio ${audioId} completed`);
+      job.log(`Transcription job for audioId ${audioId} completed - Stage: Transcription Completed`);
 
       const translationJob: ITransalationAudioProcessor = {
         transcriptionData: transcriptionResults.transcriptionResult,
@@ -34,22 +31,12 @@ export class TranscriptionProcessor {
       };
 
       await this.translationQueue.add(QueueProcess.TRANSLATION_AUDIO, translationJob);
+      job.log(`Translation job for audioId ${audioId} added to queue - Stage: Translation Queued`);
 
-      // // Update status to success in the database
-      // await this.audioService.updateStatus(TGId, {
-      //   status: 1,
-      //   //statusCode: 200,
-      // });
     } catch (error) {
-      this.logger.error(`Transcription job failed: ${error.message}`);
-      // Update status to failed in the database
-      // await this.audioService.updateStatus(TGId, {
-
-      //   status: 2,
-      //   //statusCode: 500,
-      // });
+      job.log(`Transcription job for audioId ${audioId} failed - Stage: Error: ${error.message}`);
       throw error;
     }
-    await job.log(`Transcription job for all the audios are completed`);
+    job.log(`Transcription job for audioId ${audioId} is completed - Stage: Completed`);
   }
 }

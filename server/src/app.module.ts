@@ -12,6 +12,9 @@ import { TranscriptionProcessor } from './processors/transcription.processor';
 import { AudioEntity, ProjectEntity } from './project/entity';
 import { ChatModule } from './chat/chat.module';
 import { ChatService } from './chat/chat.service';
+import { TranslationProcessor } from './processors/translation.processor';
+import { SummarySentimentsProcessor } from './processors/summarySentiments.processor';
+import { EmbeddingProcessor } from './processors/embedding.processor';
 
 
 const C = new ConfigService()
@@ -56,11 +59,17 @@ console.log(C.get<string>('COSMOS_DBNAME'))
     BullModule.registerQueue({
       name: BullQueues.TRANSLATION,
     }),
+    BullModule.registerQueue({
+      name: BullQueues.SUMMARY,
+    }),
+    BullModule.registerQueue({
+      name: BullQueues.EMBEDDING,
+    }),
     AudioModule,
     ProjectModule,
     ChatModule,
   ],
   controllers: [AppController],
-  providers: [AppService, TranscriptionProcessor, AudioUtils],
+  providers: [AppService, TranscriptionProcessor, TranslationProcessor, SummarySentimentsProcessor, EmbeddingProcessor, AudioUtils],
 })
 export class AppModule { }

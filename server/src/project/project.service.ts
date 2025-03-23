@@ -21,7 +21,6 @@ export class ProjectService {
         @InjectModel(ProjectEntity) private readonly projectContainer: Container,
         @InjectModel(AudioEntity) private readonly audioContainer: Container,
         @InjectQueue(BullQueues.TRANSCRIPTION) private readonly transcriptionQueue: Queue,
-
     ) {
         this.blobServiceClient = BlobServiceClient.fromConnectionString(this.config.get<string>('AZURE_STORAGE_CONNECTION_STRING'));
         this.containerClient = this.blobServiceClient.getContainerClient(this.config.get<string>('AUDIO_UPLOAD_BLOB_CONTAINER'));
@@ -68,9 +67,7 @@ export class ProjectService {
                     };
                     this.transcriptionQueue.add(QueueProcess.TRANSCRIPTION_AUDIO, audioData);
 
-
                     Logger.log(`Transcription job for ${audio.audioId} enqueued successfully`);
-
 
                     console.log('audioEntity:', audioResult?.resources, audio.audioId);
                 }
