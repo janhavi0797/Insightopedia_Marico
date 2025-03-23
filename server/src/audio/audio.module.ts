@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { AudioService } from './audio.service';
 import { AudioController } from './audio.controller';
-import { ConfigModule } from '@nestjs/config';
 import { AzureCosmosDbModule } from '@nestjs/azure-database';
+import { ConfigModule } from '@nestjs/config';
 import { Audio } from './entity/audio.enitity';
 
 @Module({
@@ -13,7 +13,7 @@ import { Audio } from './entity/audio.enitity';
         dto: Audio,
       },
     ]),
-    ConfigModule.forRoot(),
+    ConfigModule,
   ],
   controllers: [AudioController],
   providers: [AudioService],
