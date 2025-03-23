@@ -220,7 +220,8 @@ export class UserService {
       return {
         statusCode: 500,
         message: 'Failed to fetch master data',
-        data: [],
+        data: null,
+        error: error.message,
       };
     }
   }
