@@ -5,6 +5,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { BullModule } from '@nestjs/bull';
 import { AzureCosmosDbModule } from '@nestjs/azure-database';
 import { AudioModule } from './audio/audio.module';
+import { Container, CosmosClient } from '@azure/cosmos';
+import { UserModule } from './user/user.module';
 import { ProjectModule } from './project/project.module';
 import { BullQueues, ContainersEnum } from './utils/enums';
 import { AudioUtils } from './utils';
@@ -41,6 +43,7 @@ console.log(C.get<string>('COSMOS_DBNAME'))
         key: configService.get<string>('COSMOS_DB_KEY'),
         database: configService.get<string>('COSMOS_DBNAME'),
         dbName: configService.get<string>('COSMOS_DBNAME'),
+        dbName: configService.get<string>('COSMOS_DBNAME'),
       }),
       inject: [ConfigService],
     }),
@@ -66,10 +69,27 @@ console.log(C.get<string>('COSMOS_DBNAME'))
       name: BullQueues.EMBEDDING,
     }),
     AudioModule,
+    UserModule,
     ProjectModule,
     ChatModule,
   ],
   controllers: [AppController],
-  providers: [AppService, TranscriptionProcessor, TranslationProcessor, SummarySentimentsProcessor, EmbeddingProcessor, AudioUtils],
+  providers: [
+    AppService,
+    {
+      provide: 'AUDIO_CONTAINER',
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService): Container => {
+        const client = new CosmosClient({
+          endpoint: configService.get<string>('COSMOS_DB_ENDPOINT'),
+          key: configService.get<string>('COSMOS_DB_KEY'),
+        });
+        return client
+          .database(configService.get<string>('COSMOS_DBNAME'))
+          .container('Audio');
+      },
+    },
+    TranscriptionProcessor, TranslationProcessor, SummarySentimentsProcessor, EmbeddingProcessor, AudioUtils
+  ],
 })
 export class AppModule { }
