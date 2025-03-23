@@ -43,7 +43,6 @@ console.log(C.get<string>('COSMOS_DBNAME'))
         key: configService.get<string>('COSMOS_DB_KEY'),
         database: configService.get<string>('COSMOS_DBNAME'),
         dbName: configService.get<string>('COSMOS_DBNAME'),
-        dbName: configService.get<string>('COSMOS_DBNAME'),
       }),
       inject: [ConfigService],
     }),
