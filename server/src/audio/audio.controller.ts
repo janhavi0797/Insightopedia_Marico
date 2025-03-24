@@ -6,9 +6,8 @@ import {
   Post,
   UploadedFiles,
   UseInterceptors,
-  Get, 
-  Param, 
-  Query
+  Get,
+  Query,
 } from '@nestjs/common';
 import { AudioService } from './audio.service';
 import { ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
