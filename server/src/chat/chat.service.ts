@@ -391,8 +391,8 @@ export class ChatService {
     let start = 0;
 
     while (start < text.length) {
-      let end = start + maxTokenLength;
-      let chunk = text.slice(start, end);
+      const end = start + maxTokenLength;
+      const chunk = text.slice(start, end);
 
       chunks.push(chunk);
       start += maxTokenLength - overlapTokenLength;
