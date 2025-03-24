@@ -1,5 +1,6 @@
 import { InjectModel, Repository } from '@nestjs/azure-database';
 import {
+  Inject,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -35,6 +36,7 @@ export class ProjectService {
     @InjectModel(AudioEntity) private readonly audioContainer: Container,
     @InjectQueue(BullQueues.TRANSCRIPTION)
     private readonly transcriptionQueue: Queue,
+    @Inject('RedisService') private readonly redisService,
   ) {
     this.blobServiceClient = BlobServiceClient.fromConnectionString(
       this.config.get<string>('AZURE_STORAGE_CONNECTION_STRING'),
@@ -84,7 +86,7 @@ export class ProjectService {
       }
 
       if (project?.audioIds?.length > 0) {
-        for (const audio of project?.audioIds) {
+        const audioPromises = project.audioIds.map(async (audio, index) => {
           const audioEntity = new AudioEntity();
           audioEntity.audioId = audio.audioId;
           const audioResult = await this.audioContainer.items
@@ -108,17 +110,24 @@ export class ProjectService {
             fileName: audioResult?.resources[0]?.audioName,
             sasToken: sasToken,
           };
-          this.transcriptionQueue.add(
-            QueueProcess.TRANSCRIPTION_AUDIO,
-            audioData,
-          );
+          this.transcriptionQueue.add(QueueProcess.TRANSCRIPTION_AUDIO, {
+            ...audioData,
+            projectId: projectObj.projectId,
+          });
 
           Logger.log(
             `Transcription job for ${audio.audioId} enqueued successfully`,
           );
 
           console.log('audioEntity:', audioResult?.resources, audio.audioId);
-        }
+          // If this is the last audio, mark it in Redis
+          if (index === project.audioIds.length - 1) {
+            await this.redisService.set(`lastAudio`, audio.audioId);
+          }
+        });
+        Promise.all(audioPromises).then(() => {
+          Logger.log(`Transcription jobs enqueued successfully`);
+        });
       }
 
       Logger.log(`Project created successfully`);
