@@ -3,6 +3,7 @@ import { ProjectService } from './project.service';
 import { ProjectController } from './project.controller';
 import { AzureCosmosDbModule } from '@nestjs/azure-database';
 import { ProjectEntity } from './entity';
+import { Audio } from '../audio/entity/audio.enitity';
 
 @Module({
   imports: [
@@ -10,6 +11,10 @@ import { ProjectEntity } from './entity';
       {
         dto: ProjectEntity,
         collection: 'Projects',
+      },
+      {
+        collection: 'Audio',
+        dto: Audio,
       },
     ]),
   ],
