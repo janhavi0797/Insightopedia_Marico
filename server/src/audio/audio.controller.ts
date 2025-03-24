@@ -8,10 +8,13 @@ import {
   UseInterceptors,
   Get,
   Query,
+  InternalServerErrorException,
+  NotFoundException,
 } from '@nestjs/common';
 import { AudioService } from './audio.service';
 import { ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express';
+import { ProjectsDto } from './dto/project.dto';
 
 @ApiTags('Audio Management')
 @Controller('audio')
@@ -72,11 +75,29 @@ export class AudioController {
     const parsedData = JSON.parse(AudioDto);
 
     // Call the service to process the audio files
-    await this.audioService.processAudioFiles(parsedData, files);
+    try {
+      return await this.audioService.processAudioFiles(parsedData, files);
+    } catch (err) {
+      if (err instanceof BadRequestException) {
+        throw new BadRequestException(`${err.message}`);
+      }
+      throw new InternalServerErrorException(`${err.message}`);
+    }
+  }
 
-    return {
-      statusCode: 200,
-      message: 'File Uploaded successfully.',
-    };
+  @Post('/projects')
+  @ApiOperation({ summary: 'Get All Projects of user.' })
+  async getAllProjects(@Query() projectsDto: ProjectsDto) {
+    const { isAllFile, userId } = projectsDto;
+    try {
+      return await this.audioService.getAllProjects(+isAllFile, userId);
+    } catch (err) {
+      if (err instanceof BadRequestException) {
+        throw new BadRequestException(`${err.message}`);
+      } else if (err instanceof NotFoundException) {
+        throw new NotFoundException(`${err.message}`);
+      }
+      throw new InternalServerErrorException(`${err.message}`);
+    }
   }
 }
