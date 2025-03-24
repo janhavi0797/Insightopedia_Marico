@@ -4,6 +4,12 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ExpressAdapter } from '@bull-board/express';
 import { createBullBoard } from '@bull-board/api';
 import { ValidationPipe } from '@nestjs/common';
+import { Queue } from 'bull';
+import { getQueueToken } from '@nestjs/bull';
+import { BullAdapter } from '@bull-board/api/bullAdapter';
+import bodyParser from 'body-parser';
+import * as express from 'express';
+import { join } from 'path';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -12,10 +18,18 @@ async function bootstrap() {
     .setTitle('Insightopedia Marico')
     .setDescription('The Median API description')
     .setVersion('0.1')
+    .addServer('/Insightopedia/backend')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
+
+  app.enableCors({
+    origin: ['http://localhost:4200'], // Replace with your Angular app's URL
+   //origin: ['https://maricointellivoice.atriina.com'],
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true,  // If you are using cookies or authorization headers
+  });
 
   const serverAdapter = new ExpressAdapter();
   serverAdapter.setBasePath('/admin/queues');
@@ -38,3 +52,6 @@ async function bootstrap() {
   await app.listen(3000);
 }
 bootstrap();
+
+
+

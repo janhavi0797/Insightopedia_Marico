@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { BullModule } from '@nestjs/bullmq';
+import { BullModule } from '@nestjs/bull';
 import { AzureCosmosDbModule } from '@nestjs/azure-database';
 import { AudioModule } from './audio/audio.module';
 import { Container, CosmosClient } from '@azure/cosmos';
@@ -17,8 +17,24 @@ const C = new ConfigService();
       isGlobal: true, // Makes ConfigService available globally in the app
     }),
 
+    BullModule.registerQueue({
+      name: 'audio',
+    }),
+    BullModule.registerQueue({
+      name: 'transcription',
+    }),
+    BullModule.registerQueue({
+      name: 'translation',
+    }),
+    BullModule.registerQueue({
+      name: 'summary',
+    }),
+    BullModule.registerQueue({
+      name: 'embedding',
+    }),
+
     BullModule.forRoot({
-      connection: {
+      redis: {
         host: process.env.QUEUE_HOST,
         port: +process.env.QUEUE_PORT,
       },
