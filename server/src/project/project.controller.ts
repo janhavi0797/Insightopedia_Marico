@@ -7,7 +7,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { ProjectService } from './project.service';
-import { ProjectEntity } from './entity/project.entity';
+import { ProjectEntity } from 'src/utils/containers/project.entity';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CreateProjectDto } from './dtos';
 

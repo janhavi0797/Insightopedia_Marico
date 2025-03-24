@@ -2,8 +2,11 @@ import { Module } from '@nestjs/common';
 import { ProjectService } from './project.service';
 import { ProjectController } from './project.controller';
 import { AzureCosmosDbModule } from '@nestjs/azure-database';
-import { ProjectEntity } from './entity';
-import { Audio } from '../audio/entity/audio.enitity';
+import { ProjectEntity, AudioEntity } from 'src/utils/containers';
+import { BullModule } from '@nestjs/bull';
+import { BullQueues, ContainersEnum } from 'src/utils/enums';
+import { AudioUtils } from 'src/utils';
+import { ChatService } from 'src/chat/chat.service';
 
 @Module({
   imports: [
@@ -12,13 +15,14 @@ import { Audio } from '../audio/entity/audio.enitity';
         dto: ProjectEntity,
         collection: 'Projects',
       },
-      {
-        collection: 'Audio',
-        dto: Audio,
-      },
     ]),
+    BullModule.registerQueue({
+      name: BullQueues.TRANSLATION,
+    }),
+    BullModule.registerQueue({
+      name: BullQueues.TRANSCRIPTION,
+    }),
   ],
-
   controllers: [ProjectController],
   providers: [ProjectService],
 })
