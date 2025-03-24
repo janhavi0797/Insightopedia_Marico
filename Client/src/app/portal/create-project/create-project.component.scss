@@ -1,0 +1,103 @@
+.project-details {
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 24px;
+    font-family: Arial, sans-serif;
+    //background: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+  }
+  
+  .project-details h2 {
+    margin-bottom: 24px;
+    text-align: center;
+    font-size: 24px;
+    color: #2c3e50;
+  }
+  
+  /* Full-width single row for project name */
+  .full-width-row {
+    width: 100%;
+    margin-bottom: 16px;
+  }
+  
+  /* Make rows flexible when needed */
+  .form-row {
+    display: flex;
+    flex-direction: column;
+  }
+  
+//   .form-field {
+//     width: 50%;
+//   }
+  
+  .project-name {
+    flex: 1;
+  }
+  
+  .filter-tags {
+    min-width: 50%;
+    flex-shrink: 0;
+  }
+  
+  .selected-tags {
+    flex: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    padding-top: 12px;
+  }
+  
+  /* Combined row for filter and selected tags */
+  .tags-row {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  
+  .tag {
+    background-color: #e6f0ff;
+    border: 1px solid #4285f4;
+    border-radius: 20px;
+    padding: 4px 10px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+  }
+  
+  .tag button {
+    background: none;
+    border: none;
+    margin-left: 6px;
+    font-size: 16px;
+    color: #4285f4;
+    cursor: pointer;
+  }
+  
+  @media (max-width: 600px) {
+    .project-details {
+      padding: 16px;
+    }
+  
+    .project-details h2 {
+      font-size: 20px;
+    }
+  
+    .tags-row {
+      flex-direction: column;
+    }
+  
+    .filter-tags,
+    .selected-tags {
+      width: 100%;
+    }
+  }
+  
+  
+  
+  
+  

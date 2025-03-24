@@ -1,1 +1,77 @@
-<p>create-project works!</p>
+<div class="project-details">
+    <h2>Project Details</h2>
+  
+    <!-- Row 1: Project Name -->
+    <div class="form-row full-width-row">
+      <mat-form-field appearance="outline" class="form-field project-name">
+        <mat-label>Project Name</mat-label>
+        <input
+          matInput
+          type="text"
+          id="projectName"
+          [(ngModel)]="projectName"
+          placeholder="Enter project name"
+          name="projectName"
+          required
+        />
+      </mat-form-field>
+    </div>
+  
+    <!-- Row 2: Filter Tags + Selected Tags on same row -->
+    <div class="form-row tags-row">
+      <!-- Filter By Tags -->
+      <mat-form-field appearance="outline" class="form-field filter-tags">
+        <mat-label>Filter By Tags</mat-label>
+        <mat-select [(ngModel)]="selectedTag" (selectionChange)="filterByTag()">
+          <mat-option *ngFor="let tag of filteredTags()" [value]="tag">
+            {{ tag }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+  
+      <!-- Selected Tags -->
+      <div class="selected-tags">
+        <span *ngFor="let tag of selectedTags" class="tag">
+          {{ tag }}
+          <button (click)="removeTag(tag)">×</button>
+        </span>
+      </div>
+    </div>
+  </div>
+  
+  
+  
+  
+      
+      <!-- Display Selected Tags as Chips -->
+      <!-- <div class="selected-tags" *ngIf="selectedTags?.length > 0">
+        <mat-chip-list>
+          <mat-chip *ngFor="let tag of selectedTags" [removable]="true" (removed)="removeTag(tag)">
+            {{ tag }}
+            <button matChipRemove>
+              <mat-icon>cancel</mat-icon>
+            </button>
+          </mat-chip>
+        </mat-chip-list>
+      </div> -->
+  
+    <!-- <div class="audio-list">
+      <div class="audio-card" *ngFor="let audio of filteredAudios">
+        <input type="checkbox" [(ngModel)]="audio.selected" />
+        <div class="audio-details">
+          <img src="assets/mp3-icon.png" alt="mp3" />
+          <div>
+            <p><strong>{{ audio.title }}</strong></p>
+            <p>{{ audio.size }}</p>
+          </div>
+          <progress [value]="audio.progress" max="100"></progress>
+          <button>▶️</button>
+          <button (click)="deleteAudio(audio)">🗑️</button>
+        </div>
+        <div class="tags">
+          <span *ngFor="let tag of audio.tags" class="tag">{{ tag }}</span>
+        </div>
+      </div>
+    </div> -->
+  
+  

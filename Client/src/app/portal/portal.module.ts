@@ -30,7 +30,7 @@ import { UserListComponent } from './user-list/user-list.component';
 import { ProjectDetailsComponent } from './project-details/project-details.component';
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatTableModule } from '@angular/material/table';
-
+//import { MatChipsModule } from '@angular/material/chips';
 
 @NgModule({
   declarations: [
@@ -68,7 +68,8 @@ import { MatTableModule } from '@angular/material/table';
     MatGridListModule,
     MatProgressSpinnerModule,
     MatTableModule,
-    MatPaginatorModule
+    MatPaginatorModule,
+    //MatChipsModule
   ],
   providers: []
 })
