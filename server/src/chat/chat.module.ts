@@ -3,12 +3,11 @@ import { ChatController } from "./chat.controller";
 import { ChatService } from "./chat.service";
 import { ConfigModule } from "@nestjs/config";
 import { AudioUtils } from "src/utils/audio.utils";
-import { TranscriptionEntity } from "src/audio/entity/transcription.entity";
 import { Project } from "src/audio/entity/project.entity";
 import { AudioModule } from "src/audio/audio.module";
 import { AzureCosmosDbModule } from "@nestjs/azure-database";
 import { ContainersEnum } from "src/utils/enums";
-import { ProjectEntity } from "src/project/entity";
+import { ProjectEntity } from "src/utils/containers";
 // import { TargetGroupEntity } from "src/audio/entity/target.entity";
 
 @Module({
@@ -17,10 +16,7 @@ import { ProjectEntity } from "src/project/entity";
             collection: ContainersEnum.PROJECTS,
             dto: ProjectEntity
         },
-        {
-            collection: 'Transcription',
-            dto: TranscriptionEntity
-        }
+
 
     ])
 

@@ -5,9 +5,8 @@ import { AzureOpenAI } from "openai";
 import { AudioUtils } from "src/utils/audio.utils";
 import { InjectModel } from "@nestjs/azure-database";
 import { Container, Item } from "@azure/cosmos";
-import { TranscriptionEntity } from "src/audio/entity/transcription.entity";
 import { PROJECT_COMPARE_STATIC_INSTRUCTION, STATIC_INSTRUCTION } from "src/utils";
-import { ProjectEntity } from "src/project/entity";
+import { ProjectEntity } from "src/utils/containers";
 
 export interface Document {
   id: string;              // The text content of the document
@@ -25,7 +24,6 @@ export class ChatService {
   constructor
     (
       @InjectModel(ProjectEntity) private readonly projectContainer: Container,
-      @InjectModel(TranscriptionEntity) private readonly transcriptionContainer: Container,
       private readonly config: ConfigService,
     ) {
     try {
@@ -245,52 +243,48 @@ export class ChatService {
     }
   }
 
-  async getVectorIdsByProject(projectName: string): Promise<string[]> {
+  async getVectorIdsByProject(projectId: string): Promise<string[]> {
     try {
       const querySpec = {
-        query: 'SELECT * FROM c WHERE c.ProjName = @projectName',
-        parameters: [{ name: '@projectName', value: projectName }],
+        query: 'SELECT * FROM c WHERE c.ProjName = @projectId',
+        parameters: [{ name: '@projectId', value: projectId }],
       };
 
       const { resources: existingDocuments } = await this.projectContainer.items.query(querySpec).fetchAll();
 
       if (existingDocuments.length === 0) {
-        throw new Error(`No documents found for project: ${projectName}`);
+        throw new Error(`No documents found for project: ${projectId}`);
       }
 
       const projectDocument = existingDocuments[0];
-      const transcriptionIds = projectDocument.TGIds.map(id => `'${id}'`).join(", ");
+      const transcriptionIds = projectDocument.audioIds.map(id => `'${id}'`).join(", ");
       console.log(transcriptionIds);
 
-      const transcriptionQuery = {
-        query: `SELECT c.vectorId FROM c WHERE c.TGName IN (${transcriptionIds})`,
-      };
-
-      const { resources: transcriptionData } = await this.transcriptionContainer.items.query(transcriptionQuery).fetchAll();
-      if (!transcriptionData.length) {
-        throw new Error(`No transcription data found for project: ${projectName}`);
+      // TODO add transcription data to the project entity
+      const transcriptionData = projectDocument.transcription;
+      if (!transcriptionData) {
+        throw new Error(`No transcription data found for project: ${projectId}`);
       }
-      return transcriptionData.filter(item => item !== null).map(item => item.vectorId).flat();
+      return projectDocument.filter(item => item !== null).map(item => item.vectorIds).flat();
     } catch (error) {
       console.error("Error fetching data:", error);
       throw new Error("An error occurred while fetching data.");
     }
   }
 
-  async getVectorIdsByTarget(targetName: string): Promise<string[]> {
+  async getVectorIdsByTarget(projectId: string): Promise<string[]> {
     try {
       const querySpec = {
-        query: 'SELECT * FROM c WHERE c.TGName=@targetName',
-        parameters: [{ name: '@targetName', value: targetName }],
+        query: 'SELECT * FROM c WHERE c.project=@projectId',
+        parameters: [{ name: '@projectId', value: projectId }],
       };
-      const { resources: existingDocuments } = await this.transcriptionContainer.items.query(querySpec).fetchAll();
+      const { resources: existingDocuments } = await this.projectContainer.items.query(querySpec).fetchAll();
 
       if (!existingDocuments.length) {
-        throw new Error(`No documents found for project: ${targetName}`);
+        throw new Error(`No documents found for project: ${projectId}`);
       }
-      const transcriptionDocument = existingDocuments[0];
-      return transcriptionDocument.vectorId;
-      //const transcriptionIds = projectDocument.TGIds.map(id => `'${id}'`).join(", ");      
+      const projectDocument = existingDocuments[0];
+      return projectDocument.vectorId;
     } catch (error) {
       console.error("Error fetching data:", error);
       throw new Error("An error occurred while fetching data.");

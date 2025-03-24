@@ -11,7 +11,7 @@ import { ProjectModule } from './project/project.module';
 import { BullQueues, ContainersEnum } from './utils/enums';
 import { AudioUtils } from './utils';
 import { TranscriptionProcessor } from './processors/transcription.processor';
-import { AudioEntity, ProjectEntity } from './project/entity';
+import { AudioEntity, ProjectEntity } from './utils/containers';
 import { ChatModule } from './chat/chat.module';
 import { ChatService } from './chat/chat.service';
 import { TranslationProcessor } from './processors/translation.processor';
