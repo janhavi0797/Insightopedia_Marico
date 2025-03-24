@@ -3,7 +3,7 @@ import { Translate } from "@google-cloud/translate/build/src/v2";
 import { AzureOpenAI } from "openai";
 import { AzureKeyCredential, SearchClient } from "@azure/search-documents";
 import { InjectModel } from "@nestjs/azure-database";
-import { AudioEntity, ProjectEntity } from 'src/project/entity';
+import { AudioEntity, ProjectEntity } from 'src/utils/containers';
 import { ConfigService } from "@nestjs/config";
 import { Container } from "@azure/cosmos";
 import axios from "axios";
@@ -72,6 +72,7 @@ export class AudioUtils {
       throw new Error('Audio transcription failed.');
     }
   }
+
   async transcribe(audioId, sas_url, main_language, other_languages, number_of_speakers) {
     try {
       const SUBSCRIPTION_KEY = this.configService.get<string>('SUBSCRIPTION_KEY'); // Replace with your Azure subscription key
@@ -127,7 +128,6 @@ export class AudioUtils {
     }
   }
 
-
   async getTranscriptionResult(transcriptionUrl, headers, audioId) {
     let isCompleted = false;
     let transcriptionData;
@@ -181,6 +181,7 @@ export class AudioUtils {
     const combinedTranslation = updatedTextArray.map(data => `${data.speaker} : ${data.translation}`).join('\n\n');
     return { updatedTextArray, combinedTranslation };
   }
+
   generateSummarizationPrompt(text: string) {
     const summaryLength = 500;
     return SUMMARIZATION_PROMPT_TEMPLATE(summaryLength, text);
@@ -195,33 +196,59 @@ export class AudioUtils {
     const deployment = this.AZURE_OPENAI_DEPLOYMENT;
     const apiVersion = this.AZURE_OPEN_AI_VERSION;
     const apiKey = this.AZURE_OPENAI_API_KEY;
-    const endpoint = this.AZURE_OPENAI_ENDPOINT; // Your Azure OpenAI endpoint here
-    // const options = { azureADTokenProvider, deployment, apiVersion, endpoint };
-    const options = {
-      endpoint,
-      apiKey,
-      apiVersion,
-      deployment: deployment,
-    };
-    const client2 = new AzureOpenAI(options);
-    let prompt;
-    if (purpose === "Summary") {
-      prompt = this.generateSummarizationPrompt(text);
-    }
-    else {
-      prompt = this.generateSentimenAnalysisPrompt(text);
+    const endpoint = this.AZURE_OPENAI_ENDPOINT;
+
+    const options = { endpoint, apiKey, apiVersion, deployment };
+    const client = new AzureOpenAI(options);
+
+    // 1️⃣ **Split text into chunks using existing method**
+    const chunkSize = 10897; // Adjust based on model token limits
+    const chunks = this.getChunks(text, chunkSize);
+
+    let chunkSummaries: string[] = [];
+
+    // 2️⃣ **Summarize Each Chunk**
+    for (const chunk of chunks) {
+      let prompt = purpose === "Summary"
+        ? this.generateSummarizationPrompt(chunk)
+        : this.generateSentimenAnalysisPrompt(chunk);
+
+      const messages: ChatCompletionMessageParam[] = [
+        { role: 'user', content: prompt }
+      ];
+
+      try {
+        const response = await client.chat.completions.create({
+          messages, model: deployment, max_tokens: 500
+        });
+
+        chunkSummaries.push(response.choices[0].message.content);
+      } catch (error) {
+        console.error('Error summarizing chunk:', error);
+      }
     }
 
+    // 3️⃣ **Generate Final Summary from Chunk Summaries**
+    let finalSummary = await this.refineFinalSummary(chunkSummaries.join(' '), client);
+    return finalSummary;
+  }
+
+  private async refineFinalSummary(mergedSummary: string, client: AzureOpenAI) {
+    const refinementPrompt = `Refine the following summary to be more concise while preserving key details:\n\n${mergedSummary}`;
+
     const messages: ChatCompletionMessageParam[] = [
-      { role: 'user', content: prompt }
+      { role: 'user', content: refinementPrompt }
     ];
+
     try {
-      const stream = await client2.chat.completions.create({ messages, model: deployment, max_tokens: 500 });
-      const finalSummary = stream.choices[0].message.content;
-      return finalSummary;
+      const response = await client.chat.completions.create({
+        messages, model: this.AZURE_OPENAI_DEPLOYMENT, max_tokens: 500
+      });
+
+      return response.choices[0].message.content;
     } catch (error) {
-      console.error('Error during API call:', error);
-      throw new Error('Failed to get summary from Azure OpenAI');
+      console.error('Error refining summary:', error);
+      return mergedSummary; // Fallback to raw merged summary
     }
   }
 
@@ -242,6 +269,7 @@ export class AudioUtils {
         existingDocument.sentiment_analysis = transcriptionDocument.sentiment_analysis;
         existingDocument.combinedTranslation = transcriptionDocument.combinedTranslation;
         existingDocument.vectorIds = transcriptionDocument.vectorIds;
+
         const response = await this.AudioContainer.items.upsert(existingDocument);
         console.log('Document updated successfully:');
       } else {
@@ -267,7 +295,6 @@ export class AudioUtils {
         parameters: [{ name: '@audioId', value: audioId }],
       };
       const { resources: existingDocuments } = await this.AudioContainer.items.query(querySpec).fetchAll();
-
       if (existingDocuments.length > 0) {
         const existingDocument = existingDocuments[0];
         existingDocument.vectorIds = updateData;
@@ -299,6 +326,7 @@ export class AudioUtils {
     // Formatting hours, minutes, seconds to 2 digits
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   }
+
   sleep(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
@@ -354,8 +382,8 @@ export class AudioUtils {
     catch (error) {
       throw new Error(`Embedding generation failed ${error}`);
     }
-
   }
+
   getChunks(text: string, chunkSize: number): string[] {
     const chunks: string[] = [];
     let currentPosition = 0;
@@ -365,6 +393,28 @@ export class AudioUtils {
       chunks.push(chunk);
       currentPosition += chunkSize;
     }
+    return chunks;
+  }
+
+  getChunksWithOverlap(text: string, chunkSize: number, overlapSize: number): string[] {
+    const chunks: string[] = [];
+    let currentPosition = 0;
+
+    while (currentPosition < text.length) {
+      let endPosition = currentPosition + chunkSize;
+
+      // Ensure we don't go beyond the text length
+      if (endPosition > text.length) {
+        endPosition = text.length;
+      }
+
+      const chunk = text.slice(currentPosition, endPosition);
+      chunks.push(chunk);
+
+      // Move the pointer but keep an overlap for context
+      currentPosition += chunkSize - overlapSize;
+    }
+
     return chunks;
   }
 

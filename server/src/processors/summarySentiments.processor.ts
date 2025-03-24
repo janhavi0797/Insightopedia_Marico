@@ -5,7 +5,7 @@ import { Logger } from "@nestjs/common";
 import { SENTIMENT_ANALYSIS, SUMMARY } from "src/utils/constants";
 import { BullQueues, QueueProcess } from "src/utils/enums";
 import { ISummaryProcessor } from "src/utils/interfaces";
-import { AudioEntity } from "src/project/entity";
+import { AudioEntity } from "src/utils/containers";
 
 
 @Processor(BullQueues.SUMMARY)

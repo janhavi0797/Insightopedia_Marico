@@ -1,12 +1,12 @@
 import { InjectModel, Repository } from '@nestjs/azure-database';
 import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
-import { ProjectEntity, AudioEntity } from './entity';
+import { ProjectEntity, AudioEntity } from 'src/utils/containers';
 import { Container } from '@azure/cosmos';
 import { CreateProjectDto } from './dtos';
 import { v4 as uuid } from 'uuid';
 import { InjectQueue } from '@nestjs/bull'
 import { Queue } from 'bull';
-import { BullQueues, QueueProcess } from 'src/utils/enums';
+import { BullQueues, QueueProcess, ResponseStatus } from 'src/utils/enums';
 import { ITranscriptionProcessor } from 'src/utils/interfaces';
 import { BlobSASPermissions, BlobServiceClient, generateBlobSASQueryParameters, StorageSharedKeyCredential } from '@azure/storage-blob';
 import { ConfigService } from '@nestjs/config';
@@ -33,6 +33,19 @@ export class ProjectService {
       projectObj.projectName = project.projectName;
       projectObj.userId = project.userId;
       projectObj.audioIds = project?.audioIds?.map(audio => audio?.audioId);
+
+      const checkExistingProject = await this.projectContainer.items.query({
+        query: 'SELECT * FROM c WHERE c.projectName = @projectName AND c.userId = @userId',
+        parameters: [{ name: '@projectName', value: project.projectName }, { name: '@userId', value: project.userId }],
+      }).fetchAll();
+
+      if (checkExistingProject?.resources?.length > 0) {
+        return {
+          status: ResponseStatus.FAILED,
+          message: 'Project with same name already exists',
+          data: null
+        }
+      }
 
       const result = await this.projectContainer.items.create(projectObj);
 
@@ -76,7 +89,7 @@ export class ProjectService {
 
       Logger.log(`Project created successfully`);
       return {
-        status: 'success',
+        status: ResponseStatus.SUCCESS,
         message: 'Project created successfully',
         data: result?.resource
       }
