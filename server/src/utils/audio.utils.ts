@@ -254,11 +254,11 @@ export class AudioUtils {
     const chunkSize = 10897; // Adjust based on model token limits
     const chunks = this.getChunks(text, chunkSize);
 
-    let chunkSummaries: string[] = [];
+    const chunkSummaries: string[] = [];
 
     // 2️⃣ **Summarize Each Chunk**
     for (const chunk of chunks) {
-      let prompt =
+      const prompt =
         purpose === 'Summary'
           ? this.generateSummarizationPrompt(chunk)
           : this.generateSentimenAnalysisPrompt(chunk);
@@ -281,7 +281,7 @@ export class AudioUtils {
     }
 
     // 3️⃣ **Generate Final Summary from Chunk Summaries**
-    let finalSummary = await this.refineFinalSummary(
+    const finalSummary = await this.refineFinalSummary(
       chunkSummaries.join(' '),
       client,
     );
