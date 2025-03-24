@@ -1,25 +1,24 @@
-import { ApiProperty } from "@nestjs/swagger";
+import { ApiProperty } from '@nestjs/swagger';
 
 class AudioIds {
-    @ApiProperty()
-    audioId: string;
-    @ApiProperty()
-    audioUrl: string;
-    @ApiProperty()
-    tags: string[];
+  @ApiProperty()
+  audioId: string;
+  @ApiProperty()
+  audioUrl: string;
+  @ApiProperty()
+  tags: string[];
 }
 
 export class CreateProjectDto {
-    @ApiProperty()
-    userId: string;
-    @ApiProperty()
-    projectName: string;
-    @ApiProperty({ type: [AudioIds] })
-    audioIds: AudioIds[];
+  @ApiProperty()
+  userId: string;
+  @ApiProperty()
+  projectName: string;
+  @ApiProperty({ type: [AudioIds] })
+  audioIds: AudioIds[];
 }
 
-
 export class CreateProjectResponseDto {
-    message: string;
-    project: CreateProjectDto;
+  message: string;
+  project: CreateProjectDto;
 }

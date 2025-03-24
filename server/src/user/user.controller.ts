@@ -1,14 +1,13 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, NotFoundException, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query } from '@nestjs/common';
 import { UserService } from './user.service';
-import { IUserDto, IUserEditDto } from './user.dto';
-import { get } from 'http';
-import { User } from '@azure/cosmos';
+import { IUserDto, IUserEditDto } from './dto/user.dto';
+//import { User } from '@azure/cosmos';
 import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('User Management')
 @Controller('users')
 export class UserController {
-  constructor(private readonly userService: UserService) { }
+  constructor(private readonly userService: UserService) {}
 
   @Post('create') // This sets the route to /users/create
   @ApiOperation({ summary: 'Create a new user' }) // Provides a description in Swagger
@@ -28,4 +27,9 @@ export class UserController {
     return await this.userService.editUser(payload);
   }
 
+  // Master
+  @Get('masterData')
+  async getAllMasterData() {
+    return this.userService.getMasterData();
+  }
 }
