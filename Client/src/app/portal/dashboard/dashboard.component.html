@@ -1,1 +1,116 @@
-<p>dashboard works!</p>
+    <div class="media-container">
+        <div class="media-inner-cont">
+            <div class="media-header">
+                <h3>Media Upload</h3>
+                <p>Format supported are MP3</p>
+                <div class="upload-box" (drop)="onDrop($event)" (dragover)="onDragOver($event)"
+                    (dragleave)="onDragLeave($event)">
+                    <input type="file" #fileDropRef id="fileDropRef" (change)="onFileSelected($event)" multiple
+                        accept="audio/*">
+                    <img [src]="imageBasePath + 'assets/Img/dashboard/upload-file.png'" alt="upload-file">
+                    <div class="upload-label">
+                        <label for="fileDropRef">Drag your file(s) or <span>browse</span></label>
+                        <label class="validation-msg">Maximum Upload File Size is 4GB</label>
+                    </div>
+                </div>
+            </div>
+            <div class="media-body">
+                <div class="upload-list">
+                    <div class="subtitle">
+                        <h3>Add details about the audios</h3>
+                    </div>
+
+                    <form [formGroup]="audioDetails">
+                        <ul class="audio-files-section" formArrayName="bankInput">
+                            <li *ngFor="let file of audioFiles; let i = index; trackBy: trackByIndex" [formGroupName]="i">
+                                <div class="upload-player">
+                                    <div class="controls">
+                                        <div class="file-name">
+                                            <img [src]="imageBasePath + 'assets/Img/dashboard/file.png'" alt="">
+                                            <span>{{ file.name | truncate:25}}</span>
+                                        </div>
+                                        <div class="control">
+                                            <button (click)="togglePlayPause(i, audioFiles,'audioFiles')">
+                                                <mat-icon *ngIf="!isPlaying(i, 'audioFiles')">play_arrow</mat-icon>
+                                                <mat-icon *ngIf="isPlaying(i, 'audioFiles')">pause</mat-icon>
+                                            </button>
+                                            <button (click)="deleteFile(i)">
+                                                <mat-icon>delete</mat-icon>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="slider">
+                                        <span id="current-time">{{ file.currentTime || '0:00' }}</span>
+                                        <input type="range" class="seek-bar" [value]="file.seekValue || 0" max="100"
+                                            (input)="seekAudio($event, i, audioFiles)" />
+                                        <span id="duration-time">{{ file.durationTime || '0:00' }}</span>
+                                        <audio #audioPlayer controls (timeupdate)="updateProgress($event, i, audioFiles)"
+                                            [src]="file.url"></audio>
+                                    </div>
+                                </div>
+
+                                <!-- Form controls -->
+                                <div class="audio-form">
+                                    <mat-form-field>
+                                        <mat-label>No. of Speakers</mat-label>
+                                        <input matInput type="number" formControlName="numSpeakers"
+                                            placeholder="Enter No. of Speakers" min="2" max="10">
+                                        <mat-error
+                                            *ngIf="getFormControl(i, 'numSpeakers')?.touched && getFormControl(i, 'numSpeakers')?.invalid">
+                                            <span *ngIf="getFormControl(i, 'numSpeakers')?.errors?.['required']">
+                                                Number of Speakers is required
+                                            </span>
+                                            <span *ngIf="getFormControl(i, 'numSpeakers')?.errors?.['min']">
+                                                Number of Speakers cannot be less than 2
+                                            </span>
+                                            <span *ngIf="getFormControl(i, 'numSpeakers')?.errors?.['max']">
+                                                Number of Speakers cannot exceed 10
+                                            </span>
+                                        </mat-error>
+                                    </mat-form-field>
+                                    <mat-form-field>
+                                        <mat-label>Primary Language</mat-label>
+                                        <mat-select formControlName="primaryLanguage">
+                                            <mat-option [value]="pl.name"
+                                                *ngFor="let pl of languageList">{{pl.name}}</mat-option>
+                                        </mat-select>
+                                        <mat-error
+                                            *ngIf="getFormControl(i, 'primaryLanguage')?.touched && getFormControl(i, 'primaryLanguage')?.invalid">
+                                            <span *ngIf="getFormControl(i, 'primaryLanguage')?.errors?.['required']">
+                                                Primary Language is required
+                                            </span>
+                                        </mat-error>
+                                    </mat-form-field>
+                                    <mat-form-field>
+                                        <mat-label>Secondary Language</mat-label>
+                                        <mat-select multiple formControlName="secondaryLanguage">
+                                            <mat-option [value]="ol.name"
+                                                *ngFor="let ol of languageList">{{ol.name}}</mat-option>
+                                        </mat-select>
+                                        <mat-error
+                                            *ngIf="getFormControl(i, 'secondaryLanguage')?.touched && getFormControl(i, 'secondaryLanguage')?.invalid">
+                                            <span
+                                                *ngIf="getFormControl(i, 'secondaryLanguage')?.errors?.['required']">Secondary
+                                                language is required</span>
+                                        </mat-error>
+                                    </mat-form-field>
+                                    <mat-form-field>
+                                        <mat-label>Choose a date</mat-label>
+                                        <input matInput [matDatepicker]="picker" formControlName="date">
+                                        <mat-hint>MM/DD/YYYY</mat-hint>
+                                        <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+                                        <mat-datepicker #picker></mat-datepicker>
+                                        <mat-error
+                                            *ngIf="getFormControl(i, 'date')?.touched && getFormControl(i, 'date')?.invalid">
+                                            <span
+                                                *ngIf="getFormControl(i, 'date')?.errors?.['required']">Date is required</span>
+                                        </mat-error>
+                                    </mat-form-field>
+                                </div>
+                            </li>
+                        </ul>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
