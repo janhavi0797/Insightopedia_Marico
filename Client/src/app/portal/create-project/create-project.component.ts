@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { environment } from 'src/environments/environment';
+import { CommonService } from '../service/common.service';
 
 interface AudioFile {
   name: string;
@@ -9,7 +10,8 @@ interface AudioFile {
   currentTime?: string;   // Track time for each audio
   durationTime?: string;  // Duration for each audio
   seekValue?: number;     // Seek value for progress bar
-  isEdit: boolean
+  isEdit: boolean;
+  tags: string[];
 }
 
 @Component({
@@ -19,8 +21,107 @@ interface AudioFile {
 })
 export class CreateProjectComponent {
 
-  imageBasePath: string = environment.imageBasePath;
+  userCode: any;
+   userRole: any;
+
+   constructor(private commonServ: CommonService) {}
+
+  ngOnInit(): void {
+    this.userRole = localStorage.getItem('role') || '';
+    this.userCode = localStorage.getItem('uId') || '';
+    if (this.userRole === "1") {
+      this.userCode = '';
+    }
+
+    this.getTagsWiseAudio();
+  }
+
+
+  getTagsWiseAudio() {
+    debugger
+    let userCode = '';
+    userCode = this.userRole === "1" ? '' : this.userCode;
+    this.commonServ.getTagwiseAudio('audio/all', userCode).subscribe(
+      (res: any) => {
+        debugger
+        console.log('Tags Res', res );
+        this.audioTags = res.data.allUniqueTags;
+        this.audioNames = res.data.audioData;
+
+        this.audioFiles = res.data.audioData.map((audio: any) => ({
+          name: audio.audioName,
+          url: audio.audioUrl,
+          tags:audio.tags,
+          isEdit: false,
+          seekValue: 0,
+          currentTime: '0:00',
+          durationTime: '0:00',
+        }));
+      },
+      (err: any) => {
+        //this.toastr.error('Something Went Wrong!');
+        console.log('Something Went Wrong!');
+      }
+    );
+  }
+
+  projectName = '';
+  audioTags: string[] = [];
+  audioNames: string[] = [];
+  selectedTags: string[] = [];
+  selectedTag: string = '';
   audioFiles: AudioFile[] = [];
+  filterOption: string = '1';
+
+  selectedAudio: string = '';
+  selectedAudios: string[] = [];
+
+  imageBasePath: string = environment.imageBasePath;
+  
+  audios = [
+    {
+      title: 'Audio 1',
+      size: '1GB',
+      progress: 100,
+      selected: true,
+      tags: ['Vrijesh', 'Vaicom18', 'Workshop', 'Important']
+    }
+  ];
+  
+  filterByTag() {
+    if (this.selectedTag && !this.selectedTags.includes(this.selectedTag)) {
+      this.selectedTags.push(this.selectedTag);
+    }
+    this.selectedTag = '';
+  }
+
+  filterByAudio() {
+    if (this.selectedAudio && !this.selectedAudios.includes(this.selectedAudio)) {
+      this.selectedAudios.push(this.selectedAudio);
+    }
+    this.selectedAudio = '';
+  } 
+  
+  removeTag(tag: string) {
+    this.selectedTags = this.selectedTags.filter(t => t !== tag);
+  }
+
+  removeAudio(audio: string) {
+    debugger
+    this.selectedAudios = this.selectedAudios.filter(t => t !== audio);
+  }
+  
+  filteredTags(): string[] {
+    return this.audioTags.filter(tag => !this.selectedTags.includes(tag));
+  }
+
+  filteredAudios(): string[] {
+    if (!this.audioNames) return [];
+
+    const audioNameSet = new Set(this.audioNames.map((audio: any) => audio.audioName));
+    return Array.from(audioNameSet);
+  }
+
 
   //Media Code
   onFileSelected(event: any): void {
@@ -32,10 +133,30 @@ export class CreateProjectComponent {
         size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
         data: file,
         url: URL.createObjectURL(file),
-        isEdit:false
+        isEdit:false,
+        tags:[]
       });
     }
     event.target.value = null;
+  }
+
+  onDrop(event: DragEvent): void {
+    event.preventDefault();
+
+    if (event.dataTransfer?.files?.length) {
+      const files = event.dataTransfer.files;
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        this.audioFiles.push({
+          name: file.name,
+          size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
+          data: file,
+          url: URL.createObjectURL(file),
+          isEdit: false,
+          tags: []
+        });
+      }
+    }
   }
 
   isPlayingIndexMap: { expansion: number | null; audioFiles: number | null } = {
@@ -80,27 +201,13 @@ export class CreateProjectComponent {
     return this.isPlayingIndexMap[section] === index;
   }
 
-  isPlayingIndex: number | null = null;
-
    // Delete file functionality
    deleteFile(index: number): void {
     this.audioFiles.splice(index, 1);
-    if (this.isPlayingIndex === index) {
-      this.isPlayingIndex = null;
-    }
+    // if (this.isPlayingIndex === index) {
+    //   this.isPlayingIndex = null;
+    // }
   }
-
-  toggleSelectFile(file: AudioFile, event: Event): void {
-    const isChecked = (event.target as HTMLInputElement).checked;
-    if (isChecked) {
-      this.selectedArr.push(file);
-      //this.audioFiles = this.audioFiles.filter((f) => f !== file);
-    } else {
-      //this.audioFiles.push(file);
-      this.selectedArr = this.selectedArr.filter((f) => f !== file);
-    }
-  }
-  selectedArr: AudioFile[] = []; // Array for selected files
 
   seekAudio(event: any, index: number, audioList: any[]): void {
     const audio = document.querySelectorAll('audio')[index] as HTMLAudioElement;
@@ -125,39 +232,29 @@ export class CreateProjectComponent {
     // }
   }
 
-  projectName = 'Project 132 Vaicom';
-  availableTags = ['Vrijesh', 'Vaicom18', 'Workshop', 'Important'];
-  selectedTags: string[] = ['Vrijesh', 'Vaicom18', 'Workshop', 'Important'];
-  selectedTag: string = '';
-  
-  audios = [
-    {
-      title: 'Audio 1',
-      size: '1GB',
-      progress: 100,
-      selected: true,
-      tags: ['Vrijesh', 'Vaicom18', 'Workshop', 'Important']
+  updateProgress(event: any, index: number, audioList: any[]): void {
+    const audio = event.target;
+    const currentTime = audio.currentTime;
+    const duration = audio.duration;
+
+    // Update specific audio file's progress and time
+    audioList[index].seekValue = (currentTime / duration) * 100;
+    // audioList[index].currentTime = this.formatTime(currentTime);
+    // audioList[index].durationTime = this.formatTime(duration);
+
+    // this.updateSliderTrack(index, audioList);
+  }
+
+  toggleSelectFile(file: AudioFile, event: Event): void {
+    const isChecked = (event.target as HTMLInputElement).checked;
+    if (isChecked) {
+      //this.selectedArr.push(file);
+      //this.audioFiles = this.audioFiles.filter((f) => f !== file);
+    } else {
+      //this.audioFiles.push(file);
+      //this.selectedArr = this.selectedArr.filter((f) => f !== file);
     }
-  ];
-  
-  get filteredAudios() {
-    return this.audios.filter(audio =>
-      this.selectedTags.every(tag => audio.tags.includes(tag))
-    );
   }
-  
-  filterByTag() {
-    if (this.selectedTag && !this.selectedTags.includes(this.selectedTag)) {
-      this.selectedTags.push(this.selectedTag);
-    }
-    this.selectedTag = '';
-  }
-  
-  removeTag(tag: string) {
-    this.selectedTags = this.selectedTags.filter(t => t !== tag);
-  }
-  
-  filteredTags(): string[] {
-    return this.availableTags.filter(tag => !this.selectedTags.includes(tag));
-  }
+
+
 }

@@ -16,9 +16,26 @@
         />
       </mat-form-field>
     </div>
+
+    <!-- Row 2: Filter Option Radio Buttons -->
+  <!-- <div class="form-row">
+    <mat-radio-group [(ngModel)]="filterOption" aria-label="Select Filter Option">
+      <mat-radio-button value="1">Filter By Tag</mat-radio-button>
+      <mat-radio-button value="2">Filter By Audio</mat-radio-button>
+    </mat-radio-group>
+  </div> -->
   
     <!-- Row 2: Filter Tags + Selected Tags on same row -->
     <div class="form-row tags-row">
+     
+        <div class="form-row">
+            <mat-radio-group [(ngModel)]="filterOption" aria-label="Select Filter Option">
+              <mat-radio-button value="1">Filter By Tag</mat-radio-button>
+              <mat-radio-button value="2">Filter By Audio</mat-radio-button>
+            </mat-radio-group>
+          </div>
+    
+    <ng-container *ngIf="filterOption === '1'">
       <!-- Filter By Tags -->
       <mat-form-field appearance="outline" class="form-field filter-tags">
         <mat-label>Filter By Tags</mat-label>
@@ -36,42 +53,80 @@
           <button (click)="removeTag(tag)">×</button>
         </span>
       </div>
+    </ng-container>
+
+    <ng-container *ngIf="filterOption === '2'">
+        <!-- Filter By Audios -->
+      <mat-form-field appearance="outline" class="form-field filter-tags">
+        <mat-label>Filter By Audio</mat-label>
+        <mat-select [(ngModel)]="selectedAudio" (selectionChange)="filterByAudio()">
+          <mat-option *ngFor="let audio of filteredAudios()" [value]="audio">
+            {{ audio }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+  
+      <!-- Selected Audios -->
+      <div class="selected-tags">
+        <span *ngFor="let audio of selectedAudios" class="tag">
+          {{ audio }}
+          <button (click)="removeAudio(audio)">×</button>
+        </span>
+      </div>
+    </ng-container>
+
     </div>
   </div>
   
   
-  
+  <!-- Audio list  -->
+
+  <div class="media-body">
+    <div class="upload-list">
+        <ul class="audio-files-section">
+            <li *ngFor="let file of audioFiles; let i = index">
+                <input type="checkbox" (change)="toggleSelectFile(file, $event)" />
+                <div class="upload-player">
+                    <div class="controls">
+                        <div class="file-name">
+                            <img [src]="imageBasePath + 'assets/Img/dashboard/file.png'" alt="">
+                            <span>{{ file.name | truncate:25}}</span>
+                        </div>
+                        <div class="control">
+                            <button (click)="togglePlayPause(i, audioFiles,'audioFiles')">
+                                <mat-icon *ngIf="!isPlaying(i, 'audioFiles')">play_arrow</mat-icon>
+                                <mat-icon *ngIf="isPlaying(i, 'audioFiles')">pause</mat-icon>
+                            </button>
+                            <button (click)="deleteFile(i)">
+                                <mat-icon>delete</mat-icon>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="slider">
+                        <span id="current-time">{{ file.currentTime || '0:00' }}</span>
+                        <input type="range" class="seek-bar" [value]="file.seekValue || 0" max="100"
+                            (input)="seekAudio($event, i, audioFiles)" />
+                        <span id="duration-time">{{ file.durationTime || '0:00' }}</span>
+                        <audio #audioPlayer controls (timeupdate)="updateProgress($event, i, audioFiles)"
+                            [src]="file.url"></audio>
+                    </div>
+                </div>
+                
+                <div class="selected-audio" *ngIf="file.tags && file.tags.length">
+                    <h4>Tags</h4>
+                    <div class="selected-audios">
+                      <span class="audio-tag" *ngFor="let tag of file.tags">
+                        {{ tag }}
+                        <button (click)="removeTag(tag)" class="remove-btn" aria-label="Remove tag">×</button>
+                      </span>
+                    </div>
+                  </div>
+            </li>
+        </ul>
+    </div>
+</div>
   
       
-      <!-- Display Selected Tags as Chips -->
-      <!-- <div class="selected-tags" *ngIf="selectedTags?.length > 0">
-        <mat-chip-list>
-          <mat-chip *ngFor="let tag of selectedTags" [removable]="true" (removed)="removeTag(tag)">
-            {{ tag }}
-            <button matChipRemove>
-              <mat-icon>cancel</mat-icon>
-            </button>
-          </mat-chip>
-        </mat-chip-list>
-      </div> -->
+      
   
-    <!-- <div class="audio-list">
-      <div class="audio-card" *ngFor="let audio of filteredAudios">
-        <input type="checkbox" [(ngModel)]="audio.selected" />
-        <div class="audio-details">
-          <img src="assets/mp3-icon.png" alt="mp3" />
-          <div>
-            <p><strong>{{ audio.title }}</strong></p>
-            <p>{{ audio.size }}</p>
-          </div>
-          <progress [value]="audio.progress" max="100"></progress>
-          <button>▶️</button>
-          <button (click)="deleteAudio(audio)">🗑️</button>
-        </div>
-        <div class="tags">
-          <span *ngFor="let tag of audio.tags" class="tag">{{ tag }}</span>
-        </div>
-      </div>
-    </div> -->
-  
-  
+    
