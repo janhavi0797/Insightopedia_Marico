@@ -35,9 +35,12 @@ async function bootstrap() {
   // Use ValidationPipe globally to automatically validate incoming requests
   app.useGlobalPipes(new ValidationPipe());
 
-
-  const transcriptionQueue = app.get<Queue>(getQueueToken(BullQueues.TRANSCRIPTION));
-  const translationQueue = app.get<Queue>(getQueueToken(BullQueues.TRANSLATION));
+  const transcriptionQueue = app.get<Queue>(
+    getQueueToken(BullQueues.TRANSCRIPTION),
+  );
+  const translationQueue = app.get<Queue>(
+    getQueueToken(BullQueues.TRANSLATION),
+  );
   const summaryQueue = app.get<Queue>(getQueueToken(BullQueues.SUMMARY));
   const embeddingQueue = app.get<Queue>(getQueueToken(BullQueues.EMBEDDING));
 

@@ -11,16 +11,15 @@ import { ProjectModule } from './project/project.module';
 import { BullQueues, ContainersEnum } from './utils/enums';
 import { AudioUtils } from './utils';
 import { TranscriptionProcessor } from './processors/transcription.processor';
-import { AudioEntity, ProjectEntity } from './project/entity';
+import { AudioEntity, ProjectEntity } from './utils/containers';
 import { ChatModule } from './chat/chat.module';
 import { ChatService } from './chat/chat.service';
 import { TranslationProcessor } from './processors/translation.processor';
 import { SummarySentimentsProcessor } from './processors/summarySentiments.processor';
 import { EmbeddingProcessor } from './processors/embedding.processor';
 
-
-const C = new ConfigService()
-console.log(C.get<string>('COSMOS_DBNAME'))
+const C = new ConfigService();
+console.log(C.get<string>('COSMOS_DBNAME'));
 
 @Global()
 @Module({
@@ -46,14 +45,15 @@ console.log(C.get<string>('COSMOS_DBNAME'))
       }),
       inject: [ConfigService],
     }),
-    AzureCosmosDbModule.forFeature([{
-      dto: ProjectEntity,
-      collection: ContainersEnum.PROJECTS,
-    },
-    {
-      dto: AudioEntity,
-      collection: ContainersEnum.AUDIO,
-    }
+    AzureCosmosDbModule.forFeature([
+      {
+        dto: ProjectEntity,
+        collection: ContainersEnum.PROJECTS,
+      },
+      {
+        dto: AudioEntity,
+        collection: ContainersEnum.AUDIO,
+      },
     ]),
     BullModule.registerQueue({
       name: BullQueues.TRANSCRIPTION,
@@ -88,7 +88,11 @@ console.log(C.get<string>('COSMOS_DBNAME'))
           .container('Audio');
       },
     },
-    TranscriptionProcessor, TranslationProcessor, SummarySentimentsProcessor, EmbeddingProcessor, AudioUtils
+    TranscriptionProcessor,
+    TranslationProcessor,
+    SummarySentimentsProcessor,
+    EmbeddingProcessor,
+    AudioUtils,
   ],
 })
-export class AppModule { }
+export class AppModule {}

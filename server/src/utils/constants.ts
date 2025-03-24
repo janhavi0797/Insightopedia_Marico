@@ -1,6 +1,9 @@
-import { text } from "stream/consumers";
+import { text } from 'stream/consumers';
 
-export const SUMMARIZATION_PROMPT_TEMPLATE = (summaryLength: number, text: string) => `
+export const SUMMARIZATION_PROMPT_TEMPLATE = (
+  summaryLength: number,
+  text: string,
+) => `
   You are an expert summarizer. Your task is to summarize the following text.
   Aim for a summary that is approximately ${summaryLength} words long.
   Incorporate main ideas and essential information by eliminating extraneous language and focusing on critical aspects.
@@ -14,9 +17,9 @@ export const SUMMARIZATION_PROMPT_TEMPLATE = (summaryLength: number, text: strin
 `;
 
 // export const SENTIMENT_ANALYSIS_PROMPT=(text:string) => `
-// You are an expert in sentiment analysis. Given multiple sentiment analysis, your task is to 
-// combine them into a cohesive sentiment analysis for each speaker. Be precise the do not provide 
-// mixed result give only positive and negative into result, also calculate a NPS score depends on the 
+// You are an expert in sentiment analysis. Given multiple sentiment analysis, your task is to
+// combine them into a cohesive sentiment analysis for each speaker. Be precise the do not provide
+// mixed result give only positive and negative into result, also calculate a NPS score depends on the
 // speakers positive and negative points and provide it at speaker level and at overall level.
 // Provide a overall sentiment and them give a breakdown of speaker level sentiment analysis of the
 // product feedback  with proper explanation.
@@ -24,7 +27,7 @@ export const SUMMARIZATION_PROMPT_TEMPLATE = (summaryLength: number, text: strin
 // Here are the text to combine:
 // ${text}
 
-// Sentiment Analysis & NPS Score: 
+// Sentiment Analysis & NPS Score:
 // `;
 
 export const SENTIMENT_ANALYSIS_PROMPT = (text: string) => `
@@ -45,10 +48,12 @@ You are an expert in sentiment analysis. Given multiple sentiment summaries, you
                             In case of conflicts answer proper which of sentiment can be considered.
 `;
 
-export const SUMMARY = "Summary";
-export const SENTIMENT_ANALYSIS = "SA";
+export const SUMMARY = 'Summary';
+export const SENTIMENT_ANALYSIS = 'SA';
 
-export const PROJECT_COMPARE = (text: string) => `Analyze and compare the customer feedback for two FMCG products based on the following aspects.
+export const PROJECT_COMPARE = (
+  text: string,
+) => `Analyze and compare the customer feedback for two FMCG products based on the following aspects.
             Use the provided audio file names and their respective transcripts as context for the analysis:
 
             Context:
@@ -70,7 +75,7 @@ export const PROJECT_COMPARE = (text: string) => `Analyze and compare the custom
 
 
             Provide a detailed comparison between the two products based on these points, using the transcripts for supporting insights.
-`
+`;
 
 export const STATIC_INSTRUCTION = `
 Analyze and compare the customer feedback for two FMCG products based on the following aspects.
@@ -92,7 +97,7 @@ Analyze and compare the customer feedback for two FMCG products based on the fol
             Provide a detailed comparison between the two products based on these points, using the transcripts for supporting insights.
 
 
-`
+`;
 
 export const PROJECT_COMPARE_STATIC_INSTRUCTION = `Based on the analyses of the two audio transcripts provided, please create 
                 a precise final summary that compares and contrasts their key points. Highlight 
@@ -102,7 +107,7 @@ export const PROJECT_COMPARE_STATIC_INSTRUCTION = `Based on the analyses of the 
 
                 Here are the analysis:
 
-`
+`;
 
 export const MODERATOR_RECOGNITION = `You are an expert at analyzing textual conversations. Your task is to
                         identify the moderator in the following discussion text. The moderator is 
@@ -110,4 +115,4 @@ export const MODERATOR_RECOGNITION = `You are an expert at analyzing textual con
                         ensures the discussion stays on track, and often addresses participants by name.
                         Please carefully read the provided text and determine who the moderator is based
                         on their role and actions within the discussion.            
-                        Provide a brief explanation for your choice.`
+                        Provide a brief explanation for your choice.`;
