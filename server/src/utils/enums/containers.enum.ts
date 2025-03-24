@@ -1,4 +1,4 @@
 export enum ContainersEnum {
-    PROJECTS = 'Projects',
-    AUDIO = 'Audio',
+  PROJECTS = 'Projects',
+  AUDIO = 'Audio',
 }

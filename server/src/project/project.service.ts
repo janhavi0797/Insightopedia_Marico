@@ -1,17 +1,24 @@
 import { InjectModel, Repository } from '@nestjs/azure-database';
-import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { ProjectEntity, AudioEntity } from 'src/utils/containers';
 import { Container } from '@azure/cosmos';
 import { CreateProjectDto } from './dtos';
 import { v4 as uuid } from 'uuid';
-import { InjectQueue } from '@nestjs/bull'
+import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { BullQueues, QueueProcess, ResponseStatus } from 'src/utils/enums';
 import { ITranscriptionProcessor } from 'src/utils/interfaces';
-import { BlobSASPermissions, BlobServiceClient, generateBlobSASQueryParameters, StorageSharedKeyCredential } from '@azure/storage-blob';
+import {
+  BlobSASPermissions,
+  BlobServiceClient,
+  generateBlobSASQueryParameters,
+  StorageSharedKeyCredential,
+} from '@azure/storage-blob';
 import { ConfigService } from '@nestjs/config';
-;
-
 @Injectable()
 export class ProjectService {
   private blobServiceClient: BlobServiceClient;
@@ -20,31 +27,44 @@ export class ProjectService {
   constructor(
     @InjectModel(ProjectEntity) private readonly projectContainer: Container,
     @InjectModel(AudioEntity) private readonly audioContainer: Container,
-    @InjectQueue(BullQueues.TRANSCRIPTION) private readonly transcriptionQueue: Queue,
+    @InjectQueue(BullQueues.TRANSCRIPTION)
+    private readonly transcriptionQueue: Queue,
   ) {
-    this.blobServiceClient = BlobServiceClient.fromConnectionString(this.config.get<string>('AZURE_STORAGE_CONNECTION_STRING'));
-    this.containerClient = this.blobServiceClient.getContainerClient(this.config.get<string>('AUDIO_UPLOAD_BLOB_CONTAINER'));
+    this.blobServiceClient = BlobServiceClient.fromConnectionString(
+      this.config.get<string>('AZURE_STORAGE_CONNECTION_STRING'),
+    );
+    this.containerClient = this.blobServiceClient.getContainerClient(
+      this.config.get<string>('AUDIO_UPLOAD_BLOB_CONTAINER'),
+    );
   }
 
-  async createProject(project: CreateProjectDto): Promise<{ status: string; message: string; data: ProjectEntity; }> {
+  async createProject(
+    project: CreateProjectDto,
+  ): Promise<{ status: string; message: string; data: ProjectEntity }> {
     try {
       const projectObj = new ProjectEntity();
       projectObj.projectId = uuid();
       projectObj.projectName = project.projectName;
       projectObj.userId = project.userId;
-      projectObj.audioIds = project?.audioIds?.map(audio => audio?.audioId);
+      projectObj.audioIds = project?.audioIds?.map((audio) => audio?.audioId);
 
-      const checkExistingProject = await this.projectContainer.items.query({
-        query: 'SELECT * FROM c WHERE c.projectName = @projectName AND c.userId = @userId',
-        parameters: [{ name: '@projectName', value: project.projectName }, { name: '@userId', value: project.userId }],
-      }).fetchAll();
+      const checkExistingProject = await this.projectContainer.items
+        .query({
+          query:
+            'SELECT * FROM c WHERE c.projectName = @projectName AND c.userId = @userId',
+          parameters: [
+            { name: '@projectName', value: project.projectName },
+            { name: '@userId', value: project.userId },
+          ],
+        })
+        .fetchAll();
 
       if (checkExistingProject?.resources?.length > 0) {
         return {
           status: ResponseStatus.FAILED,
           message: 'Project with same name already exists',
-          data: null
-        }
+          data: null,
+        };
       }
 
       const result = await this.projectContainer.items.create(projectObj);
@@ -53,20 +73,24 @@ export class ProjectService {
         return {
           status: 'failed',
           message: 'Failed to create project',
-          data: null
-        }
+          data: null,
+        };
       }
 
       if (project?.audioIds?.length > 0) {
         for (const audio of project?.audioIds) {
           const audioEntity = new AudioEntity();
           audioEntity.audioId = audio.audioId;
-          const audioResult = await this.audioContainer.items.query({
-            query: 'SELECT * FROM c WHERE c.audioId = @audioId',
-            parameters: [{ name: '@audioId', value: audio.audioId }],
-          }).fetchAll();
+          const audioResult = await this.audioContainer.items
+            .query({
+              query: 'SELECT * FROM c WHERE c.audioId = @audioId',
+              parameters: [{ name: '@audioId', value: audio.audioId }],
+            })
+            .fetchAll();
 
-          const sasToken = await this.generateBlobSasUrl(audioResult?.resources[0]?.audioName);
+          const sasToken = await this.generateBlobSasUrl(
+            audioResult?.resources[0]?.audioName,
+          );
 
           console.log('sasToken:', sasToken);
 
@@ -78,21 +102,25 @@ export class ProjectService {
             fileName: audioResult?.resources[0]?.audioName,
             sasToken: sasToken,
           };
-          this.transcriptionQueue.add(QueueProcess.TRANSCRIPTION_AUDIO, audioData);
+          this.transcriptionQueue.add(
+            QueueProcess.TRANSCRIPTION_AUDIO,
+            audioData,
+          );
 
-          Logger.log(`Transcription job for ${audio.audioId} enqueued successfully`);
+          Logger.log(
+            `Transcription job for ${audio.audioId} enqueued successfully`,
+          );
 
           console.log('audioEntity:', audioResult?.resources, audio.audioId);
         }
-
       }
 
       Logger.log(`Project created successfully`);
       return {
         status: ResponseStatus.SUCCESS,
         message: 'Project created successfully',
-        data: result?.resource
-      }
+        data: result?.resource,
+      };
     } catch (err) {
       console.log('err:', err);
       throw new InternalServerErrorException('Failed to create project');
@@ -100,7 +128,6 @@ export class ProjectService {
   }
 
   generateBlobSasUrl(fileName: string): Promise<string> {
-
     // const account = this.config.get<string>('BLOB_CONTAINER_ACCOUNT');
     // const key = this.config.get<string>('BLOB_CONTAINER_ACCOUNT_KEY');
 

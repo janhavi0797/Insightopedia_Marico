@@ -7,7 +7,7 @@ import { CreateProjectDto } from './dtos';
 @Controller('project')
 @ApiTags('project')
 export class ProjectController {
-  constructor(private readonly projectService: ProjectService) { }
+  constructor(private readonly projectService: ProjectService) {}
 
   @Post('create')
   @ApiOperation({ summary: 'Create a new project' })

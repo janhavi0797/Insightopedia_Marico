@@ -1,43 +1,51 @@
-import { Logger } from "@nestjs/common";
-import { Translate } from "@google-cloud/translate/build/src/v2";
-import { AzureOpenAI } from "openai";
-import { AzureKeyCredential, SearchClient } from "@azure/search-documents";
-import { InjectModel } from "@nestjs/azure-database";
+import { Logger } from '@nestjs/common';
+import { Translate } from '@google-cloud/translate/build/src/v2';
+import { AzureOpenAI } from 'openai';
+import { AzureKeyCredential, SearchClient } from '@azure/search-documents';
+import { InjectModel } from '@nestjs/azure-database';
 import { AudioEntity, ProjectEntity } from 'src/utils/containers';
-import { ConfigService } from "@nestjs/config";
-import { Container } from "@azure/cosmos";
-import axios from "axios";
-import { ChatCompletionMessageParam } from "openai/resources";
-import { MODERATOR_RECOGNITION, SENTIMENT_ANALYSIS, SENTIMENT_ANALYSIS_PROMPT, SUMMARIZATION_PROMPT_TEMPLATE, SUMMARY } from "./constants";
-import { response } from "express";
-import { ChatService } from "src/chat/chat.service";
-
+import { ConfigService } from '@nestjs/config';
+import { Container } from '@azure/cosmos';
+import axios from 'axios';
+import { ChatCompletionMessageParam } from 'openai/resources';
+import {
+  MODERATOR_RECOGNITION,
+  SENTIMENT_ANALYSIS,
+  SENTIMENT_ANALYSIS_PROMPT,
+  SUMMARIZATION_PROMPT_TEMPLATE,
+  SUMMARY,
+} from './constants';
+import { response } from 'express';
+import { ChatService } from 'src/chat/chat.service';
 
 export interface Document {
-  id: string;             // Document ID
-  metadata: string;         // The text content of the document
-  embeding_vector: number[];     // The embedding vector (array of numbers)
+  id: string; // Document ID
+  metadata: string; // The text content of the document
+  embeding_vector: number[]; // The embedding vector (array of numbers)
 }
 
 export class AudioUtils {
-
   private readonly translateClient: Translate;
   private readonly azureOpenAIClient: AzureOpenAI;
   private readonly azureSearchClient: SearchClient<any>;
   private readonly logger = new Logger(AudioUtils.name);
 
   constructor(
-    @InjectModel(ProjectEntity) private readonly transcriptionContainer: Container,
+    @InjectModel(ProjectEntity)
+    private readonly transcriptionContainer: Container,
     @InjectModel(AudioEntity) private readonly AudioContainer: Container,
     private readonly chatService: ChatService,
     private readonly configService: ConfigService,
-
   ) {
-    this.translateClient = new Translate({ key: this.configService.get<string>('TRANSALATION_APIKEY') });
+    this.translateClient = new Translate({
+      key: this.configService.get<string>('TRANSALATION_APIKEY'),
+    });
     this.azureSearchClient = new SearchClient(
       this.configService.get<string>('VECTOR_STORE_ADDRESS'),
       this.configService.get<string>('AZURE_INDEX_NAME'),
-      new AzureKeyCredential(this.configService.get<string>('VECTOR_STORE_PASSWORD'))
+      new AzureKeyCredential(
+        this.configService.get<string>('VECTOR_STORE_PASSWORD'),
+      ),
     );
     const azureOptions = {
       endpoint: this.configService.get<string>('AZURE_OPENAI_ENDPOINT'),
@@ -48,18 +56,28 @@ export class AudioUtils {
     this.azureOpenAIClient = new AzureOpenAI(azureOptions);
   }
 
-  private readonly AZURE_OPENAI_ENDPOINT = this.configService.get<string>('AZURE_OPENAI_ENDPOINT');
-  private readonly AZURE_OPENAI_API_KEY = this.configService.get<string>('AZURE_OPENAI_API_KEY');
-  private readonly AZURE_OPENAI_DEPLOYMENT = this.configService.get<string>('AZURE_OPENAI_DEPLOYMENT');
-  private readonly AZURE_OPEN_AI_VERSION = "2024-07-01-preview";
-  private readonly AZURE_OPENAI_EMBEDDING_MODEL = this.configService.get<string>('AZURE_OPENAI_EMBEDDING_DEPLOY');
+  private readonly AZURE_OPENAI_ENDPOINT = this.configService.get<string>(
+    'AZURE_OPENAI_ENDPOINT',
+  );
+  private readonly AZURE_OPENAI_API_KEY = this.configService.get<string>(
+    'AZURE_OPENAI_API_KEY',
+  );
+  private readonly AZURE_OPENAI_DEPLOYMENT = this.configService.get<string>(
+    'AZURE_OPENAI_DEPLOYMENT',
+  );
+  private readonly AZURE_OPEN_AI_VERSION = '2024-07-01-preview';
+  private readonly AZURE_OPENAI_EMBEDDING_MODEL =
+    this.configService.get<string>('AZURE_OPENAI_EMBEDDING_DEPLOY');
 
   async transcribeAudio(audioId, sasToken, mainLang, SecondaryLang, noOfSpek) {
     try {
-
       Logger.log(`Transcribing audio ${audioId}`);
       const transcriptionResult = await this.transcribe(
-        audioId, sasToken, mainLang, SecondaryLang, noOfSpek
+        audioId,
+        sasToken,
+        mainLang,
+        SecondaryLang,
+        noOfSpek,
       );
       await Promise.all(transcriptionResult);
       return { audioId, transcriptionResult };
@@ -73,9 +91,16 @@ export class AudioUtils {
     }
   }
 
-  async transcribe(audioId, sas_url, main_language, other_languages, number_of_speakers) {
+  async transcribe(
+    audioId,
+    sas_url,
+    main_language,
+    other_languages,
+    number_of_speakers,
+  ) {
     try {
-      const SUBSCRIPTION_KEY = this.configService.get<string>('SUBSCRIPTION_KEY'); // Replace with your Azure subscription key
+      const SUBSCRIPTION_KEY =
+        this.configService.get<string>('SUBSCRIPTION_KEY'); // Replace with your Azure subscription key
       const SERVICE_REGION = this.configService.get<string>('SERVICE_REGION'); // Adjust region based on your Azure region
 
       const language_dict = {
@@ -86,12 +111,15 @@ export class AudioUtils {
         Marathi: 'mr-IN',
         Kannada: 'kn-IN',
         Malayalam: 'ml-IN',
-        Gujarati: 'gu-IN'
+        Gujarati: 'gu-IN',
       };
 
       // Determine the main language locale for Azure
       const LOCALE = language_dict[main_language];
-      const all_languages = [LOCALE, ...other_languages?.map((lang) => language_dict[lang])];
+      const all_languages = [
+        LOCALE,
+        ...other_languages?.map((lang) => language_dict[lang]),
+      ];
 
       const apiUrl = `https://${SERVICE_REGION}.api.cognitive.microsoft.com/speechtotext/v3.1/transcriptions`;
       const headers = {
@@ -113,15 +141,20 @@ export class AudioUtils {
         description: `Transcription for ${audioId}`,
       };
 
-
       // Start the transcription process
-      const response = await axios.post(apiUrl, transcriptionRequest, { headers });
+      const response = await axios.post(apiUrl, transcriptionRequest, {
+        headers,
+      });
       const transcriptionUrl = response.headers['location']; // Get the URL to check transcription status
       console.log(transcriptionUrl, 'transcriptionUrl');
-      const transcriptionId = transcriptionUrl.split('/').pop(); // Extract transcription ID 
+      const transcriptionId = transcriptionUrl.split('/').pop(); // Extract transcription ID
 
       // Poll the status of the transcription until it is complete
-      return await this.getTranscriptionResult(transcriptionUrl, headers, audioId);
+      return await this.getTranscriptionResult(
+        transcriptionUrl,
+        headers,
+        audioId,
+      );
     } catch (error) {
       console.error(`Error starting transcription for ${audioId}:`, error);
       throw new Error('Transcription failed.');
@@ -145,40 +178,50 @@ export class AudioUtils {
     }
     const filesUrl = transcriptionData.links.files;
     const resultResponse = await axios.get(filesUrl, { headers });
-    const transcriptionContentUrl = resultResponse.data.values.find(file => file.kind === 'Transcription').links.contentUrl;
+    const transcriptionContentUrl = resultResponse.data.values.find(
+      (file) => file.kind === 'Transcription',
+    ).links.contentUrl;
 
     const transcriptionResult = await axios.get(transcriptionContentUrl);
     return transcriptionResult.data.recognizedPhrases;
   }
 
   async translateText(transcriptionData) {
-    const translatedTextArray =
-      await Promise.all(
-        transcriptionData.map(async (item) => {
-          const displayText = item.nBest?.[0]?.display || '';
-          const translatedText = await this.translateClient.translate(displayText, 'en');
-          const convTime = item.offset.replace('PT', '').toLowerCase().split('.')[0] + 's';
-          return {
-            speaker: item.speaker,
-            timestamp: this.convertToTimeFormat(convTime),
-            transcription: displayText,
-            translation: translatedText[0],
-          };
-        })
-      );
+    const translatedTextArray = await Promise.all(
+      transcriptionData.map(async (item) => {
+        const displayText = item.nBest?.[0]?.display || '';
+        const translatedText = await this.translateClient.translate(
+          displayText,
+          'en',
+        );
+        const convTime =
+          item.offset.replace('PT', '').toLowerCase().split('.')[0] + 's';
+        return {
+          speaker: item.speaker,
+          timestamp: this.convertToTimeFormat(convTime),
+          transcription: displayText,
+          translation: translatedText[0],
+        };
+      }),
+    );
     const audioTranscript = translatedTextArray
       .map((entry: any) => ` Speaker ${entry.speaker}: ${entry.translation}`)
       .join('\n\n');
-    const response = this.chatService.getPrompResponse(MODERATOR_RECOGNITION, audioTranscript);
+    const response = this.chatService.getPrompResponse(
+      MODERATOR_RECOGNITION,
+      audioTranscript,
+    );
     const match = (await response).match(/Speaker\s*\d+/i).toString();
-    const updatedTextArray = translatedTextArray.map(item => {
+    const updatedTextArray = translatedTextArray.map((item) => {
       // If this item's speaker matches the identified moderator, mark them as 'Moderator'
       if (`Speaker ${item.speaker}` === match) {
         return { ...item, speaker: 'Moderator' };
       }
       return item;
     });
-    const combinedTranslation = updatedTextArray.map(data => `${data.speaker} : ${data.translation}`).join('\n\n');
+    const combinedTranslation = updatedTextArray
+      .map((data) => `${data.speaker} : ${data.translation}`)
+      .join('\n\n');
     return { updatedTextArray, combinedTranslation };
   }
 
@@ -190,7 +233,6 @@ export class AudioUtils {
   generateSentimenAnalysisPrompt(text: string) {
     return SENTIMENT_ANALYSIS_PROMPT(text);
   }
-
 
   async getSummaryAndSentiments(purpose: string, text: string) {
     const deployment = this.AZURE_OPENAI_DEPLOYMENT;
@@ -209,17 +251,20 @@ export class AudioUtils {
 
     // 2️⃣ **Summarize Each Chunk**
     for (const chunk of chunks) {
-      let prompt = purpose === "Summary"
-        ? this.generateSummarizationPrompt(chunk)
-        : this.generateSentimenAnalysisPrompt(chunk);
+      let prompt =
+        purpose === 'Summary'
+          ? this.generateSummarizationPrompt(chunk)
+          : this.generateSentimenAnalysisPrompt(chunk);
 
       const messages: ChatCompletionMessageParam[] = [
-        { role: 'user', content: prompt }
+        { role: 'user', content: prompt },
       ];
 
       try {
         const response = await client.chat.completions.create({
-          messages, model: deployment, max_tokens: 500
+          messages,
+          model: deployment,
+          max_tokens: 500,
         });
 
         chunkSummaries.push(response.choices[0].message.content);
@@ -229,7 +274,10 @@ export class AudioUtils {
     }
 
     // 3️⃣ **Generate Final Summary from Chunk Summaries**
-    let finalSummary = await this.refineFinalSummary(chunkSummaries.join(' '), client);
+    let finalSummary = await this.refineFinalSummary(
+      chunkSummaries.join(' '),
+      client,
+    );
     return finalSummary;
   }
 
@@ -237,12 +285,14 @@ export class AudioUtils {
     const refinementPrompt = `Refine the following summary to be more concise while preserving key details:\n\n${mergedSummary}`;
 
     const messages: ChatCompletionMessageParam[] = [
-      { role: 'user', content: refinementPrompt }
+      { role: 'user', content: refinementPrompt },
     ];
 
     try {
       const response = await client.chat.completions.create({
-        messages, model: this.AZURE_OPENAI_DEPLOYMENT, max_tokens: 500
+        messages,
+        model: this.AZURE_OPENAI_DEPLOYMENT,
+        max_tokens: 500,
       });
 
       return response.choices[0].message.content;
@@ -257,30 +307,37 @@ export class AudioUtils {
       // Update the  Audio Container with the audioId
       const query = {
         query: 'SELECT * FROM c WHERE c.audioId = @audioId',
-        parameters: [{ name: '@audioId', value: transcriptionDocument.audioId }]
-      }
-      const { resources: existingDocuments } = await this.AudioContainer.items.query(query).fetchAll();
+        parameters: [
+          { name: '@audioId', value: transcriptionDocument.audioId },
+        ],
+      };
+      const { resources: existingDocuments } = await this.AudioContainer.items
+        .query(query)
+        .fetchAll();
 
       if (existingDocuments.length > 0) {
         const existingDocument = existingDocuments[0];
         existingDocument.audioId = transcriptionDocument.audioId;
         existingDocument.audiodata = transcriptionDocument.audiodata;
         existingDocument.summary = transcriptionDocument.summary;
-        existingDocument.sentiment_analysis = transcriptionDocument.sentiment_analysis;
-        existingDocument.combinedTranslation = transcriptionDocument.combinedTranslation;
+        existingDocument.sentiment_analysis =
+          transcriptionDocument.sentiment_analysis;
+        existingDocument.combinedTranslation =
+          transcriptionDocument.combinedTranslation;
         existingDocument.vectorIds = transcriptionDocument.vectorIds;
 
-        const response = await this.AudioContainer.items.upsert(existingDocument);
+        const response =
+          await this.AudioContainer.items.upsert(existingDocument);
         console.log('Document updated successfully:');
       } else {
-        const response = await this.AudioContainer.items.create(transcriptionDocument);
+        const response = await this.AudioContainer.items.create(
+          transcriptionDocument,
+        );
         console.log('Document created successfully:');
         return response;
       }
 
       return response;
-
-
     } catch (error) {
       // Log any errors that occurred during the insertion
       console.error('Error inserting document into Cosmos DB:', error.message);
@@ -288,17 +345,24 @@ export class AudioUtils {
     }
   }
 
-  async updateTranscriptionDocument(audioId: string, updateData: Partial<any>, audioName: any) {
+  async updateTranscriptionDocument(
+    audioId: string,
+    updateData: Partial<any>,
+    audioName: any,
+  ) {
     try {
       const querySpec = {
         query: 'SELECT * FROM c WHERE  c.audioId= @audioId',
         parameters: [{ name: '@audioId', value: audioId }],
       };
-      const { resources: existingDocuments } = await this.AudioContainer.items.query(querySpec).fetchAll();
+      const { resources: existingDocuments } = await this.AudioContainer.items
+        .query(querySpec)
+        .fetchAll();
       if (existingDocuments.length > 0) {
         const existingDocument = existingDocuments[0];
         existingDocument.vectorIds = updateData;
-        const response = await this.AudioContainer.items.upsert(existingDocument);
+        const response =
+          await this.AudioContainer.items.upsert(existingDocument);
       } else {
         return response;
       }
@@ -308,7 +372,9 @@ export class AudioUtils {
   }
 
   convertToTimeFormat(timeStr) {
-    let hours = 0, minutes = 0, seconds = 0;
+    let hours = 0,
+      minutes = 0,
+      seconds = 0;
 
     // Removing 'PT' and splitting based on 'h', 'm', 's'
     if (timeStr.includes('h')) {
@@ -337,7 +403,7 @@ export class AudioUtils {
         endpoint: this.AZURE_OPENAI_ENDPOINT,
         apiKey: this.AZURE_OPENAI_API_KEY,
         apiVersion: this.AZURE_OPEN_AI_VERSION,
-        embeddingModel: this.AZURE_OPENAI_EMBEDDING_MODEL
+        embeddingModel: this.AZURE_OPENAI_EMBEDDING_MODEL,
       };
       const azureOpenAi = new AzureOpenAI(options);
       // this.azureSearchClient = new SearchClient(
@@ -356,20 +422,22 @@ export class AudioUtils {
         // Generate embeddings for each chunk of text
         const embeddings = await azureOpenAi.embeddings.create({
           input: chunk,
-          model  // Azure OpenAI Embedding Model
+          model, // Azure OpenAI Embedding Model
         });
 
         // Extract the embeddings array from the API response
         const embeddingArray = embeddings.data[0].embedding;
         // Prepare document object to upload to VectorStore
         const document: Document = {
-          id: `doc-${Date.now()}`,  // Unique ID for this document
-          metadata: translation,  // Metadata related to the text chunk
-          embeding_vector: embeddingArray  // The generated embeddings array
+          id: `doc-${Date.now()}`, // Unique ID for this document
+          metadata: translation, // Metadata related to the text chunk
+          embeding_vector: embeddingArray, // The generated embeddings array
         };
 
         // Upload the document with embedding vector to your VectorStore (e.g., Azure Search)
-        const uploadResult = await this.azureSearchClient.uploadDocuments([document]);
+        const uploadResult = await this.azureSearchClient.uploadDocuments([
+          document,
+        ]);
 
         // Return vector ID from the result
         const vectorId = uploadResult.results[0]?.key;
@@ -378,8 +446,7 @@ export class AudioUtils {
       }
       // Return all generated vector IDs for the document chunks
       return vectorIds;
-    }
-    catch (error) {
+    } catch (error) {
       throw new Error(`Embedding generation failed ${error}`);
     }
   }
@@ -396,7 +463,11 @@ export class AudioUtils {
     return chunks;
   }
 
-  getChunksWithOverlap(text: string, chunkSize: number, overlapSize: number): string[] {
+  getChunksWithOverlap(
+    text: string,
+    chunkSize: number,
+    overlapSize: number,
+  ): string[] {
     const chunks: string[] = [];
     let currentPosition = 0;
 
@@ -417,5 +488,4 @@ export class AudioUtils {
 
     return chunks;
   }
-
 }

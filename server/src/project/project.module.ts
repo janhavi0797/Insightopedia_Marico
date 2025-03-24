@@ -10,14 +10,15 @@ import { ChatService } from 'src/chat/chat.service';
 
 @Module({
   imports: [
-    AzureCosmosDbModule.forFeature([{
-      dto: ProjectEntity,
-      collection: ContainersEnum.PROJECTS,
-    },
-    {
-      dto: AudioEntity,
-      collection: ContainersEnum.AUDIO,
-    }
+    AzureCosmosDbModule.forFeature([
+      {
+        dto: ProjectEntity,
+        collection: ContainersEnum.PROJECTS,
+      },
+      {
+        dto: AudioEntity,
+        collection: ContainersEnum.AUDIO,
+      },
     ]),
     BullModule.registerQueue({
       name: BullQueues.TRANSLATION,
@@ -29,4 +30,4 @@ import { ChatService } from 'src/chat/chat.service';
   controllers: [ProjectController],
   providers: [ProjectService],
 })
-export class ProjectModule { }
+export class ProjectModule {}
