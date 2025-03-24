@@ -19,6 +19,12 @@ import {
   StorageSharedKeyCredential,
 } from '@azure/storage-blob';
 import { ConfigService } from '@nestjs/config';
+import { generateBlobSasUrl } from '../utils/blobUrl';
+import {
+  AudioDataDTO,
+  GetProjectDetailsDto,
+} from './dtos/get_project_details.dto';
+
 @Injectable()
 export class ProjectService {
   private blobServiceClient: BlobServiceClient;
@@ -160,5 +166,88 @@ export class ProjectService {
     const blobUrl = `${this.containerClient.url}/${fileName}?${sasToken}`;
     Logger.log(`Generated SAS URL for blob: ${blobUrl}`);
     return Promise.resolve(blobUrl);
+  }
+
+  // Get Project Details with projectId
+  async getProject(projectId: string) {
+    try {
+      let sqlQuery = 'SELECT * FROM c';
+
+      if (projectId) {
+        sqlQuery = `SELECT * FROM c WHERE c.projectId = @projectId`;
+      }
+
+      const querySpec = {
+        query: sqlQuery,
+        parameters: projectId ? [{ name: '@projectId', value: projectId }] : [],
+      };
+
+      const { resources: projectResources } = await this.projectContainer.items
+        .query(querySpec)
+        .fetchAll();
+
+      if (!projectResources || projectResources.length === 0) {
+        return {
+          statusCode: 404,
+          message: 'No project records found',
+          data: null,
+        };
+      }
+
+      const audioQuerySpec = { query: 'SELECT * FROM c' };
+      const { resources: audioResources } = await this.audioContainer.items
+        .query(audioQuerySpec)
+        .fetchAll();
+
+      const audioData: AudioDataDTO[] = await Promise.all(
+        audioResources.map(async (item) => {
+          const fileUrl = await generateBlobSasUrl(item.audioName, this.config);
+          return {
+            audioId: item.audioId,
+            audioName: item.audioName,
+            userId: item.userId,
+            tags: item.tags || [],
+            audioUrl: fileUrl,
+            audiodata: item.audiodata,
+            summary: item.summary,
+            sentiment_analysis: item.sentiment_analysis,
+            combinedTranslation: item.combinedTranslation,
+            vectorId: item.vectorId,
+          };
+        }),
+      );
+
+      const projectDetails: GetProjectDetailsDto[] = projectResources.map(
+        (project) => ({
+          projectId: project.projectId,
+          projectName: project.projectName,
+          userId: project.userId,
+          summary: project.summary,
+          sentiment_analysis: project.sentiment_analysis,
+          vectorId: project.vectorId,
+          AudioData: project.audioIds
+            ? audioData.filter((audio) =>
+                project.audioIds.includes(audio.audioId),
+              )
+            : [],
+        }),
+      );
+
+      return {
+        statusCode: 200,
+        message: 'Project details fetched successfully',
+        // data: projectDetails.length ? projectDetails[0] : null,
+        data: { projectDetails },
+      };
+    } catch (error) {
+      console.error('Error fetching project details:', error);
+
+      return {
+        statusCode: 500,
+        message: 'Failed to fetch project details',
+        data: null,
+        error: error.message,
+      };
+    }
   }
 }
