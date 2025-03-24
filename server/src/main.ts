@@ -35,6 +35,9 @@ async function bootstrap() {
   );
   const summaryQueue = app.get<Queue>(getQueueToken(BullQueues.SUMMARY));
   const embeddingQueue = app.get<Queue>(getQueueToken(BullQueues.EMBEDDING));
+  const projectSummaryQueue = app.get<Queue>(
+    getQueueToken(BullQueues.PROJECT_SUMMARY),
+  );
 
   createBullBoard({
     queues: [
@@ -42,6 +45,7 @@ async function bootstrap() {
       new BullAdapter(translationQueue),
       new BullAdapter(summaryQueue),
       new BullAdapter(embeddingQueue),
+      new BullAdapter(projectSummaryQueue),
     ],
     serverAdapter,
   });
