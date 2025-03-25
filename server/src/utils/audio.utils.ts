@@ -354,7 +354,7 @@ export class AudioUtils {
 
   async updateTranscriptionDocument(
     audioId: string,
-    updateData: Partial<any>,
+    vectorIds: string[],
     audioName: any,
   ) {
     try {
@@ -366,10 +366,13 @@ export class AudioUtils {
         .query(querySpec)
         .fetchAll();
       if (existingDocuments.length > 0) {
-        const existingDocument = existingDocuments[0];
-        existingDocument.vectorIds = updateData;
+        const existingDocument = existingDocuments[0] as Partial<AudioEntity>;
+        existingDocument.vectorIds = vectorIds;
+        existingDocument.isTranscriptionFetched = true;
         const response =
           await this.AudioContainer.items.upsert(existingDocument);
+
+        return response;
       } else {
         return response;
       }
@@ -502,17 +505,13 @@ export class AudioUtils {
     projectId: string,
   ): Promise<void> {
     const lastAudioId = await this.redisService.get(`lastAudio`);
-    this.logger.log(`Last audio id: ${lastAudioId}, and ${audioId}`);
+    this.logger.log(`Last audio id: ${lastAudioId}, and current Audio Id ${audioId}`);
 
     const key = `audio:${audioId}project:${projectId}:stages`;
     const stages = JSON.parse((await this.redisService.get(key)) || '{}');
     stages[stage] = true;
     await this.redisService.set(key, JSON.stringify(stages));
     this.logger.log(`Stage ${stage} completed for audio ${audioId}`);
-
-    this.logger.log(
-      `stages: ${stages[QueueProcess.TRANSCRIPTION_AUDIO]}, ${stages[QueueProcess.TRANSLATION_AUDIO]}, ${stages[QueueProcess.SUMMARY_AUDIO]}, ${stages[QueueProcess.EMBEDDING_AUDIO]},${stages}`,
-    );
 
     // Check if all stages are completed for this audio
     if (
@@ -579,6 +578,7 @@ export class AudioUtils {
       const existingProjectDocument: ProjectEntity = projectDocument[0];
       existingProjectDocument.summary = combinedSummary;
       existingProjectDocument.sentiment_analysis = combinedSentiment;
+      existingProjectDocument.isSummaryAndSentimentDone = true;
 
       return await this.saveProjectSummary(existingProjectDocument);
     } catch (error) {
