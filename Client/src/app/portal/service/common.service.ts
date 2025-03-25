@@ -16,6 +16,7 @@ export class CommonService {
   }
 
   getAPI(url: string, userCode?:string): Observable<any> {
+    debugger
     if(userCode) {
       let params = new HttpParams().set('userId', userCode)
       return this.http.get(this.baseUrl + url,{
@@ -25,4 +26,25 @@ export class CommonService {
       return this.http.get(this.baseUrl + url);
     }
   }
+
+  getTagwiseAudio(url: string, userCode?:string) : Observable<any> {
+    debugger
+    if(userCode) {
+      let params = new HttpParams().set('userId', userCode)
+      return this.http.get(this.baseUrl + url,{
+        params: params
+      });
+    } else {
+      return this.http.get(this.baseUrl + url);
+    }
+  }
+
+  CreateProject(payload: {userId: string; projectName: string; audioIds: {audioId: string}[];}): Observable<any> {
+    debugger
+    const url = this.baseUrl + 'project/create';
+    return this.http.post(url, payload);
+  }
+
+
+
 }

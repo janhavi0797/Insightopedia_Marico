@@ -33,6 +33,9 @@ import { UserListComponent } from './user-list/user-list.component';
 import { ProjectDetailsComponent } from './project-details/project-details.component';
 import { AudioService } from './service/audio.service';
 
+import { MatPaginatorModule } from '@angular/material/paginator';
+import { MatTableModule } from '@angular/material/table';
+import {MatRadioModule} from '@angular/material/radio';
 
 @NgModule({
   declarations: [
@@ -70,7 +73,10 @@ import { AudioService } from './service/audio.service';
     MatGridListModule,
     MatProgressSpinnerModule,
     MatDatepickerModule,
-    MatNativeDateModule
+    MatNativeDateModule,
+    MatTableModule,
+    MatPaginatorModule,
+    MatRadioModule
   ],
   providers: [AudioService]
 })

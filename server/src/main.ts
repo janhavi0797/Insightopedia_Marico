@@ -16,10 +16,18 @@ async function bootstrap() {
     .setTitle('Insightopedia Marico')
     .setDescription('The Median API description')
     .setVersion('0.1')
+    .addServer('/Insightopedia/backend')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
+
+  app.enableCors({
+    origin: ['http://localhost:4200'], // Replace with your Angular app's URL
+   //origin: ['https://maricointellivoice.atriina.com'],
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true,  // If you are using cookies or authorization headers
+  });
 
   const serverAdapter = new ExpressAdapter();
   serverAdapter.setBasePath('/admin/queues');
@@ -54,6 +62,9 @@ async function bootstrap() {
   const expressApp = app.getHttpAdapter().getInstance();
   expressApp.use('/admin/queues', serverAdapter.getRouter());
 
-  await app.listen(3000);
+  await app.listen(3001);
 }
 bootstrap();
+
+
+
