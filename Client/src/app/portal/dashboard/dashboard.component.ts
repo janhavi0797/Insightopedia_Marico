@@ -1,4 +1,4 @@
-import { Component, NgZone, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
 import { environment } from 'src/environments/environment';
@@ -46,7 +46,7 @@ export class DashboardComponent implements OnInit {
     }
   ];
   audioDetails!: FormGroup;
-  constructor(private toastr: ToastrService, private fb: FormBuilder,private ngZone: NgZone) { }
+  constructor(private toastr: ToastrService, private fb: FormBuilder) { }
 
   ngOnInit() {
     this.initializeAudioForm();
@@ -94,24 +94,19 @@ export class DashboardComponent implements OnInit {
       this.toastr.warning('You can only upload 4 files at a time');
       return false;
     }
-  
-    this.ngZone.run(() => {
-      setTimeout(() => {
-        for (let i = 0; i < files.length; i++) {
-          const file = files[i];
-          this.audioFiles.push({
-            name: file.name,
-            size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
-            data: file,
-            url: URL.createObjectURL(file),
-            isEdit: false
-          });
-  
-          this.addFormFile(file);
-        }
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      this.audioFiles.push({
+        name: file.name,
+        size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
+        data: file,
+        url: URL.createObjectURL(file),
+        isEdit: false
       });
-    });
-  
+
+      this.addFormFile(file);
+    }
     return true;
   }
 
