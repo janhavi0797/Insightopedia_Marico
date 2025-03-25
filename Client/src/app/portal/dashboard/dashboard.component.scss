@@ -1,7 +1,7 @@
 //Media CSS
 .media-container {
     padding: 20px 40px 0 40px;
-    height: 100vh;
+    height: calc(100vh - 64px);
     .media-inner-cont {
         height: 100%;
 
@@ -60,7 +60,7 @@
         }
 
         .media-body {
-            height: 75%;
+            height: 65%;
             overflow-y: auto;
             .upload-list {
                 padding: 0 10px;
@@ -165,6 +165,7 @@
                                     border-radius: 5px;
                                     outline: none;
                                     position: relative;
+                                    cursor: pointer;
                                 }
 
                                 .seek-bar::-webkit-slider-runnable-track {
@@ -201,10 +202,50 @@
                             display: flex;
                             justify-content: space-between;
                             margin-top: 10px;
+                            ::ng-deep mat-form-field {
+                                background: none;
+                                border-radius: 5px;
+                
+                                .mat-mdc-text-field-wrapper {
+                                    background: none;
+                                }
+                
+                                mat-icon {
+                                    cursor: pointer;
+                                }
+                            }
+                            mat-error {
+                                font-size: 10px;
+                            }
 
                         }
                     }
                 }
+            }
+        }
+        .media-footer {
+            height: 10%;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            border-top: 1px solid #E7E7E7;
+            button {
+                border: none;
+                outline: none;
+                background: #014FA1;
+                color: white;
+                padding: 10px 20px;
+                border-radius: 5px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                mat-icon {
+                    margin-left: 10px;
+                }
+            }
+            button:disabled {
+                background: #757575;
+                cursor: not-allowed;
             }
         }
     }

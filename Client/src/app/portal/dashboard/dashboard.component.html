@@ -23,7 +23,7 @@
                     <form [formGroup]="audioDetails">
                         <ul class="audio-files-section" formArrayName="bankInput">
                             <li *ngFor="let file of audioFiles; let i = index; trackBy: trackByIndex" [formGroupName]="i">
-                                <div class="upload-player">
+                                 <div class="upload-player">
                                     <div class="controls">
                                         <div class="file-name">
                                             <img [src]="imageBasePath + 'assets/Img/dashboard/file.png'" alt="">
@@ -111,6 +111,9 @@
                         </ul>
                     </form>
                 </div>
+            </div>
+            <div class="media-footer">
+                <button [disabled]="true">Save to all files <mat-icon>save</mat-icon></button>
             </div>
         </div>
     </div>

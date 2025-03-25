@@ -45,7 +45,7 @@ export class DashboardComponent implements OnInit {
       "code": "ML"
     }
   ];
-  audioDetails!: FormGroup;
+  audioDetails: any;
   constructor(private toastr: ToastrService, private fb: FormBuilder) { }
 
   ngOnInit() {
@@ -205,8 +205,12 @@ export class DashboardComponent implements OnInit {
   }
 
   deleteFile(index: number): void {
+    debugger
+    console.log('Before Deletion:', this.audioFiles, this.bankDetailsArray);
     this.audioFiles.splice(index, 1);
     this.bankDetailsArray.removeAt(index);
+    this.bankDetailsArray.setValue(this.bankDetailsArray.value);
+    console.log('After Deletion:', this.audioFiles, this.bankDetailsArray);
   }
 
   trackByIndex(index: number, _: any): number {
