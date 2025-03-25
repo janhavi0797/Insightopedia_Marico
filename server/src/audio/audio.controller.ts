@@ -10,11 +10,13 @@ import {
   Query,
   InternalServerErrorException,
   NotFoundException,
+  Res,
 } from '@nestjs/common';
 import { AudioService } from './audio.service';
 import { ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { ProjectsDto } from './dto/project.dto';
+import { Response } from 'express';
 
 @ApiTags('Audio Management')
 @Controller('audio')
@@ -85,7 +87,7 @@ export class AudioController {
     }
   }
 
-  @Post('/projects')
+  @Get('/projects')
   @ApiOperation({ summary: 'Get All Projects of user.' })
   async getAllProjects(@Query() projectsDto: ProjectsDto) {
     const { isAllFile, userId } = projectsDto;
@@ -98,6 +100,27 @@ export class AudioController {
         throw new NotFoundException(`${err.message}`);
       }
       throw new InternalServerErrorException(`${err.message}`);
+    }
+  }
+
+  @Get('generate-pdf')
+  @ApiOperation({ summary: 'To Generate the PDF' })
+  async generateSummeryPDF(
+    @Res() res: Response,
+    @Query('id') id: string,
+    @Query('type') type: string,
+    @Query('key') key: string,
+  ) {
+    key = key.toLowerCase();
+    type = type.toLowerCase();
+
+    if (
+      (key == 'audio' || key == 'project') &&
+      (type == 'summary' || type == 'sentiment_analysis')
+    ) {
+      return await this.audioService.generateSummeryPDF(res, id, type, key);
+    } else {
+      throw new BadRequestException(`Invalid Key Value.`);
     }
   }
 }
