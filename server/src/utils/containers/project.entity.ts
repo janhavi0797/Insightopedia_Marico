@@ -6,6 +6,7 @@ export class ProjectEntity {
   projectName: string;
   userId: string;
   audioIds: string[];
+  isSummaryAndSentimentDone: boolean;
   summary: string;
   sentiment_analysis: string;
   id: string;

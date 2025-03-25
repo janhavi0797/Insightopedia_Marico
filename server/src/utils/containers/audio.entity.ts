@@ -11,6 +11,7 @@ export class AudioEntity {
   secondaryLang: string[];
   noOfSpek: number;
   audiodata: Audiodata[];
+  isTranscriptionFetched: boolean;
   summary: string;
   sentiment_analysis: string;
   combinedTranslation: string;
