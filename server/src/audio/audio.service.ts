@@ -23,6 +23,8 @@ import {
   StorageSharedKeyCredential,
 } from '@azure/storage-blob';
 import { ProjectEntity, User } from 'src/utils/containers';
+import * as PDFDocument from 'pdfkit';
+import { Response } from 'express';
 
 // const unlinkAsync = promisify(fs.unlink);
 ffmpeg.setFfmpegPath('C:/ffmpeg/ffmpeg.exe');
@@ -48,12 +50,39 @@ export class AudioService {
   }
 
   async processAudioFiles(uploadAudioDto: any, files: Express.Multer.File[]) {
+    const audioNames = uploadAudioDto.map((audio) => audio.audioName);
+
+    if (audioNames.length === 0) {
+      throw new Error('No audio names provided.');
+    }
+
+    // Query to check if any of these audioNames already exist
+    const audioQuerySpec = {
+      query: `
+        SELECT * FROM c 
+        WHERE ARRAY_CONTAINS(@audioName, c.audioName)
+      `,
+      parameters: [{ name: '@audioName', value: audioNames }],
+    };
+
+    const { resources: existingAudios } = await this.audioContainer.items
+      .query(audioQuerySpec)
+      .fetchAll();
+
+    if (existingAudios.length > 0) {
+      const existingNames = existingAudios
+        .map((audio) => audio.audioName)
+        .join(', ');
+      throw new BadRequestException(
+        `Audio name already exist: ${existingNames}`,
+      );
+    }
+
     const sasUrls = await this.uploadAudioFiles(files);
 
     const processedData = uploadAudioDto.map((audioObj) => {
       // Normalize audioName for matching (remove extension if present)
       const normalizedAudioName = audioObj.audioName.replace(/\.[^/.]+$/, '');
-      console.log(normalizedAudioName);
       // Find matching file by fileName (remove extension for comparison)
       const matchingFile = sasUrls.find((file) => {
         const normalizedFileName = file.fileName.replace(/\.[^/.]+$/, '');
@@ -219,7 +248,7 @@ export class AudioService {
         data: { audioData, allUniqueTags },
       };
     } catch (error) {
-      console.error('Error fetching audio records:', error);
+      Logger.error('Error fetching audio records:', error);
 
       return {
         statusCode: 500,
@@ -343,6 +372,240 @@ export class AudioService {
       status: 200,
       count: projectSummaries.length,
       data: projectSummaries,
+    };
+  }
+
+  async generateSummeryPDF(
+    res: Response,
+    id: string,
+    type: string,
+    key: string,
+  ) {
+    const data = {
+      id: id,
+      type: type,
+      key: key,
+      summary: '',
+      sentiment_analysis: '',
+    };
+
+    if (key == 'audio') {
+      const userQuerySpec = {
+        query: `SELECT c.${type} FROM c WHERE c.audioId = @audioId`,
+        parameters: [{ name: '@audioId', value: id }],
+      };
+
+      const { resources: records } = await this.audioContainer.items
+        .query(userQuerySpec)
+        .fetchAll();
+
+      if (type === 'summary' || type === 'sentiment_analysis') {
+        data[type] = records[0][type];
+      }
+    } else if (key == 'project') {
+      const projectQuerySpec = {
+        query: `SELECT c.${type} FROM c WHERE c.projectId = @projectId`,
+        parameters: [{ name: '@projectId', value: id }],
+      };
+
+      const { resources: records } = await this.projectContainer.items
+        .query(projectQuerySpec)
+        .fetchAll();
+
+      if (type === 'summary' || type === 'sentiment_analysis') {
+        data[type] = records[0][type];
+      }
+    }
+
+    return await this.generatePDF(res, data);
+  }
+
+  async generatePDF(res: Response, data: any) {
+    const { id, type, key, summary, sentiment_analysis } = data;
+
+    const doc = new PDFDocument({ margin: 50, size: 'A4' });
+
+    // Set PDF Headers
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=${key}_${id}.pdf`,
+    );
+
+    doc.pipe(res);
+
+    // PDF Heading
+    doc
+      .fillColor('black') // Set text color to black
+      .fontSize(22)
+      .font('Helvetica-Bold')
+      .text(`Report for: ${key.charAt(0).toUpperCase() + key.slice(1)}`, {
+        align: 'center',
+      });
+    doc.moveDown(2);
+
+    let rows: any;
+
+    if (key == 'audio') {
+      // Audio Information Section
+      doc
+        .fillColor('#333333')
+        .fontSize(16)
+        .font('Helvetica-Bold')
+        .text('Audio Information : ', { underline: true });
+      doc.moveDown(0.5);
+
+      //query to get audio details
+      const userQuerySpec = {
+        query: `SELECT * FROM c WHERE c.audioId = @audioId`,
+        parameters: [{ name: '@audioId', value: id }],
+      };
+
+      const { resources: records } = await this.audioContainer.items
+        .query(userQuerySpec)
+        .fetchAll();
+
+      const record = records[0];
+
+      rows = [
+        [`Audio Name: `, `${record.audioName}`],
+        [`No of Speakers: `, `${record.noOfSpek}`],
+        [`Primary Language: `, `${record.primaryLang}`],
+        [`Secondary Language: `, `${record.secondaryLang.join(', ')}`],
+        [`Tags: `, `${record.tags.join(', ')}`],
+      ];
+    } else {
+      // Project Information Section
+      doc
+        .fillColor('#333333')
+        .fontSize(16)
+        .font('Helvetica-Bold')
+        .text('Project Information : ', { underline: true });
+      doc.moveDown(0.5);
+
+      //query to get project details
+      const projectQuerySpec = {
+        query: `SELECT * FROM c WHERE c.projectId = @projectId`,
+        parameters: [{ name: '@projectId', value: id }],
+      };
+
+      const { resources: records } = await this.projectContainer.items
+        .query(projectQuerySpec)
+        .fetchAll();
+
+      const record = records[0];
+      const mappedAudioIds = record.audioIds;
+
+      // Query to get audionames
+      const audioQuerySpec = {
+        query: `
+        SELECT c.audioName, c.tags FROM c 
+        WHERE ARRAY_CONTAINS(@audioId, c.audioId)
+      `,
+        parameters: [{ name: '@audioId', value: mappedAudioIds }],
+      };
+
+      const { resources: projectAudios } = await this.audioContainer.items
+        .query(audioQuerySpec)
+        .fetchAll();
+
+      const audioNames = projectAudios.map((audioObj) => audioObj.audioName);
+      const allTags = projectAudios.flatMap((audioObj) => audioObj.tags);
+      const uniqueTags = [...new Set(allTags)];
+
+      rows = [
+        [`Project: `, `${record.projectName}`],
+        [`Audios: `, `${audioNames.join(', ')}`],
+        [`Tags: `, `${uniqueTags.join(', ')}`],
+      ];
+    }
+
+    rows.forEach(([title, content]) => {
+      doc
+        .fontSize(12)
+        .font('Helvetica-Bold')
+        .fillColor('#4B9CD3')
+        .text(title, { continued: true });
+      doc.font('Helvetica').fillColor('black').text(` ${content}`);
+      doc.moveDown(0.3);
+    });
+
+    doc.moveDown(1);
+
+    // Summary Section
+    if (summary) {
+      doc
+        .fillColor('#4B9CD3')
+        .fontSize(16)
+        .font('Helvetica-Bold')
+        .text('Summary :', { underline: true });
+      doc.moveDown(0.5);
+
+      doc.fillColor('black').fontSize(12).font('Helvetica').text(summary, {
+        align: 'justify',
+        lineGap: 4,
+      });
+      doc.moveDown(1);
+    }
+
+    // Sentiment Analysis Section
+    if (sentiment_analysis) {
+      doc
+        .fillColor('#4B9CD3')
+        .fontSize(16)
+        .font('Helvetica-Bold')
+        .text('Sentiment Analysis : ', { underline: true });
+      doc.moveDown(0.5);
+
+      // Split the sentiment analysis into lines
+      const sentimentLines = sentiment_analysis.split('\n');
+
+      sentimentLines.forEach((line) => {
+        if (line.includes('### Overall Sentiment Analysis:')) {
+          doc
+            .fontSize(14)
+            .fillColor('#34495E')
+            .font('Helvetica-Bold')
+            .text(line); // Dark Gray
+        } else if (line.includes('### Comprehensive Sentiment Analysis:')) {
+          doc
+            .fontSize(14)
+            .fillColor('#1F618D')
+            .font('Helvetica-Bold')
+            .text(line); // Navy Blue
+        } else if (line.includes('#### Positive Sentiments')) {
+          doc
+            .fontSize(12)
+            .fillColor('#27AE60')
+            .font('Helvetica-Bold')
+            .text(line); // Green
+        } else if (line.includes('#### Neutral Sentiments')) {
+          doc
+            .fontSize(12)
+            .fillColor('#F39C12')
+            .font('Helvetica-Bold')
+            .text(line); // Orange
+        } else if (line.includes('#### Negative Sentiments')) {
+          doc
+            .fontSize(12)
+            .fillColor('#E74C3C')
+            .font('Helvetica-Bold')
+            .text(line); // Red
+        } else {
+          doc.fontSize(11).fillColor('black').font('Helvetica').text(line); // Default text
+        }
+        doc.moveDown(0.3); // Add spacing between lines
+      });
+
+      doc.moveDown(1);
+    }
+
+    // Finalize the PDF
+    doc.end();
+
+    return {
+      status: 200,
+      message: 'PDF Generated successfully.',
     };
   }
 }

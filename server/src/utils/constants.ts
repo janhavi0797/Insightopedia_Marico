@@ -16,7 +16,6 @@ export const SUMMARIZATION_PROMPT_TEMPLATE = (
   Provide a summary based on the given guidelines.
 `;
 
-
 export const SENTIMENT_ANALYSIS_PROMPT = (text: string) => `
 You are an expert in sentiment analysis. Given multiple sentiment summaries, your task is to
                             combine them into a cohesive sentiment analysis.
