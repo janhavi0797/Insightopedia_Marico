@@ -505,7 +505,9 @@ export class AudioUtils {
     projectId: string,
   ): Promise<void> {
     const lastAudioId = await this.redisService.get(`lastAudio`);
-    this.logger.log(`Last audio id: ${lastAudioId}, and current Audio Id ${audioId}`);
+    this.logger.log(
+      `Last audio id: ${lastAudioId}, and current Audio Id ${audioId}`,
+    );
 
     const key = `audio:${audioId}project:${projectId}:stages`;
     const stages = JSON.parse((await this.redisService.get(key)) || '{}');
