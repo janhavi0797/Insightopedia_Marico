@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { environment } from 'src/environments/environment';
 import { CommonService } from '../service/common.service';
+import { ToastrService } from 'ngx-toastr';
 
 interface AudioFile {
   name: string;
@@ -12,6 +13,7 @@ interface AudioFile {
   seekValue?: number;     // Seek value for progress bar
   isEdit: boolean;
   tags: string[];
+  audioId: string;
 }
 
 @Component({
@@ -24,7 +26,7 @@ export class CreateProjectComponent {
   userCode: any;
    userRole: any;
 
-   constructor(private commonServ: CommonService) {}
+   constructor(private commonServ: CommonService, private toastr: ToastrService) {}
 
   ngOnInit(): void {
     this.userRole = localStorage.getItem('role') || '';
@@ -56,6 +58,7 @@ export class CreateProjectComponent {
           seekValue: 0,
           currentTime: '0:00',
           durationTime: '0:00',
+          audioId: audio.audioId,
         }));
       },
       (err: any) => {
@@ -77,18 +80,11 @@ export class CreateProjectComponent {
   selectedAudios: string[] = [];
 
   imageBasePath: string = environment.imageBasePath;
-  
-  audios = [
-    {
-      title: 'Audio 1',
-      size: '1GB',
-      progress: 100,
-      selected: true,
-      tags: ['Vrijesh', 'Vaicom18', 'Workshop', 'Important']
-    }
-  ];
+
+  isShowFooter: boolean = false;
   
   filterByTag() {
+    debugger
     if (this.selectedTag && !this.selectedTags.includes(this.selectedTag)) {
       this.selectedTags.push(this.selectedTag);
     }
@@ -103,6 +99,7 @@ export class CreateProjectComponent {
   } 
   
   removeTag(tag: string) {
+    debugger
     this.selectedTags = this.selectedTags.filter(t => t !== tag);
   }
 
@@ -122,43 +119,26 @@ export class CreateProjectComponent {
     return Array.from(audioNameSet);
   }
 
+  getFilteredAudioFiles(): AudioFile[] {
+    //debugger
+    if (this.filterOption === '1' && this.selectedTags.length) {
+      return this.audioFiles.filter(file =>
+        file.tags?.some(tag => this.selectedTags.includes(tag))
+      );
+    }
+  
+    if (this.filterOption === '2' && this.selectedAudios.length) {
+      return this.audioFiles.filter(file =>
+        this.selectedAudios.includes(file.name)
+      );
+    }
+  
+    return this.audioFiles;
+  }
+  
+
 
   //Media Code
-  onFileSelected(event: any): void {
-    const files: FileList = event.target.files;
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      this.audioFiles.push({
-        name: file.name,
-        size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
-        data: file,
-        url: URL.createObjectURL(file),
-        isEdit:false,
-        tags:[]
-      });
-    }
-    event.target.value = null;
-  }
-
-  onDrop(event: DragEvent): void {
-    event.preventDefault();
-
-    if (event.dataTransfer?.files?.length) {
-      const files = event.dataTransfer.files;
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        this.audioFiles.push({
-          name: file.name,
-          size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
-          data: file,
-          url: URL.createObjectURL(file),
-          isEdit: false,
-          tags: []
-        });
-      }
-    }
-  }
-
   isPlayingIndexMap: { expansion: number | null; audioFiles: number | null } = {
     expansion: null,
     audioFiles: null
@@ -202,11 +182,18 @@ export class CreateProjectComponent {
   }
 
    // Delete file functionality
-   deleteFile(index: number): void {
-    this.audioFiles.splice(index, 1);
-    // if (this.isPlayingIndex === index) {
-    //   this.isPlayingIndex = null;
-    // }
+  //  deleteFile(index: number): void {
+  //   this.audioFiles.splice(index, 1);
+  //   if (this.isPlayingIndex === index) {
+  //     this.isPlayingIndex = null;
+  //   }
+  // }
+
+  formatTime(timeInSeconds: number): string {
+    const minutes = Math.floor(timeInSeconds / 60);
+    const seconds = Math.floor(timeInSeconds % 60);
+    const formattedSeconds = seconds < 10 ? '0' + seconds : seconds;
+    return `${minutes}:${formattedSeconds}`;
   }
 
   seekAudio(event: any, index: number, audioList: any[]): void {
@@ -215,46 +202,83 @@ export class CreateProjectComponent {
     audio.currentTime = newTime;
   }
 
-  updateProgressFinal(event: any): void {
-    // const audio = this.audioPlayerFinal.nativeElement;
-    // const currentTime = audio.currentTime;
-    // const duration = audio.duration;
-    // if (!isNaN(duration)) {
-    //   // Calculate percentage for the seek bar
-    //   this.seekValueFinal = (currentTime / duration) * 100;
-
-    //   // Update the displayed time
-    //   this.currentTimeFinal = this.formatTime(currentTime);
-    //   this.durationTimeFinal = this.formatTime(duration);
-
-    //   // Update slider track color
-    //   this.updateSliderTrackFinal();
-    // }
-  }
-
   updateProgress(event: any, index: number, audioList: any[]): void {
     const audio = event.target;
     const currentTime = audio.currentTime;
     const duration = audio.duration;
-
-    // Update specific audio file's progress and time
-    audioList[index].seekValue = (currentTime / duration) * 100;
-    // audioList[index].currentTime = this.formatTime(currentTime);
-    // audioList[index].durationTime = this.formatTime(duration);
-
-    // this.updateSliderTrack(index, audioList);
-  }
-
-  toggleSelectFile(file: AudioFile, event: Event): void {
-    const isChecked = (event.target as HTMLInputElement).checked;
-    if (isChecked) {
-      //this.selectedArr.push(file);
-      //this.audioFiles = this.audioFiles.filter((f) => f !== file);
-    } else {
-      //this.audioFiles.push(file);
-      //this.selectedArr = this.selectedArr.filter((f) => f !== file);
+  
+    if (!isNaN(duration)) {
+      // Set formatted currentTime and duration
+      audioList[index].currentTime = this.formatTime(currentTime);
+      audioList[index].durationTime = this.formatTime(duration);
+  
+      // Update the seek bar value (progress)
+      audioList[index].seekValue = (currentTime / duration) * 100;
     }
   }
+
+  selectedArr: AudioFile[] = []; // Array for selected files
+
+  toggleSelectFile(file: AudioFile, event: Event): void {
+    debugger
+    // const isChecked = (event.target as HTMLInputElement).checked;
+    // console.log("selectedArr", this.selectedArr);
+    // if (isChecked) {
+    //    this.isShowFooter = true;
+    //    this.selectedArr.push(file);
+    //    //this.audioFiles = this.audioFiles.filter((f) => f !== file);
+    // }
+    // else if (!isChecked) {
+    //      this.isShowFooter = false;
+    // } else {
+    //   //this.audioFiles.push(file);
+    //   //this.selectedArr = this.selectedArr.filter((f) => f !== file);
+    // }
+    const isChecked = (event.target as HTMLInputElement).checked;
+  
+    if (isChecked) {
+      // Add the file to the selectedArr if not already there
+      const alreadyExists = this.selectedArr.some(f => f.name === file.name && f.url === file.url);
+      if (!alreadyExists) {
+        this.selectedArr.push(file);
+      }
+    } else {
+      // Remove file from selectedArr by matching name + url (or other unique identifiers)
+      this.selectedArr = this.selectedArr.filter(f => !(f.name === file.name && f.url === file.url));
+    }
+  
+    // Update footer visibility based on remaining selected files
+    this.isShowFooter = this.selectedArr.length > 0;
+  }
+
+  createNewProject() {
+    debugger
+    console.log('Project name', this.projectName);
+    if (this.projectName === "") {
+      this.toastr.error('Please enter project name');
+      return;
+    }
+
+    console.log('audio id', )
+    const payload = {
+      userId: this.userCode,  
+      projectName: this.projectName, 
+      audioIds: this.selectedArr.map(file => ({
+      audioId: file.audioId,
+    }))
+  };
+   this.commonServ.CreateProject(payload).subscribe(
+    (res: any) => {
+      debugger
+      console.log('Project Created Successfully:', res);
+      this.toastr.success(res);
+    }, 
+  err => {
+    console.error('Error creating project:', err);
+    this.toastr.error(err);
+  });
+} 
+  
 
 
 }

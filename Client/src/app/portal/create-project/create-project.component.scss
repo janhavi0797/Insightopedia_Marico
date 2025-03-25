@@ -1,7 +1,8 @@
 .project-details {
     max-width: 1200px;
     margin: 10px auto;
-    padding: 24px;
+    padding: 1px 5px;
+    //padding-bottom: 2px;
     font-family: Arial, sans-serif;
     //background: #fff;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -17,8 +18,8 @@
   
   /* Full-width single row for project name */
   .full-width-row {
-    width: 58%;
-    margin-bottom: 16px;
+    width: 57%;
+    //margin-bottom: 10px;
   }
   
   /* Make rows flexible when needed */
@@ -105,7 +106,7 @@
   
   /// 
   .media-body {
-    height: 70%;
+    height: 50%;
     overflow-y: auto;
 
     .upload-list {
@@ -326,4 +327,73 @@
             }
         }
     }
+
+    .page-footer {
+      position: fixed;
+      bottom: 0;
+      left: 18%;
+      width: 82%;
+      background-color: #f1f1f1;
+      padding: 15px 20px;
+      border-top: 1px solid #ddd;
+      font-size: 14px;
+      color: #333;
+      z-index: 1000;
+    }
+    
+    .footer-content {
+      display: flex;
+      justify-content: right;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    
+    .right-button {
+      background-color: #76b5ef;
+      color: white;
+      border: none;
+      border-radius: 20px;
+      padding: 8px 16px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.3s ease;
+    }
+    
+    .right-button:hover {
+      background-color: #3367d6;
+    }
 }
+
+/* Responsive CSS */
+@media (max-width: 1024px) {
+  .page-footer {
+    left: 0;
+    width: 100%;
+    padding: 12px 15px;
+  }
+}
+
+@media (max-width: 768px) {
+  .footer-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .right-button {
+    align-self: flex-end;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-footer {
+    font-size: 12px;
+    padding: 10px 12px;
+  }
+
+  .right-button {
+    width: 100%;
+    text-align: center;
+    padding: 10px 0;
+  }
+}    

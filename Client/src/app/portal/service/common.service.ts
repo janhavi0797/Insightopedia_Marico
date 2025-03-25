@@ -39,6 +39,12 @@ export class CommonService {
     }
   }
 
+  CreateProject(payload: {userId: string; projectName: string; audioIds: {audioId: string}[];}): Observable<any> {
+    debugger
+    const url = this.baseUrl + 'project/create';
+    return this.http.post(url, payload);
+  }
+
 
 
 }
