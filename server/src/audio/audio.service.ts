@@ -53,7 +53,7 @@ export class AudioService {
     const processedData = uploadAudioDto.map((audioObj) => {
       // Normalize audioName for matching (remove extension if present)
       const normalizedAudioName = audioObj.audioName.replace(/\.[^/.]+$/, '');
-
+      console.log(normalizedAudioName);
       // Find matching file by fileName (remove extension for comparison)
       const matchingFile = sasUrls.find((file) => {
         const normalizedFileName = file.fileName.replace(/\.[^/.]+$/, '');
@@ -123,7 +123,8 @@ export class AudioService {
         const ffmpegPath = 'C:/ffmpeg/ffmpeg.exe'; // Adjust the path
 
         // Process the file with FFmpeg (noise cancellation and mono conversion)
-        const ffmpegCommand = `${ffmpegPath} -i ${tempFilePath} -af "highpass=f=300, lowpass=f=3000, afftdn=nf=-25" -ac 1 -ar 16000 ${processedFilePath}`;
+        //const ffmpegCommand = `${ffmpegPath} -i ${tempFilePath} -af "highpass=f=300, lowpass=f=3000, afftdn=nf=-25" -ac 1 -ar 16000 ${processedFilePath}`;
+        const ffmpegCommand = `${ffmpegPath} -i "${tempFilePath}" -af "highpass=f=300, lowpass=f=3000, afftdn=nf=-25" -ac 1 -ar 16000 "${processedFilePath}"`;
         await execAsync(ffmpegCommand);
 
         // Read the processed file back into a buffer

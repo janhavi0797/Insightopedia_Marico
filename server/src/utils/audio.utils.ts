@@ -1,4 +1,4 @@
-import { Logger } from '@nestjs/common';
+import { Inject, Logger } from '@nestjs/common';
 import { Translate } from '@google-cloud/translate/build/src/v2';
 import { AzureOpenAI } from 'openai';
 import { AzureKeyCredential, SearchClient } from '@azure/search-documents';
@@ -17,6 +17,9 @@ import {
 } from './constants';
 import { response } from 'express';
 import { ChatService } from 'src/chat/chat.service';
+import { BullQueues, QueueProcess } from './enums';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
 
 export interface Document {
   id: string; // Document ID
@@ -34,8 +37,12 @@ export class AudioUtils {
     @InjectModel(ProjectEntity)
     private readonly transcriptionContainer: Container,
     @InjectModel(AudioEntity) private readonly AudioContainer: Container,
+    @InjectModel(ProjectEntity) private readonly ProjectContainer: Container,
     private readonly chatService: ChatService,
     private readonly configService: ConfigService,
+    @Inject('RedisService') private readonly redisService,
+    @InjectQueue(BullQueues.PROJECT_SUMMARY)
+    private readonly projectSummaryQueue: Queue,
   ) {
     this.translateClient = new Translate({
       key: this.configService.get<string>('TRANSALATION_APIKEY'),
@@ -347,7 +354,7 @@ export class AudioUtils {
 
   async updateTranscriptionDocument(
     audioId: string,
-    updateData: Partial<any>,
+    vectorIds: string[],
     audioName: any,
   ) {
     try {
@@ -359,10 +366,13 @@ export class AudioUtils {
         .query(querySpec)
         .fetchAll();
       if (existingDocuments.length > 0) {
-        const existingDocument = existingDocuments[0];
-        existingDocument.vectorIds = updateData;
+        const existingDocument = existingDocuments[0] as Partial<AudioEntity>;
+        existingDocument.vectorIds = vectorIds;
+        existingDocument.isTranscriptionFetched = true;
         const response =
           await this.AudioContainer.items.upsert(existingDocument);
+
+        return response;
       } else {
         return response;
       }
@@ -487,5 +497,105 @@ export class AudioUtils {
     }
 
     return chunks;
+  }
+
+  async markStageCompleted(
+    audioId: string,
+    stage: QueueProcess,
+    projectId: string,
+  ): Promise<void> {
+    const lastAudioId = await this.redisService.get(`lastAudio`);
+    this.logger.log(
+      `Last audio id: ${lastAudioId}, and current Audio Id ${audioId}`,
+    );
+
+    const key = `audio:${audioId}project:${projectId}:stages`;
+    const stages = JSON.parse((await this.redisService.get(key)) || '{}');
+    stages[stage] = true;
+    await this.redisService.set(key, JSON.stringify(stages));
+    this.logger.log(`Stage ${stage} completed for audio ${audioId}`);
+
+    // Check if all stages are completed for this audio
+    if (
+      stages[QueueProcess.TRANSCRIPTION_AUDIO] &&
+      stages[QueueProcess.TRANSLATION_AUDIO] &&
+      stages[QueueProcess.SUMMARY_AUDIO] &&
+      stages[QueueProcess.EMBEDDING_AUDIO]
+    ) {
+      this.logger.log(`All stages completed for audio ${audioId}`);
+      const lastAudioId = await this.redisService.get(`lastAudio`);
+      if (audioId === lastAudioId) {
+        this.logger.log(`All stages completed for the last audio ${audioId}`);
+        // Trigger the project audio process
+        await this.projectSummaryQueue.add(QueueProcess.PROJECT_SUMMARY_AUDIO, {
+          ...stages,
+          projectId,
+        });
+        this.logger.log(`Combined Audio Project job enqueued`);
+      }
+    }
+  }
+
+  async makeCombineSummaryOfAllAudios(projectId: string) {
+    try {
+      const query = {
+        query: 'SELECT * FROM c WHERE c.projectId = @projectId',
+        parameters: [{ name: '@projectId', value: projectId }],
+      };
+
+      const { resources: projectDocument } = await this.ProjectContainer.items
+        .query(query)
+        .fetchAll();
+      console.log('projectDocument:', projectDocument);
+
+      if (projectDocument.length === 0) {
+        throw new Error('Project not found');
+      }
+
+      const audioIds = (projectDocument[0] as ProjectEntity).audioIds;
+      console.log('audioIds:', audioIds);
+
+      const audioQueue = {
+        query: 'SELECT * FROM c WHERE ARRAY_CONTAINS(@audioIds, c.audioId)',
+        parameters: [{ name: '@audioIds', value: audioIds }],
+      };
+
+      const { resources: audioDocuments } = await this.AudioContainer.items
+        .query(audioQueue)
+        .fetchAll();
+
+      const combinedTranscription = audioDocuments
+        .map((audio) => audio.combinedTranslation)
+        .join('\n\n');
+
+      const combinedSummary = await this.getSummaryAndSentiments(
+        SUMMARY,
+        combinedTranscription,
+      );
+      const combinedSentiment = await this.getSummaryAndSentiments(
+        SENTIMENT_ANALYSIS,
+        combinedTranscription,
+      );
+
+      const existingProjectDocument: ProjectEntity = projectDocument[0];
+      existingProjectDocument.summary = combinedSummary;
+      existingProjectDocument.sentiment_analysis = combinedSentiment;
+      existingProjectDocument.isSummaryAndSentimentDone = true;
+
+      return await this.saveProjectSummary(existingProjectDocument);
+    } catch (error) {
+      console.error(error);
+      throw new Error('Failed to make combined summary');
+    }
+  }
+  async saveProjectSummary(projectDocument: ProjectEntity) {
+    try {
+      const response =
+        await this.ProjectContainer.items.upsert(projectDocument);
+      return response;
+    } catch (error) {
+      console.error('Error saving project summary:', error.message);
+      throw new Error('Failed to save project summary');
+    }
   }
 }

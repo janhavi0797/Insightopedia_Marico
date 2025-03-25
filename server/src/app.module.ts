@@ -17,7 +17,9 @@ import { ChatService } from './chat/chat.service';
 import { TranslationProcessor } from './processors/translation.processor';
 import { SummarySentimentsProcessor } from './processors/summarySentiments.processor';
 import { EmbeddingProcessor } from './processors/embedding.processor';
-
+import { createClient } from 'redis';
+import { promisify } from 'util';
+import { ProjectSummaryProcessor } from './processors/projectSummary.processor';
 const C = new ConfigService();
 console.log(C.get<string>('COSMOS_DBNAME'));
 
@@ -67,6 +69,9 @@ console.log(C.get<string>('COSMOS_DBNAME'));
     BullModule.registerQueue({
       name: BullQueues.EMBEDDING,
     }),
+    BullModule.registerQueue({
+      name: BullQueues.PROJECT_SUMMARY,
+    }),
     AudioModule,
     UserModule,
     ProjectModule,
@@ -88,11 +93,32 @@ console.log(C.get<string>('COSMOS_DBNAME'));
           .container('Audio');
       },
     },
+
     TranscriptionProcessor,
     TranslationProcessor,
     SummarySentimentsProcessor,
     EmbeddingProcessor,
+    ProjectSummaryProcessor,
     AudioUtils,
+    {
+      provide: 'RedisService',
+      useFactory: () => {
+        const redisHost = process.env.QUEUE_HOST;
+        const redisPort = process.env.QUEUE_PORT;
+        if (!redisHost || !redisPort) {
+          throw new Error('Missing Redis configuration');
+        }
+        const client = createClient({
+          url: `redis://${redisHost}:${redisPort}`,
+        });
+        client.on('error', (err) => console.error('Redis Client Error', err));
+        client.connect().catch(console.error);
+        return {
+          get: (key: string) => client.get(key),
+          set: (key: string, value: string) => client.set(key, value),
+        };
+      },
+    },
   ],
 })
 export class AppModule {}

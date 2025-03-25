@@ -29,10 +29,16 @@ export class TranscriptionProcessor {
       secondaryLang,
       noOfSpek,
       fileName,
+      projectId,
     }: ITranscriptionProcessor = job.data;
     try {
       job.log(
         `Transcription job for audioId ${audioId} started - Stage: Started`,
+      );
+      await this.audioUtils.markStageCompleted(
+        audioId,
+        QueueProcess.TRANSCRIPTION_AUDIO,
+        projectId,
       );
       const transcriptionResults = await this.audioUtils.transcribeAudio(
         audioId,
@@ -41,6 +47,7 @@ export class TranscriptionProcessor {
         secondaryLang,
         noOfSpek,
       );
+
       job.log(
         `Transcription job for audioId ${audioId} completed - Stage: Transcription Completed`,
       );
@@ -49,6 +56,7 @@ export class TranscriptionProcessor {
         transcriptionData: transcriptionResults.transcriptionResult,
         audioId: audioId,
         fileName: fileName,
+        projectId: projectId,
       };
 
       await this.translationQueue.add(

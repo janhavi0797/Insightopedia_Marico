@@ -3,6 +3,7 @@ export enum BullQueues {
   TRANSLATION = 'translation',
   SUMMARY = 'summary',
   EMBEDDING = 'embedding',
+  PROJECT_SUMMARY = 'project-summary',
 }
 
 export enum QueueProcess {
@@ -10,4 +11,5 @@ export enum QueueProcess {
   TRANSLATION_AUDIO = 'translate-audio',
   SUMMARY_AUDIO = 'summarize-audio',
   EMBEDDING_AUDIO = 'embedding-audio',
+  PROJECT_SUMMARY_AUDIO = 'project-summary-audio',
 }

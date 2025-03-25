@@ -7,6 +7,7 @@ import { BullModule } from '@nestjs/bull';
 import { BullQueues, ContainersEnum } from 'src/utils/enums';
 import { AudioUtils } from 'src/utils';
 import { ChatService } from 'src/chat/chat.service';
+import { createClient } from 'redis';
 
 @Module({
   imports: [
@@ -28,6 +29,27 @@ import { ChatService } from 'src/chat/chat.service';
     }),
   ],
   controllers: [ProjectController],
-  providers: [ProjectService],
+  providers: [
+    ProjectService,
+    {
+      provide: 'RedisService',
+      useFactory: () => {
+        const redisHost = process.env.QUEUE_HOST;
+        const redisPort = process.env.QUEUE_PORT;
+        if (!redisHost || !redisPort) {
+          throw new Error('Missing Redis configuration');
+        }
+        const client = createClient({
+          url: `redis://${redisHost}:${redisPort}`,
+        });
+        client.on('error', (err) => console.error('Redis Client Error', err));
+        client.connect().catch(console.error);
+        return {
+          get: (key: string) => client.get(key),
+          set: (key: string, value: string) => client.set(key, value),
+        };
+      },
+    },
+  ],
 })
 export class ProjectModule {}

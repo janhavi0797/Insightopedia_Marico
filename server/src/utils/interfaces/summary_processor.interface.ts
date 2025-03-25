@@ -3,4 +3,5 @@ export interface ISummaryProcessor {
   combinedTranslation: string;
   audioId: string;
   fileName: string;
+  projectId: string;
 }

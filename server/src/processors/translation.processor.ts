@@ -23,6 +23,7 @@ export class TranslationProcessor {
       transcriptionData,
       audioId,
       fileName,
+      projectId,
     }: ITransalationAudioProcessor = job.data;
 
     this.logger.log(`Translation job started for ${audioId}`);
@@ -34,11 +35,18 @@ export class TranslationProcessor {
       this.logger.log('Translation job completed:', audioId);
       await job.log('Translation job completed');
 
+      await this.audioUtils.markStageCompleted(
+        audioId,
+        QueueProcess.TRANSLATION_AUDIO,
+        projectId,
+      );
+
       const summaryJob: ISummaryProcessor = {
         updatedTextArray,
         combinedTranslation,
         audioId,
         fileName,
+        projectId,
       };
 
       await this.summaryQueue.add(QueueProcess.SUMMARY_AUDIO, summaryJob);

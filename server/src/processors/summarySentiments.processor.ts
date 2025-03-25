@@ -17,8 +17,13 @@ export class SummarySentimentsProcessor {
   ) {}
   @Process({ name: QueueProcess.SUMMARY_AUDIO, concurrency: 5 })
   async handleTranscriptionJob(job: Job) {
-    const { updatedTextArray, combinedTranslation, audioId, fileName } =
-      job.data;
+    const {
+      updatedTextArray,
+      combinedTranslation,
+      audioId,
+      fileName,
+      projectId,
+    } = job.data;
 
     this.logger.log('Summary job started');
     await job.log(`Processing transcription job for audio array`);
@@ -54,11 +59,18 @@ export class SummarySentimentsProcessor {
         `Saved transcription document for ${audioId} without vectorId`,
       );
 
+      await this.audioUtils.markStageCompleted(
+        audioId,
+        QueueProcess.SUMMARY_AUDIO,
+        projectId,
+      );
+
       const embeddingJob = {
         transcriptionDocument,
         combinedTranslation,
         audioId,
         fileName,
+        projectId,
       };
       await this.embeddingQueue.add(QueueProcess.EMBEDDING_AUDIO, embeddingJob);
       return { transcriptionDocument };
