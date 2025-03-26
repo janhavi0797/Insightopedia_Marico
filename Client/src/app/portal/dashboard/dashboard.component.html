@@ -51,6 +51,51 @@
 
                                 <!-- Form controls -->
                                 <div class="audio-form">
+
+                                    <div class="chip-wrapper">
+                                        <mat-chip-grid #chipGrid aria-label="Tag selection">
+                                          <mat-chip-row *ngFor="let tag of getFormControl(i, 'tagName')?.value" (removed)="removeTag(i, tag)">
+                                            {{ tag }}
+                                            <button matChipRemove>
+                                              <mat-icon>cancel</mat-icon>
+                                            </button>
+                                          </mat-chip-row>
+                                        </mat-chip-grid>
+                                      </div>
+
+                                      <mat-form-field>
+                                        <mat-label>Type a tag for audio</mat-label>
+                                      
+                                        <!-- Chips Grid -->
+                                        <!-- <mat-chip-grid #chipGrid aria-label="Tag selection">
+                                          <mat-chip-row *ngFor="let tag of getFormControl(i, 'tagName')?.value" (removed)="removeTag(i, tag)">
+                                            {{ tag }}
+                                            <button matChipRemove>
+                                              <mat-icon>cancel</mat-icon>
+                                            </button>
+                                          </mat-chip-row>
+                                        </mat-chip-grid> -->
+                                      
+                                        <!-- Tag Input -->
+                                        <input
+                                          matInput
+                                          placeholder="Enter tag"
+                                          [formControl]="tagInputControl"
+                                          [matChipInputFor]="chipGrid"
+                                          [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+                                          (matChipInputTokenEnd)="addTag($event, i)"
+                                        />
+                                      
+                                        <!-- Error message -->
+                                         <mat-error
+                                          *ngIf="getFormControl(i, 'tagName')?.touched && getFormControl(i, 'tagName')?.invalid">
+                                          <span *ngIf="getFormControl(i, 'tagName')?.errors?.['required']">
+                                            Tag Name is required
+                                          </span>
+                                        </mat-error>
+                                      </mat-form-field>
+
+
                                     <mat-form-field>
                                         <mat-label>No. of Speakers</mat-label>
                                         <input matInput type="number" formControlName="numSpeakers"
@@ -107,13 +152,142 @@
                                         </mat-error>
                                     </mat-form-field>
                                 </div>
+
+                                <!-- <div class="audio-form">
+                                    <div class="form-row"> -->
+                                      <!-- <mat-form-field>
+                                        <mat-label>Type a tag for audio</mat-label>
+                                        <input matInput placeholder="Enter tag" formControlName="tagName" />
+                                        <mat-error
+                                            *ngIf="getFormControl(i, 'tagName')?.touched && getFormControl(i, 'tagName')?.invalid">
+                                            <span *ngIf="getFormControl(i, 'tagName')?.errors?.['required']">
+                                                Tag Name is required
+                                            </span>
+                                        </mat-error>
+                                      </mat-form-field> -->
+
+                                      <!-- <mat-form-field>
+                                        <mat-label>Type a tag for audio</mat-label> -->
+                                      
+                                        <!-- Chips Grid -->
+                                        <!-- <mat-chip-grid #chipGrid aria-label="Tag selection">
+                                          <mat-chip-row *ngFor="let tag of getFormControl(i, 'tagName')?.value" (removed)="removeTag(i, tag)">
+                                            {{ tag }}
+                                            <button matChipRemove>
+                                              <mat-icon>cancel</mat-icon>
+                                            </button>
+                                          </mat-chip-row>
+                                        </mat-chip-grid> -->
+                                      
+                                        <!-- Tag Input -->
+                                        <!-- <input
+                                          matInput
+                                          placeholder="Enter tag"
+                                          [formControl]="tagInputControl"
+                                          [matChipInputFor]="chipGrid"
+                                          [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+                                          (matChipInputTokenEnd)="addTag($event, i)"
+                                        /> -->
+                                      
+                                        <!-- Error message -->
+                                        <!-- <mat-error
+                                          *ngIf="getFormControl(i, 'tagName')?.touched && getFormControl(i, 'tagName')?.invalid">
+                                          <span *ngIf="getFormControl(i, 'tagName')?.errors?.['required']">
+                                            Tag Name is required
+                                          </span>
+                                        </mat-error>
+                                      </mat-form-field>                                      
+
+                                      <mat-form-field>
+                                        <mat-label>No. of Speakers</mat-label>
+                                        <input matInput type="number" formControlName="numSpeakers"
+                                            placeholder="Enter No. of Speakers" min="2" max="10">
+                                        <mat-error
+                                            *ngIf="getFormControl(i, 'numSpeakers')?.touched && getFormControl(i, 'numSpeakers')?.invalid">
+                                            <span *ngIf="getFormControl(i, 'numSpeakers')?.errors?.['required']">
+                                                Number of Speakers is required
+                                            </span>
+                                            <span *ngIf="getFormControl(i, 'numSpeakers')?.errors?.['min']">
+                                                Number of Speakers cannot be less than 2
+                                            </span>
+                                            <span *ngIf="getFormControl(i, 'numSpeakers')?.errors?.['max']">
+                                                Number of Speakers cannot exceed 10
+                                            </span>
+                                        </mat-error>
+                                    </mat-form-field>
+                                
+                                      <mat-form-field>
+                                        <mat-label>Choose a date</mat-label>
+                                        <input matInput [matDatepicker]="picker" formControlName="date">
+                                        <mat-hint>MM/DD/YYYY</mat-hint>
+                                        <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+                                        <mat-datepicker #picker></mat-datepicker>
+                                        <mat-error
+                                            *ngIf="getFormControl(i, 'date')?.touched && getFormControl(i, 'date')?.invalid">
+                                            <span
+                                                *ngIf="getFormControl(i, 'date')?.errors?.['required']">Date is required</span>
+                                        </mat-error>
+                                    </mat-form-field> -->
+
+                                    <!-- <mat-form-field appearance="fill">
+                                        <mat-label>Choose Month-Year</mat-label>
+                                        <input matInput [matDatepicker]="picker" [formControl]="date">
+                                        <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+                                        <mat-datepicker
+                                          #picker
+                                          startView="multi-year"
+                                          (monthSelected)="chosenMonthHandler($event, picker)"
+                                          (yearSelected)="chosenYearHandler($event)"
+                                          panelClass="month-picker"
+                                        ></mat-datepicker>
+                                        <mat-error
+                                            *ngIf="getFormControl(i, 'date')?.touched && getFormControl(i, 'date')?.invalid">
+                                            <span
+                                                *ngIf="getFormControl(i, 'date')?.errors?.['required']">Date is required</span>
+                                        </mat-error>
+                                      </mat-form-field> -->
+
+                                      
+                                    <!-- </div> -->
+                                  
+                                    <!-- <div class="form-row">
+                                        <mat-form-field>
+                                            <mat-label>Primary Language</mat-label>
+                                            <mat-select formControlName="primaryLanguage">
+                                                <mat-option [value]="pl.name"
+                                                    *ngFor="let pl of languageList">{{pl.name}}</mat-option>
+                                            </mat-select>
+                                            <mat-error
+                                                *ngIf="getFormControl(i, 'primaryLanguage')?.touched && getFormControl(i, 'primaryLanguage')?.invalid">
+                                                <span *ngIf="getFormControl(i, 'primaryLanguage')?.errors?.['required']">
+                                                    Primary Language is required
+                                                </span>
+                                            </mat-error>
+                                        </mat-form-field>
+                                  
+                                        <mat-form-field>
+                                            <mat-label>Secondary Language</mat-label>
+                                            <mat-select multiple formControlName="secondaryLanguage">
+                                                <mat-option [value]="ol.name"
+                                                    *ngFor="let ol of languageList">{{ol.name}}</mat-option>
+                                            </mat-select>
+                                            <mat-error
+                                                *ngIf="getFormControl(i, 'secondaryLanguage')?.touched && getFormControl(i, 'secondaryLanguage')?.invalid">
+                                                <span
+                                                    *ngIf="getFormControl(i, 'secondaryLanguage')?.errors?.['required']">Secondary
+                                                    language is required</span>
+                                            </mat-error>
+                                        </mat-form-field>
+                                    </div>
+                                  </div> -->
+                                  
                             </li>
                         </ul>
                     </form>
                 </div>
             </div>
             <div class="media-footer">
-                <button [disabled]="true">Save to all files <mat-icon>save</mat-icon></button>
+                <button [disabled]="isSaveDisabled" (click)="saveAudioFile()">Save to all files <mat-icon>save</mat-icon></button>
             </div>
         </div>
     </div>
