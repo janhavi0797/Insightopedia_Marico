@@ -255,16 +255,23 @@ export class AudioService {
             item.audioName.substring(item.audioName.lastIndexOf('/') + 1),
           );
 
-          let projectIds = associatedProjects
+          //project Id and name
+          let projectdata = associatedProjects
             .filter((project) => project.audioIds.includes(item.audioId))
-            .map((project) => project.projectId);
+            .map((project) => {
+              return {
+                projectId: project.projectId,
+                projectName: project.projectName,
+              };
+            });
+
           return {
             audioId: item.audioId,
             audioName: item.audioName,
             userId: item.userId,
             tags: item.tags || [],
             audioUrl: fileUrl, // Now it's a resolved string, not a Promise<string>
-            projects: projectIds,
+            projects: projectdata,
           };
         }),
       );
