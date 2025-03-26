@@ -1,75 +1,61 @@
-<div class="project-details">
-    <h2>Project Details</h2>
-  
-    <!-- Row 1: Project Name -->
-    <div class="form-row full-width-row">
-      <mat-form-field appearance="outline" class="form-field project-name">
-        <mat-label>Project Name</mat-label>
-        <input
-          matInput
-          type="text"
-          id="projectName"
-          [(ngModel)]="projectName"
-          placeholder="Enter project name"
-          name="projectName"
-          required
-        />
-      </mat-form-field>
-    </div>
+<div class="project-container">
+  <h2>Project Details</h2>
 
-    <!-- Row 2: Filter Tags + Selected Tags on same row -->
-    <div class="form-row tags-row">
-     
-        <div class="form-row">
-            <mat-radio-group [(ngModel)]="filterOption" aria-label="Select Filter Option">
-              <mat-radio-button value="1">Filter By Tag</mat-radio-button>
-              <mat-radio-button value="2">Filter By Audio</mat-radio-button>
-            </mat-radio-group>
-          </div>
-    
+  <!-- Full Top Row: Project Name + Filter Options -->
+  <div class="top-row">
+    <!-- Project Name -->
+    <mat-form-field appearance="outline" class="project-name">
+      <mat-label>Project Name</mat-label>
+      <input matInput type="text" [(ngModel)]="projectName" placeholder="Enter project name" required />
+    </mat-form-field>
+
+    <!-- Filter Options -->
+    <mat-radio-group [(ngModel)]="filterOption" class="filter-radio" aria-label="Select Filter Option">
+      <mat-radio-button value="1">Select by Tag</mat-radio-button>
+      <mat-radio-button value="2">Select by Audio</mat-radio-button>
+    </mat-radio-group>
+  </div>
+
+  <!-- Filter Section -->
+  <div class="filter-section">
+    <!-- Tag Dropdown -->
     <ng-container *ngIf="filterOption === '1'">
-      <!-- Filter By Tags -->
-      <mat-form-field appearance="outline" class="form-field filter-tags">
-        <mat-label>Filter By Tags</mat-label>
+      <mat-form-field appearance="outline" class="filter-dropdown">
+        <mat-label>Select Tag</mat-label>
         <mat-select [(ngModel)]="selectedTag" (selectionChange)="filterByTag()">
-          <mat-option *ngFor="let tag of filteredTags()" [value]="tag">
-            {{ tag }}
-          </mat-option>
+          <mat-option *ngFor="let tag of filteredTags()" [value]="tag">{{ tag }}</mat-option>
         </mat-select>
       </mat-form-field>
-  
+
       <!-- Selected Tags -->
-      <div class="selected-tags">
-        <span *ngFor="let tag of selectedTags" class="tag">
+      <div class="selected-display">
+        <span *ngFor="let tag of selectedTags" class="pill">
           {{ tag }}
           <button (click)="removeTag(tag)">×</button>
         </span>
       </div>
     </ng-container>
 
+    <!-- Audio Dropdown -->
     <ng-container *ngIf="filterOption === '2'">
-        <!-- Filter By Audios -->
-      <mat-form-field appearance="outline" class="form-field filter-tags">
-        <mat-label>Filter By Audio</mat-label>
+      <mat-form-field appearance="outline" class="filter-dropdown">
+        <mat-label>Select Audio</mat-label>
         <mat-select [(ngModel)]="selectedAudio" (selectionChange)="filterByAudio()">
-          <mat-option *ngFor="let audio of filteredAudios()" [value]="audio">
-            {{ audio }}
-          </mat-option>
+          <mat-option *ngFor="let audio of filteredAudios()" [value]="audio">{{ audio }}</mat-option>
         </mat-select>
       </mat-form-field>
-  
+
       <!-- Selected Audios -->
-      <div class="selected-tags">
-        <span *ngFor="let audio of selectedAudios" class="tag">
+      <div class="selected-display">
+        <span *ngFor="let audio of selectedAudios" class="pill">
           {{ audio }}
           <button (click)="removeAudio(audio)">×</button>
         </span>
       </div>
     </ng-container>
-
-    </div>
   </div>
-  
+</div>
+
   
   <!-- Audio list  -->
 
@@ -77,7 +63,11 @@
     <div class="upload-list">
         <ul class="audio-files-section">
             <li *ngFor="let file of getFilteredAudioFiles(); let i = index">
-                <input type="checkbox" (change)="toggleSelectFile(file, $event)" />
+                <!-- <input type="checkbox" (change)="toggleSelectFile(file, $event)" /> -->
+                <input 
+                type="checkbox" 
+                [checked]="isFileSelected(file)"
+                (change)="toggleSelectFile(file, $event)" />
                 <div class="upload-player">
                     <div class="controls">
                         <div class="file-name">
@@ -97,7 +87,8 @@
                     <div class="slider">
                         <span id="current-time">{{ file.currentTime || '0:00' }}</span>
                         <input type="range" class="seek-bar" [value]="file.seekValue || 0" max="100"
-                            (input)="seekAudio($event, i, audioFiles)" />
+                            (input)="seekAudio($event, i, audioFiles)"
+                            [style.background]="getSliderBackground(file.seekValue || 0)" />
                         <span id="duration-time">{{ file.durationTime || '0:00' }}</span>
                         <!-- <audio #audioPlayer controls (timeupdate)="updateProgress($event, i, audioFiles)"
                             [src]="file.url"></audio> -->

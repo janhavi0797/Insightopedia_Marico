@@ -23,7 +23,7 @@ body {
 
 /* Handle */
 ::-webkit-scrollbar-thumb {
-    background: #014FA1;
+    background: #E4E7EC;
     border-radius: 20px;
 }
 
@@ -47,3 +47,12 @@ button {
     font-size: 16px;
     color: black;
 }
+
+.toast-message {
+    font-size: 14px !important; // or whatever size you prefer
+  }
+  
+  // Optional: Change title font size if you're using one
+  .toast-title {
+    font-size: 16px !important;
+  }

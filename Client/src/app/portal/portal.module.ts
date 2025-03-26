@@ -31,6 +31,7 @@ import { ProjectDetailsComponent } from './project-details/project-details.compo
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatTableModule } from '@angular/material/table';
 import {MatRadioModule} from '@angular/material/radio';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 
 @NgModule({
   declarations: [
@@ -69,7 +70,8 @@ import {MatRadioModule} from '@angular/material/radio';
     MatProgressSpinnerModule,
     MatTableModule,
     MatPaginatorModule,
-    MatRadioModule
+    MatRadioModule,
+    MatSnackBarModule
   ],
   providers: []
 })
