@@ -4,6 +4,7 @@ import {MatTableDataSource, MatTableModule} from '@angular/material/table';
 import { FormControl } from '@angular/forms';
 import { map, Observable, startWith } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
+import { CommonService } from '../service/common.service';
 
 @Component({
   selector: 'app-project-analysis',
@@ -11,12 +12,15 @@ import { ToastrService } from 'ngx-toastr';
   styleUrls: ['./project-analysis.component.scss']
 })
 export class ProjectAnalysisComponent {
-
-  constructor(private toastr: ToastrService) {}
+  project: any[] = [];
+  isLoading: boolean = false;
+  userCode: string = '';
+ ELEMENT_DATA: PeriodicElement[]=[];
+  constructor(private toastr: ToastrService , private common: CommonService) {}
 
   displayedColumns: string[] = ['userName', 'projectName', 'createdTime', 'status', 'view'];
   
-  dataSource = new MatTableDataSource<PeriodicElement>(ELEMENT_DATA);
+  dataSource = new MatTableDataSource<PeriodicElement>(this.ELEMENT_DATA);
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
 
@@ -69,13 +73,27 @@ export class ProjectAnalysisComponent {
     }
     const param = {
       user: code,
-      projectName: this.selectedProject,
+      //projectName: this.selectedProject,
       isAllFile: val
     }
     this.getProjectData(param);
   }
 
-  getProjectData(param:any) {}
+  getProjectData(param:any) {
+    this.isLoading = true;
+    this.common.getAllProject('audio/projects', param).subscribe((res: any) => {
+      this.project = res.data;
+      this.mapProjectData();
+      console.log("project Data",this.project);
+      //this.tempAudioData = res.data.map((x: any) => Object.assign({}, x));
+      this.count = res.count;
+      this.userCode = localStorage.getItem('uId') || '';
+      this.isLoading = false;
+    }, (err: any) => {
+      this.isLoading = false;
+      this.toastr.error('Something Went Wrong!')
+    });
+  }
 
   selectedProjects: Map<string, string> = new Map();
   myUserControl = new FormControl('');
@@ -94,8 +112,17 @@ export class ProjectAnalysisComponent {
 
  viewDetails(param1: string, param2: string) {}
 
+ mapProjectData(): void {
+   this.ELEMENT_DATA = this.project.map((item) => ({
+    userName: item.userName,
+    projectName: item.projectName,
+    createdTime: new Date().toLocaleString(),
+    status: item.status,
+    view: ''
+  }));
+  this.dataSource.data = this.ELEMENT_DATA;
 }
-
+}
 export interface PeriodicElement {
   userName: string; 
   projectName: string;
@@ -104,46 +131,46 @@ export interface PeriodicElement {
   view: string;
 }
 
-const ELEMENT_DATA: PeriodicElement[] = [
-  { userName: 'test1', projectName: 'sample1', createdTime: 'March 2025', status: 1, view: '' },
-  { userName: 'test2', projectName: 'sample2', createdTime: 'March 2025', status: 0, view: '' },
-  { userName: 'test3', projectName: 'sample3', createdTime: 'March 2025', status: 2, view: '' },
-  { userName: 'test4', projectName: 'sample4', createdTime: 'March 2025', status: 0, view: '' },
-  { userName: 'test5', projectName: 'sample5', createdTime: 'March 2025', status: 1, view: '' },
-  { userName: 'test6', projectName: 'sample6', createdTime: 'March 2025', status: 2, view: '' },
-  { userName: 'test7', projectName: 'sample7', createdTime: 'March 2025', status: 1, view: '' },
-    { userName: 'test8', projectName: 'sample8', createdTime: 'March 2025', status: 0, view: '' },
-    { userName: 'test9', projectName: 'sample9', createdTime: 'March 2025', status: 2, view: '' },
-    { userName: 'test10', projectName: 'sample10', createdTime: 'March 2025', status: 0, view: '' },
-    { userName: 'test11', projectName: 'sample11', createdTime: 'March 2025', status: 2, view: '' },
-    { userName: 'test12', projectName: 'sample12', createdTime: 'March 2025', status: 2, view: '' },
-    { userName: 'test13', projectName: 'sample13', createdTime: 'March 2025', status: 1, view: '' },
-    { userName: 'test14', projectName: 'sample14', createdTime: 'March 2025', status: 0, view: '' },
-    { userName: 'test15', projectName: 'sample15', createdTime: 'March 2025', status: 1, view: '' },
-    { userName: 'test16', projectName: 'sample16', createdTime: 'March 2025', status: 0, view: '' },
-    { userName: 'test17', projectName: 'sample17', createdTime: 'March 2025', status: 1, view: '' },
-    { userName: 'test18', projectName: 'sample18', createdTime: 'March 2025', status: 0, view: '' },
-    { userName: 'test19', projectName: 'sample19', createdTime: 'March 2025', status: 1, view: '' },
-    { userName: 'test20', projectName: 'sample20', createdTime: 'March 2025', status: 0, view: '' },
-    { userName: 'test21', projectName: 'sample21', createdTime: 'March 2025', status: 1, view: '' },
-    { userName: 'test22', projectName: 'sample22', createdTime: 'March 2025', status: 0, view: '' },
-    { userName: 'test23', projectName: 'sample23', createdTime: 'March 2025', status: 1, view: '' },
-    { userName: 'test24', projectName: 'sample24', createdTime: 'March 2025', status: 0, view: '' },
-    { userName: 'test25', projectName: 'sample25', createdTime: 'March 2025', status: 1, view: '' },
-    { userName: 'test26', projectName: 'sample26', createdTime: 'March 2025', status: 0, view: '' },
-    { userName: 'test27', projectName: 'sample27', createdTime: 'March 2025', status: 1, view: '' },
-    { userName: 'test28', projectName: 'sample28', createdTime: 'March 2025', status: 0, view: '' },
-    { userName: 'test29', projectName: 'sample29', createdTime: 'March 2025', status: 1, view: '' },
-    { userName: 'test30', projectName: 'sample30', createdTime: 'March 2025', status: 0, view: '' },
-    { userName: 'test31', projectName: 'sample31', createdTime: 'March 2025', status: 1, view: '' },
-    { userName: 'test32', projectName: 'sample32', createdTime: 'March 2025', status: 0, view: '' },
-    { userName: 'test33', projectName: 'sample33', createdTime: 'March 2025', status: 1, view: '' },
-    { userName: 'test34', projectName: 'sample34', createdTime: 'March 2025', status: 0, view: '' },
-    { userName: 'test35', projectName: 'sample35', createdTime: 'March 2025', status: 1, view: '' },
-    { userName: 'test36', projectName: 'sample36', createdTime: 'March 2025', status: 0, view: '' },
-    { userName: 'test37', projectName: 'sample37', createdTime: 'March 2025', status: 1, view: '' },
-    { userName: 'test38', projectName: 'sample38', createdTime: 'March 2025', status: 0, view: '' },
-    { userName: 'test39', projectName: 'sample39', createdTime: 'March 2025', status: 1, view: '' },
-    { userName: 'test40', projectName: 'sample40', createdTime: 'March 2025', status: 0, view: '' }
-];
+// const ELEMENT_DATA: PeriodicElement[] = [
+//   { userName: 'test1', projectName: 'sample1', createdTime: 'March 2025', status: 1, view: '' },
+//   { userName: 'test2', projectName: 'sample2', createdTime: 'March 2025', status: 0, view: '' },
+//   { userName: 'test3', projectName: 'sample3', createdTime: 'March 2025', status: 2, view: '' },
+//   { userName: 'test4', projectName: 'sample4', createdTime: 'March 2025', status: 0, view: '' },
+//   { userName: 'test5', projectName: 'sample5', createdTime: 'March 2025', status: 1, view: '' },
+//   { userName: 'test6', projectName: 'sample6', createdTime: 'March 2025', status: 2, view: '' },
+//   { userName: 'test7', projectName: 'sample7', createdTime: 'March 2025', status: 1, view: '' },
+//     { userName: 'test8', projectName: 'sample8', createdTime: 'March 2025', status: 0, view: '' },
+//     { userName: 'test9', projectName: 'sample9', createdTime: 'March 2025', status: 2, view: '' },
+//     { userName: 'test10', projectName: 'sample10', createdTime: 'March 2025', status: 0, view: '' },
+//     { userName: 'test11', projectName: 'sample11', createdTime: 'March 2025', status: 2, view: '' },
+//     { userName: 'test12', projectName: 'sample12', createdTime: 'March 2025', status: 2, view: '' },
+//     { userName: 'test13', projectName: 'sample13', createdTime: 'March 2025', status: 1, view: '' },
+//     { userName: 'test14', projectName: 'sample14', createdTime: 'March 2025', status: 0, view: '' },
+//     { userName: 'test15', projectName: 'sample15', createdTime: 'March 2025', status: 1, view: '' },
+//     { userName: 'test16', projectName: 'sample16', createdTime: 'March 2025', status: 0, view: '' },
+//     { userName: 'test17', projectName: 'sample17', createdTime: 'March 2025', status: 1, view: '' },
+//     { userName: 'test18', projectName: 'sample18', createdTime: 'March 2025', status: 0, view: '' },
+//     { userName: 'test19', projectName: 'sample19', createdTime: 'March 2025', status: 1, view: '' },
+//     { userName: 'test20', projectName: 'sample20', createdTime: 'March 2025', status: 0, view: '' },
+//     { userName: 'test21', projectName: 'sample21', createdTime: 'March 2025', status: 1, view: '' },
+//     { userName: 'test22', projectName: 'sample22', createdTime: 'March 2025', status: 0, view: '' },
+//     { userName: 'test23', projectName: 'sample23', createdTime: 'March 2025', status: 1, view: '' },
+//     { userName: 'test24', projectName: 'sample24', createdTime: 'March 2025', status: 0, view: '' },
+//     { userName: 'test25', projectName: 'sample25', createdTime: 'March 2025', status: 1, view: '' },
+//     { userName: 'test26', projectName: 'sample26', createdTime: 'March 2025', status: 0, view: '' },
+//     { userName: 'test27', projectName: 'sample27', createdTime: 'March 2025', status: 1, view: '' },
+//     { userName: 'test28', projectName: 'sample28', createdTime: 'March 2025', status: 0, view: '' },
+//     { userName: 'test29', projectName: 'sample29', createdTime: 'March 2025', status: 1, view: '' },
+//     { userName: 'test30', projectName: 'sample30', createdTime: 'March 2025', status: 0, view: '' },
+//     { userName: 'test31', projectName: 'sample31', createdTime: 'March 2025', status: 1, view: '' },
+//     { userName: 'test32', projectName: 'sample32', createdTime: 'March 2025', status: 0, view: '' },
+//     { userName: 'test33', projectName: 'sample33', createdTime: 'March 2025', status: 1, view: '' },
+//     { userName: 'test34', projectName: 'sample34', createdTime: 'March 2025', status: 0, view: '' },
+//     { userName: 'test35', projectName: 'sample35', createdTime: 'March 2025', status: 1, view: '' },
+//     { userName: 'test36', projectName: 'sample36', createdTime: 'March 2025', status: 0, view: '' },
+//     { userName: 'test37', projectName: 'sample37', createdTime: 'March 2025', status: 1, view: '' },
+//     { userName: 'test38', projectName: 'sample38', createdTime: 'March 2025', status: 0, view: '' },
+//     { userName: 'test39', projectName: 'sample39', createdTime: 'March 2025', status: 1, view: '' },
+//     { userName: 'test40', projectName: 'sample40', createdTime: 'March 2025', status: 0, view: '' }
+// ];
   

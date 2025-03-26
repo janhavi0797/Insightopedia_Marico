@@ -45,6 +45,14 @@ export class CommonService {
     return this.http.post(url, payload);
   }
 
+  getAllProject(endpoint: string, params: any): Observable<any> {
+    let httpParams = new HttpParams()
+    .set('isAllFile', params.isAllFile)
+      .set('userId', params.user);
+
+    return this.http.get(`${this.baseUrl}${endpoint}`, { params: httpParams });
+  }
+
 
 
 }
