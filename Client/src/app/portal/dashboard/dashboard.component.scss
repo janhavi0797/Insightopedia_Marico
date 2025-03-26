@@ -1,0 +1,252 @@
+//Media CSS
+.media-container {
+    padding: 20px 40px 0 40px;
+    height: calc(100vh - 64px);
+    .media-inner-cont {
+        height: 100%;
+
+        .media-header {
+            height: 25%;
+            h3,
+            p {
+                margin-bottom: 0.5rem;
+            }
+
+            h3 {
+                font-size: 1rem;
+            }
+
+            p {
+                font-size: 0.8rem;
+            }
+
+            .upload-box {
+                border: 2px dashed #1849D6;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                padding: 20px;
+
+                #fileDropRef {
+                    display: none;
+                }
+
+                img {
+                    margin-bottom: 10px;
+                }
+
+                .upload-label {
+                    display: flex;
+                    flex-direction: column;
+
+                    label {
+                        font-size: 14px;
+                        font-weight: 550;
+                        margin: 0 0 10px 15px;
+
+                        span {
+                            color: #1849D6;
+                            cursor: pointer;
+                        }
+                    }
+
+                    .validation-msg {
+                        color: #6D6D6D;
+                    }
+                }
+
+
+            }
+        }
+
+        .media-body {
+            height: 65%;
+            overflow-y: auto;
+            .upload-list {
+                padding: 0 10px;
+                .subtitle {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 10px;
+                }
+
+                h3 {
+                    font-size: 16px;
+                    font-weight: 550;
+                    margin-bottom: 10px
+                }
+
+                ul {
+                    margin: 10px 0;
+
+                    li {
+                        border: 1px solid #E7E7E7;
+                        border-radius: 10px;
+                        width: 100%;
+                        padding: 10px 20px;
+                        display: flex;
+                        align-items: center;
+                        margin-bottom: 15px;
+                        flex-direction: column;
+
+                        button {
+                            border: none;
+                            outline: none;
+                            background: none;
+                            margin-right: 15px;
+
+                            img {
+                                width: 16px;
+                                height: 18px;
+                            }
+                        }
+
+                        .upload-player {
+                            width: 100%;
+
+                            .controls {
+                                display: flex;
+                                justify-content: space-between;
+                                margin-bottom: 5px;
+
+                                .file-name {
+                                    display: flex;
+                                    align-items: flex-start;
+
+                                    img {
+                                        margin-right: 5px;
+                                    }
+
+                                    span {
+                                        font-size: 13px;
+                                        font-weight: 500;
+                                    }
+                                }
+
+                                .control {
+                                    display: flex;
+                                    align-items: center;
+
+                                    button {
+                                        border: none;
+                                        outline: none;
+                                        background: none;
+                                    }
+
+                                    img {
+                                        margin-right: 10px;
+                                    }
+                                }
+                            }
+
+                            .slider {
+                                width: 100%;
+                                display: flex;
+                                justify-content: center;
+                                align-items: center;
+
+                                audio {
+                                    display: none;
+                                }
+
+                                #current-time,
+                                #duration-time {
+                                    font-size: 10px;
+                                    margin: 0 5px;
+                                }
+
+                                .seek-bar {
+                                    -webkit-appearance: none;
+                                    appearance: none;
+                                    width: 80%;
+                                    height: 5px;
+                                    background: #DADADA;
+                                    border-radius: 5px;
+                                    outline: none;
+                                    position: relative;
+                                    cursor: pointer;
+                                }
+
+                                .seek-bar::-webkit-slider-runnable-track {
+                                    height: 8px;
+                                    border-radius: 5px;
+                                }
+
+                                .seek-bar::-webkit-slider-thumb {
+                                    -webkit-appearance: none;
+                                    appearance: none;
+                                    width: 10px;
+                                    height: 10px;
+                                    border-radius: 50%;
+                                    background: #014FA1;
+                                }
+
+                                .seek-bar::-moz-range-track {
+                                    height: 8px;
+                                    border-radius: 5px;
+                                    background: #DADADA;
+                                }
+
+                                .seek-bar::-moz-range-thumb {
+                                    width: 10px;
+                                    height: 10px;
+                                    border-radius: 50%;
+                                    background: #014FA1;
+                                }
+                            }
+                        }
+
+                        .audio-form {
+                            width: 100%;
+                            display: flex;
+                            justify-content: space-between;
+                            margin-top: 10px;
+                            ::ng-deep mat-form-field {
+                                background: none;
+                                border-radius: 5px;
+                
+                                .mat-mdc-text-field-wrapper {
+                                    background: none;
+                                }
+                
+                                mat-icon {
+                                    cursor: pointer;
+                                }
+                            }
+                            mat-error {
+                                font-size: 10px;
+                            }
+
+                        }
+                    }
+                }
+            }
+        }
+        .media-footer {
+            height: 10%;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            border-top: 1px solid #E7E7E7;
+            button {
+                border: none;
+                outline: none;
+                background: #014FA1;
+                color: white;
+                padding: 10px 20px;
+                border-radius: 5px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                mat-icon {
+                    margin-left: 10px;
+                }
+            }
+            button:disabled {
+                background: #757575;
+                cursor: not-allowed;
+            }
+        }
+    }
+}
