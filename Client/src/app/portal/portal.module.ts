@@ -22,12 +22,17 @@ import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 import {MatAutocompleteModule} from '@angular/material/autocomplete';
 import {MatTooltipModule} from '@angular/material/tooltip';
 import {MatGridListModule} from '@angular/material/grid-list';
+import {MatDatepickerModule} from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
+
 import { TruncatePipe } from '../shared/truncate.pipe';
 import { AllFilesComponent } from './all-files/all-files.component';
 import { CreateProjectComponent } from './create-project/create-project.component';
 import { ProjectAnalysisComponent } from './project-analysis/project-analysis.component';
 import { UserListComponent } from './user-list/user-list.component';
 import { ProjectDetailsComponent } from './project-details/project-details.component';
+import { AudioService } from './service/audio.service';
+
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatTableModule } from '@angular/material/table';
 import {MatRadioModule} from '@angular/material/radio';
@@ -68,11 +73,13 @@ import { MatSnackBarModule } from '@angular/material/snack-bar';
     MatAutocompleteModule,
     MatGridListModule,
     MatProgressSpinnerModule,
+    MatDatepickerModule,
+    MatNativeDateModule,
     MatTableModule,
     MatPaginatorModule,
     MatRadioModule,
     MatSnackBarModule
   ],
-  providers: []
+  providers: [AudioService]
 })
 export class PortalModule { }

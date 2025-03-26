@@ -1,8 +1,9 @@
 import { Job, Queue } from 'bull';
 import { InjectQueue, Process, Processor } from '@nestjs/bull';
-import { Logger } from '@nestjs/common';
+import { InternalServerErrorException, Logger } from '@nestjs/common';
 import { AudioUtils } from 'src/utils';
 import { BullQueues, QueueProcess } from 'src/utils/enums';
+import nodemailer from 'nodemailer';
 
 @Processor(BullQueues.EMBEDDING)
 export class EmbeddingProcessor {
@@ -38,6 +39,51 @@ export class EmbeddingProcessor {
     } catch (error) {
       this.logger.error(`Translation job failed: ${error.message}`);
       throw error;
+    }
+  }
+
+  @Process('send-email')
+  async sendEmail(
+    change: any,
+    recipientEmail: string,
+    userName: string,
+    projectDetails: any,
+  ) {
+    const baseUrl = process.env.APP_BASE_URL || 'http://localhost:4200';
+
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_SERVER,
+      port: process.env.EMAIL_PORT,
+      secure: false, // Use STARTTLS
+      auth: {
+        user: process.env.EMAIL_USER, // Office 365 email
+        pass: process.env.EMAIL_PASS, // Office 365 app password
+      },
+      tls: {
+        ciphers: 'SSLv3',
+      },
+    });
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: recipientEmail,
+      subject: 'Project Successfully Created',
+      html: `
+        <p>Hi ${userName},</p>
+      <p>The project is successfully created on the portal.</p>
+    
+      <p>You can view the details by clicking on the link below:</p>
+      <a href="${baseUrl}/portal/allFiles/audioDetails/${test}">View Audio Details</a>
+      <p>Best regards,<br>Marico Team</p>
+      `,
+    };
+
+    try {
+      await transporter.sendMail(mailOptions);
+      console.log('Email sent successfully.');
+    } catch (err) {
+      Logger.error(`Error in email sent ${err.message}`);
+      throw new InternalServerErrorException(`${err.message}`);
     }
   }
 }

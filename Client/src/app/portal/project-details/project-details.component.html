@@ -1,1 +1,184 @@
-<p>project-details works!</p>
+<div class="tab-container">
+    <div class="tab-header">
+      <button (click)="back()" matTooltip="Back"><mat-icon>arrow_back</mat-icon></button>
+      <h3>{{allAudioDetails?.TGName}}</h3>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Audio Name</mat-label>
+        <mat-select [(ngModel)]="audioName" (selectionChange)="onAudioNameChange($event)" [disabled]="isEdit">
+            <mat-option *ngFor="let audioNm of audioNameArr;let i=index" [value]="audioNm">{{ audioNm }}</mat-option>
+        </mat-select>
+    </mat-form-field>
+    </div>
+    <mat-tab-group class="tab-group" [(selectedIndex)]="selectedTabIndex">
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <label>
+            <img *ngIf="selectedTabIndex === 0"
+              [src]="imageBasePath + 'assets/Img/AudioDetails/trascriptor-a.png'"
+              alt="">
+              <img *ngIf="selectedTabIndex !== 0"
+              [src]="imageBasePath + 'assets/Img/AudioDetails/transcriptor-i.png'"
+              alt="">
+              <span [ngClass]="{'active': selectedTabIndex === 0}">Transcript</span>
+          </label>
+        </ng-template>
+        <div class="tab-content">
+          <div class="tab-content-text">
+            <p class="text" *ngFor="let audioData of audioDetails?.AudioData">
+              <span class="moderator" [ngClass]="{ 'main': audioData?.speaker === 'Moderator' }">Speaker {{audioData?.speaker}} ({{audioData?.timestamp}}): </span>
+              {{audioData?.transcription}}
+            </p>
+          </div>
+          <div class="tab-content-model">
+            <div class="model-detail">
+              <h5>Audio 1</h5>
+              <p>Target Group 1</p>
+              <p>Nykka, Nivea Vs Parachute Safolla</p>
+            </div>
+            <div class="model-audio">
+              <div class="controls">
+                <button (click)="seekBackward()" matTooltip="Rewind to 10 sec"><mat-icon>fast_rewind</mat-icon></button>
+                    <button (click)="togglePlayPause()">
+                           <mat-icon *ngIf="!isPlaying" class="playbtn" matTooltip="Play">play_circle_filled</mat-icon>
+                           <mat-icon *ngIf="isPlaying" class="playbtn" matTooltip="Pause">pause_circle_filled</mat-icon>
+                    </button>
+                <button (click)="seekForward()" matTooltip="Forward to 10 sec"><mat-icon>fast_forward</mat-icon></button>
+              </div>
+              <div class="audio-player">
+                <span id="current-time">{{ currentTime }}</span>
+                <input type="range" class="seek-bar" [value]="seekValue" max="100" (input)="seekAudio($event)">
+                <span id="duration-time">{{ durationTime }}</span>
+                <audio #audioPlayer controls (timeupdate)="updateProgress($event)">
+                  <source [src]="audioDetails?.filepath" />
+                  Your browser does not support the audio element.
+                </audio>
+              </div>
+            </div>
+          </div>
+        </div>
+      </mat-tab>
+  
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <label><img *ngIf="selectedTabIndex === 1"
+              [src]="imageBasePath + '../../../assets/Img/AudioDetails/translation-a.png'"
+              alt="">
+              <img *ngIf="selectedTabIndex !== 1"
+              [src]="imageBasePath + '../../../assets/Img/AudioDetails/translation-i.png'"
+              alt="">
+              <span [ngClass]="{'active': selectedTabIndex === 1}">Translation</span></label>
+        </ng-template>
+        <div class="tab-content">
+          <div class="tab-content-text">
+            <p class="text" *ngFor="let audioData of audioDetails?.AudioData">
+              <span class="moderator" [ngClass]="{ 'main': audioData?.speaker === 'Moderator' }">Speaker {{audioData?.speaker}} ({{audioData?.timestamp}}): </span>
+              <span *ngIf="!isEdit">{{audioData?.translation}}</span>
+              <textarea *ngIf="isEdit" name="" id="" [(ngModel)]="audioData.translation" class="edit-textarea"></textarea>
+            </p>
+          </div>
+          <div class="tab-content-model translation">
+            <!-- <button *ngIf="!isEdit" (click)="replace(dialogTemplate)"><mat-icon>find_replace</mat-icon> Replace</button>
+            <button *ngIf="!isEdit" (click)="editTranslation()"><mat-icon>edit</mat-icon> Edit</button>
+            <button class="cancel-btn" *ngIf="isEdit" (click)="cancelEdit()"><mat-icon>add</mat-icon> Cancel</button>
+            <button *ngIf="isEdit" (click)="updateTranslation()"><mat-icon>check</mat-icon> Update</button> -->
+          </div>
+        </div>
+      </mat-tab>
+  
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <label><img *ngIf="selectedTabIndex === 2"
+              [src]="imageBasePath + 'assets/Img/AudioDetails/summary-a.png'"
+              alt="">
+              <img *ngIf="selectedTabIndex !== 2"
+              [src]="imageBasePath + 'assets/Img/AudioDetails/summary-i.png'"
+              alt="">
+              <span [ngClass]="{'active': selectedTabIndex === 2}">Summary</span></label>
+        </ng-template>
+        <div class="tab-content">
+          <div class="tab-content-text">
+            <p class="text"> <span class="moderator">Summary : </span>{{audioDetails?.Summary}}</p>
+          </div>
+          <div class="tab-content-model translation">
+            <button (click)="downloadSummaryAndSenti('summary')"><mat-icon>cloud_download</mat-icon> Download Summary</button>
+          </div>
+        </div>
+      </mat-tab>
+  
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <label><img *ngIf="selectedTabIndex === 3"
+              [src]="imageBasePath + 'assets/Img/AudioDetails/senti-a.png'"
+              alt="">
+              <img *ngIf="selectedTabIndex !== 3"
+              [src]="imageBasePath + 'assets/Img/AudioDetails/senti-i.png'"
+              alt="">
+              <span [ngClass]="{'active': selectedTabIndex === 3}">Sentiment analysis</span></label>
+        </ng-template>
+  
+        <div class="tab-content">
+          <div class="tab-content-text">
+            <pre class="text">{{audioDetails?.SentimentAnalysis}}</pre>
+          </div>
+          <div class="tab-content-model translation">
+            <button (click)="downloadSummaryAndSenti('sentimental-analysis')"><mat-icon>cloud_download</mat-icon> Download Sentiment
+              Analysis</button>
+          </div>
+        </div>
+      </mat-tab>
+  
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <label><img *ngIf="selectedTabIndex === 4"
+              [src]="imageBasePath + 'assets/Img/AudioDetails/chat-a.png'"
+              alt="">
+              <img *ngIf="selectedTabIndex !== 4"
+              [src]="imageBasePath + 'assets/Img/AudioDetails/chat-i.png'"
+              alt="">
+              <span [ngClass]="{'active': selectedTabIndex === 4}">Chat</span></label>
+        </ng-template>
+  
+        <div class="tab-content">
+          <div class="tab-content-chat">
+            <div class="ask-header" *ngIf="chatHistory.length === 0">
+              <p>Ask me anything about the selected audio</p>
+            </div>
+            <div class="chat-dashboard">
+              <div *ngFor="let message of chatHistory">
+                <div *ngIf="message.from === 'user'" class="question-format">
+                  <div class="question">
+                    <button><mat-icon>account_circle</mat-icon></button>
+                    <p>{{ message.message }}</p>
+                  </div>
+                </div>
+  
+                <div *ngIf="message.from === 'AI'" class="answer-format">
+                  <div class="answer">
+                    <img [src]="imageBasePath + 'assets/Img/header/Logo.png'" alt="logo">
+                    <pre>{{ message.message }}</pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="tab-content-search">
+            <div class="input-container">
+              <input type="text" placeholder="Start Typing Here!..." class="text-input" [(ngModel)]="question"
+                (keyup.enter)="sendQuery()" />
+              <button class="send-button" (click)="sendQuery()">
+                <mat-icon>search</mat-icon>
+              </button>
+            </div>
+            <button class="download-chat-button" (click)="downloadChat()">
+              <mat-icon>cloud_download</mat-icon>
+              Download Chat
+            </button>
+          </div>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+  </div>
+  
+  <div *ngIf="isLoading" class="spinner">
+    <mat-spinner></mat-spinner>
+  </div>
