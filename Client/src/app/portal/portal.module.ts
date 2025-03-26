@@ -36,6 +36,7 @@ import { AudioService } from './service/audio.service';
 import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatTableModule } from '@angular/material/table';
 import {MatRadioModule} from '@angular/material/radio';
+import { FormatTextPipe } from '../shared/format-text.pipe';
 
 @NgModule({
   declarations: [
@@ -47,7 +48,8 @@ import {MatRadioModule} from '@angular/material/radio';
     CreateProjectComponent,
     ProjectAnalysisComponent,
     UserListComponent,
-    ProjectDetailsComponent
+    ProjectDetailsComponent,
+    FormatTextPipe
   ],
   imports: [
     //Basic Modules

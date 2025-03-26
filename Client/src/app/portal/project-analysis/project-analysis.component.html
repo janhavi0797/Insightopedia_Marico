@@ -93,7 +93,7 @@
         <ng-container matColumnDef="view">
             <th mat-header-cell *matHeaderCellDef> Actions </th>
             <td mat-cell *matCellDef="let element"> 
-                <button [disabled]="element.status !== 1" class="view-btn" (click)="viewDetails(element.TargetId, element.TargetGroup)">View</button>
+                <button [disabled]="element.status == 1" class="view-btn" (click)="viewDetails(element.projectId, element.userId)">View</button>
             </td>
           </ng-container>
   

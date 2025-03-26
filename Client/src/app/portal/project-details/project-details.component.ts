@@ -5,6 +5,7 @@ import { ToastrService } from 'ngx-toastr';
 import { MatDialog } from '@angular/material/dialog';
 import { Subscription } from 'rxjs';
 import { environment } from '../../../environments/environment'
+import { CommonService } from '../service/common.service';
 
 @Component({
   selector: 'app-project-details',
@@ -41,15 +42,22 @@ export class ProjectDetailsComponent {
   audioNameArr:any[] = [];
   audioName:string = '';
   allAudioDetails:any;
+  projectId!: string;
+  userId!: string;
   
   constructor(private audioServ: AudioService, private cdr: ChangeDetectorRef, private activeRoute: ActivatedRoute,
-    private router: Router, private toastr: ToastrService, private dialog: MatDialog,
+    private router: Router, private toastr: ToastrService, private dialog: MatDialog,private common: CommonService
   ) { }
 
   ngOnInit() {
-    this.tgId = this.activeRoute.snapshot.paramMap.get("tgId") ?? "";
-    this.tgName = this.activeRoute.snapshot.paramMap.get("tgName") ?? "";
-    this.getAudioDetails();
+    this.activeRoute.queryParams.subscribe(params => {
+      this.projectId = params['projectId'];
+      this.userId = params['userId'];
+      console.log("Received Project ID:", this.projectId);
+      console.log("Received User ID:", this.userId);
+      this.getProjectDetails(this.projectId);
+    });
+    
     this.messageHistorySub = this.audioServ.getMessageHistory().subscribe((res: any) => {
       if (res) {
         this.chatHistory.push(res);
@@ -57,15 +65,22 @@ export class ProjectDetailsComponent {
     })
   }
 
-  getAudioDetails() {
+
+  getProjectDetails(projectId:string) {
     this.isLoading = true;
-    this.audioServ.getDetails('audio/details', this.tgId, this.tgName).subscribe((res: any) => {
-      this.allAudioDetails = res.data;
-      this.audioDetails = res.data.TranscriptionData[0];
-      // this.filePath = res.data.FilePath;
-      // this.vectorId = res.data.vectorId;
-      this.tempAudioData = res.data.TranscriptionData[0].AudioData.map((x: any) => Object.assign({}, x));
-      this.audioNameArr = res.data.AudioName;
+    console.log("getProjectDetails projectId",projectId);
+    this.common.getProjectDetail('project/allProjectDetails', projectId).subscribe((res: any) => {
+      console.log("getProjectDetails",res.data);
+      console.log("getProjectDetails only audioDetails",res.data.projectDetails[0].AudioData);
+
+      this.allAudioDetails = res.data.projectDetails[0];
+      this.audioDetails = res.data.projectDetails[0].AudioData[0];
+      console.log("getProjectDetails only audioDetails",this.audioDetails);
+       //this.filePath = res.data.FilePath;
+       //this.vectorId = res.data.vectorId;
+      this.tempAudioData = res.data.projectDetails[0].AudioData.map((x: any) => Object.assign({}, x));
+      this.audioNameArr =res.data.projectDetails[0].AudioData.map(((item: { audioName: any; })=> item.audioName));
+      console.log("audioNameArr",this.audioNameArr);
       this.audioName = this.audioNameArr[0];
       this.isLoading = false;
     }, (err: any) => {
@@ -290,9 +305,11 @@ export class ProjectDetailsComponent {
 
   onAudioNameChange(event: any) {
     const index = this.audioNameArr.indexOf(event.value);
-    this.audioDetails = this.allAudioDetails.TranscriptionData[index];
+    console.log("onAudioNameChange",index);
+    this.audioDetails = this.allAudioDetails.AudioData[index];
+    console.log("onAudioNameChange audioDetails",this.audioDetails);
     const audio = this.audioPlayer.nativeElement;
-    this.tempAudioData = this.allAudioDetails.TranscriptionData[index].AudioData.map((x: any) => Object.assign({}, x));
+    this.tempAudioData = this.allAudioDetails.AudioData[index].audiodata.map((x: any) => Object.assign({}, x));
     audio.load();
     this.isPlaying = false;
     this.currentTime = '0:00';

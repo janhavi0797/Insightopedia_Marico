@@ -5,6 +5,7 @@ import { FormControl } from '@angular/forms';
 import { map, Observable, startWith } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 import { CommonService } from '../service/common.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-project-analysis',
@@ -16,7 +17,7 @@ export class ProjectAnalysisComponent {
   isLoading: boolean = false;
   userCode: string = '';
  ELEMENT_DATA: PeriodicElement[]=[];
-  constructor(private toastr: ToastrService , private common: CommonService) {}
+  constructor(private toastr: ToastrService , private common: CommonService,private router: Router) {}
 
   displayedColumns: string[] = ['userName', 'projectName', 'createdTime', 'status', 'view'];
   
@@ -110,12 +111,20 @@ export class ProjectAnalysisComponent {
 
  onOptionSelectedUser(event: any): void {}
 
- viewDetails(param1: string, param2: string) {}
+ viewDetails(projectId: string, userId: string) {
+  console.log("View-param1",projectId);
+  console.log("View-param2",userId);
+  this.router.navigate(['portal/project-details'], { 
+    queryParams: { projectId, userId }
+  });
+ }
 
  mapProjectData(): void {
    this.ELEMENT_DATA = this.project.map((item) => ({
     userName: item.userName,
+    userId:item.userId,
     projectName: item.projectName,
+    projectId:item.projectId,
     createdTime: new Date().toLocaleString(),
     status: item.status,
     view: ''
@@ -125,7 +134,9 @@ export class ProjectAnalysisComponent {
 }
 export interface PeriodicElement {
   userName: string; 
+  userId:string;
   projectName: string;
+  projectId:string;
   createdTime: string;
   status: number;
   view: string;

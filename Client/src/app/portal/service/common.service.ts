@@ -53,6 +53,11 @@ export class CommonService {
     return this.http.get(`${this.baseUrl}${endpoint}`, { params: httpParams });
   }
 
+  getProjectDetail(endpoint: string, projectId: any): Observable<any> {
+    let httpParams = new HttpParams()
+    .set('projectId', projectId)
+    return this.http.get(`${this.baseUrl}${endpoint}`, { params: httpParams });
+  }
 
 
 }

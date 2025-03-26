@@ -24,7 +24,7 @@
         </ng-template>
         <div class="tab-content">
           <div class="tab-content-text">
-            <p class="text" *ngFor="let audioData of audioDetails?.AudioData">
+            <p class="text" *ngFor="let audioData of audioDetails?.audiodata">
               <span class="moderator" [ngClass]="{ 'main': audioData?.speaker === 'Moderator' }">Speaker {{audioData?.speaker}} ({{audioData?.timestamp}}): </span>
               {{audioData?.transcription}}
             </p>
@@ -49,7 +49,7 @@
                 <input type="range" class="seek-bar" [value]="seekValue" max="100" (input)="seekAudio($event)">
                 <span id="duration-time">{{ durationTime }}</span>
                 <audio #audioPlayer controls (timeupdate)="updateProgress($event)">
-                  <source [src]="audioDetails?.filepath" />
+                  <source [src]="audioDetails?.audioUrl" />
                   Your browser does not support the audio element.
                 </audio>
               </div>
@@ -70,7 +70,7 @@
         </ng-template>
         <div class="tab-content">
           <div class="tab-content-text">
-            <p class="text" *ngFor="let audioData of audioDetails?.AudioData">
+            <p class="text" *ngFor="let audioData of audioDetails?.audiodata">
               <span class="moderator" [ngClass]="{ 'main': audioData?.speaker === 'Moderator' }">Speaker {{audioData?.speaker}} ({{audioData?.timestamp}}): </span>
               <span *ngIf="!isEdit">{{audioData?.translation}}</span>
               <textarea *ngIf="isEdit" name="" id="" [(ngModel)]="audioData.translation" class="edit-textarea"></textarea>
@@ -97,7 +97,7 @@
         </ng-template>
         <div class="tab-content">
           <div class="tab-content-text">
-            <p class="text"> <span class="moderator">Summary : </span>{{audioDetails?.Summary}}</p>
+            <p class="text"> <span class="moderator">Summary : </span>{{audioDetails?.summary}}</p>
           </div>
           <div class="tab-content-model translation">
             <button (click)="downloadSummaryAndSenti('summary')"><mat-icon>cloud_download</mat-icon> Download Summary</button>
@@ -117,8 +117,11 @@
         </ng-template>
   
         <div class="tab-content">
+          <!-- <div class="tab-content-text">
+            <pre class="text">{{audioDetails?.sentiment_analysis | formatText}}</pre>
+          </div> -->
           <div class="tab-content-text">
-            <pre class="text">{{audioDetails?.SentimentAnalysis}}</pre>
+            <div class="text" [innerHTML]="audioDetails?.sentiment_analysis | formatText"></div>
           </div>
           <div class="tab-content-model translation">
             <button (click)="downloadSummaryAndSenti('sentimental-analysis')"><mat-icon>cloud_download</mat-icon> Download Sentiment
