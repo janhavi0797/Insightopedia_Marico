@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
 import { environment } from 'src/environments/environment';
+import { CommonService } from '../service/common.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -11,46 +12,42 @@ import { environment } from 'src/environments/environment';
 export class DashboardComponent implements OnInit {
   audioFiles: any[] = [];
   imageBasePath: string = environment.imageBasePath;
-  primaryLang = [
-    {
-      "name": "English",
-      "code": "EN"
-    },
-    {
-      "name": "Marathi",
-      "code": "MR"
-    },
-    {
-      "name": "Hindi",
-      "code": "HI"
-    },
-    {
-      "name": "Gujrati",
-      "code": "GU"
-    },
-    {
-      "name": "Tamil",
-      "code": "TA"
-    },
-    {
-      "name": "Telugu",
-      "code": "TE"
-    },
-    {
-      "name": "Kannada",
-      "code": "KN"
-    },
-    {
-      "name": "Malayalam",
-      "code": "ML"
-    }
-  ];
-  secondaryLang = [...this.primaryLang]; 
+  primaryLang: any[] = [];
+  secondaryLang: any[] = [];
   audioDetails: any;
-  constructor(private toastr: ToastrService, private fb: FormBuilder) { }
+
+  userCode: any;
+  userRole: any;
+  audioTags: any[] = [];
+  constructor(private toastr: ToastrService, private fb: FormBuilder, private commonServ: CommonService) { }
 
   ngOnInit() {
+    this.userRole = localStorage.getItem('role') || '';
+    this.userCode = localStorage.getItem('uId') || '';
     this.initializeAudioForm();
+    this.getMaster();
+    this.getTags();
+  }
+
+  getMaster() {
+    this.commonServ.getAPI('users/masterData').subscribe((res: any) => {
+      this.primaryLang = res.data[0].languages;
+      this.secondaryLang = [...this.primaryLang];
+    }, (err: any) => {
+      this.toastr.error('Something went wrong');
+    });
+  }
+
+  getTags() {
+    let userCode = '';
+    userCode = this.userRole === "1" ? '' : this.userCode;
+    this.commonServ.getAPI('audio/all', userCode).subscribe(
+      (res: any) => {
+        this.audioTags = res.data.allUniqueTags;
+      },
+      (err: any) => {
+        this.toastr.error('Something went wrong');
+      });
   }
 
   initializeAudioForm() {
@@ -116,7 +113,8 @@ export class DashboardComponent implements OnInit {
       primaryLanguage: ['', Validators.required],
       secondaryLanguage: [[], Validators.required],
       numSpeakers: ['', [Validators.required, Validators.min(2), Validators.max(10)]],
-      date: ['', Validators.required]
+      date: ['', Validators.required],
+      tags: [[], Validators.required],
     });
 
     this.handleLanguageSelection(fileForm);
@@ -151,7 +149,42 @@ export class DashboardComponent implements OnInit {
   }
 
   submitForm() {
-    console.log(this.audioDetails.value);
+    const requestBody: any[] = [];
+    const formData = new FormData();
+  
+    for (let i = 0; i < this.audioFiles.length; i++) {
+      const audioDetail = this.bankDetailsArray.value[i];
+      const audioFile = this.audioFiles[i];
+  
+      const formattedAudio = {
+        audioName: audioFile?.data?.name || '',
+        noOfSpek: audioDetail.numSpeakers,
+        userId: this.userCode,
+        audioDate: this.formatDate(audioDetail.date),
+        primary_lang: audioDetail.primaryLanguage,
+        secondary_lang: audioDetail.secondaryLanguage || [],
+        tags: audioDetail.tags || []
+      };
+  
+      requestBody.push(formattedAudio);
+  
+      formData.append('files', audioFile.data, audioFile.data.name);
+    }
+
+    formData.append('requestBody', JSON.stringify(requestBody));
+  
+    //this.isLoading = true;
+    this.commonServ.postAPI('audio/upload', formData).subscribe(
+      (res: any) => {
+        //this.isLoading = false;
+        this.toastr.success('Audio uploaded successfully');
+      },
+      (err: any) => {
+        debugger
+        //this.isLoading = false;
+        this.toastr.error('Something went wrong');
+      }
+    );
   }
 
   isPlayingIndexMap: { expansion: number | null; audioFiles: number | null } = {
@@ -236,22 +269,26 @@ export class DashboardComponent implements OnInit {
   deleteFile(index: number): void {
     this.audioFiles.splice(index, 1);
     this.bankDetailsArray.removeAt(index);
-    // this.bankDetailsArray.markAsTouched();
-    // this.bankDetailsArray.markAsDirty();
     this.audioDetails.setControl('bankInput', this.fb.array([...this.bankDetailsArray.controls]));
     this.audioDetails.setErrors(null);
     (this.audioDetails.get('bankInput') as FormArray).controls.forEach((group) => {
       if (group instanceof FormGroup) {
         Object.keys(group.controls).forEach((key) => {
-          group.get(key)?.setErrors(null); 
-          group.get(key)?.markAsPristine(); 
+          group.get(key)?.setErrors(null);
+          group.get(key)?.markAsPristine();
           group.get(key)?.markAsUntouched();
         });
       }
     });
-}
+  }
 
   trackByIndex(index: number, _: any): number {
     return index;
+  }
+
+  formatDate(date: Date): string {
+    if (!date) return '';
+    const d = new Date(date);
+    return d.toISOString().split('T')[0]; 
   }
 }

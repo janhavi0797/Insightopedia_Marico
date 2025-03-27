@@ -43,7 +43,7 @@ export class CreateProjectComponent {
     debugger
     let userCode = '';
     userCode = this.userRole === "1" ? '' : this.userCode;
-    this.commonServ.getTagwiseAudio('audio/all', userCode).subscribe(
+    this.commonServ.getAPI('audio/all', userCode).subscribe(
       (res: any) => {
         debugger
         console.log('Tags Res', res );
