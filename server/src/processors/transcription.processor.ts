@@ -7,8 +7,6 @@ import {
   ITransalationAudioProcessor,
   ITranscriptionProcessor,
 } from 'src/utils/interfaces';
-// import { AudioService } from "../audio.service";
-import { test } from 'src/test';
 
 @Processor(BullQueues.TRANSCRIPTION)
 export class TranscriptionProcessor {

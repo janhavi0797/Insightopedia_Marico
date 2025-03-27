@@ -9,7 +9,6 @@ import {
   Get,
   Query,
   InternalServerErrorException,
-  NotFoundException,
   Res,
 } from '@nestjs/common';
 import { AudioService } from './audio.service';
@@ -94,6 +93,21 @@ export class AudioController {
   }
 
   @Get('generate-pdf')
+  @ApiQuery({
+    name: 'id',
+    required: true,
+    description: 'ID of the audio or project',
+  })
+  @ApiQuery({
+    name: 'type',
+    required: true,
+    description: 'Type of data to fetch (summary or sentiment_analysis)',
+  })
+  @ApiQuery({
+    name: 'key',
+    required: true,
+    description: 'Specifies whether the data belongs to a project or audio',
+  })
   @ApiOperation({ summary: 'To Generate the PDF' })
   async generateSummeryPDF(
     @Res() res: Response,

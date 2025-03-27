@@ -1,4 +1,4 @@
-import { InjectModel, Repository } from '@nestjs/azure-database';
+import { InjectModel } from '@nestjs/azure-database';
 import {
   Inject,
   Injectable,
