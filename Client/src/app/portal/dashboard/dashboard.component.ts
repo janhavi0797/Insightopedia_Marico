@@ -167,22 +167,23 @@ export class DashboardComponent implements OnInit {
       };
   
       requestBody.push(formattedAudio);
-  
       formData.append('files', audioFile.data, audioFile.data.name);
     }
-
-    formData.append('requestBody', JSON.stringify(requestBody));
+    formData.append('AudioDto', JSON.stringify(requestBody));
   
     //this.isLoading = true;
     this.commonServ.postAPI('audio/upload', formData).subscribe(
       (res: any) => {
         //this.isLoading = false;
         this.toastr.success('Audio uploaded successfully');
+        this.audioFiles = [];
+        this.bankDetailsArray.clear();
+        this.audioDetails.setControl('bankInput', this.fb.array([...this.bankDetailsArray.controls]));
       },
       (err: any) => {
         debugger
         //this.isLoading = false;
-        this.toastr.error('Something went wrong');
+        this.toastr.error(err.error.message);
       }
     );
   }
