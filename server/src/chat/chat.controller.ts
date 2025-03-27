@@ -10,6 +10,8 @@ import {
   HttpException,
   HttpStatus,
   Res,
+  Post,
+  Body,
 } from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { ApiBody,ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
