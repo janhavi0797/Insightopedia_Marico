@@ -1,130 +1,53 @@
-import {COMMA, ENTER} from '@angular/cdk/keycodes';
-import {Component, ElementRef, ViewChild, inject, OnInit} from '@angular/core';
-import { FormArray, FormBuilder, FormGroup, Validators, FormControl } from '@angular/forms';
+import { Component, OnInit } from '@angular/core';
+import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
 import { environment } from 'src/environments/environment';
-import { MatDatepicker } from '@angular/material/datepicker';
-import { MatDateFormats } from '@angular/material/core';
-import { MAT_DATE_FORMATS } from '@angular/material/core';
-import { DateAdapter } from '@angular/material/core';
-import { NativeDateAdapter } from '@angular/material/core';
-
-import {MatAutocompleteSelectedEvent, MatAutocompleteModule} from '@angular/material/autocomplete';
-import {MatChipInputEvent, MatChipsModule} from '@angular/material/chips';
-import {Observable} from 'rxjs';
-import {map, startWith} from 'rxjs/operators';
-import {MatIconModule} from '@angular/material/icon';
-import {NgFor, AsyncPipe} from '@angular/common';
-import {MatFormFieldModule} from '@angular/material/form-field';
-import {LiveAnnouncer} from '@angular/cdk/a11y';
 import { CommonService } from '../service/common.service';
 
 @Component({
   selector: 'app-dashboard',
   templateUrl: './dashboard.component.html',
-  styleUrls: ['./dashboard.component.scss'],
+  styleUrls: ['./dashboard.component.scss']
 })
 export class DashboardComponent implements OnInit {
-  isSaveDisabled: boolean = false;
-  date = new FormControl();
   audioFiles: any[] = [];
   imageBasePath: string = environment.imageBasePath;
-  languageList = [
-    {
-      "name": "English",
-      "code": "EN"
-    },
-    {
-      "name": "Marathi",
-      "code": "MR"
-    },
-    {
-      "name": "Hindi",
-      "code": "HI"
-    },
-    {
-      "name": "Gujrati",
-      "code": "GU"
-    },
-    {
-      "name": "Tamil",
-      "code": "TA"
-    },
-    {
-      "name": "Telugu",
-      "code": "TE"
-    },
-    {
-      "name": "Kannada",
-      "code": "KN"
-    },
-    {
-      "name": "Malayalam",
-      "code": "ML"
-    }
-  ];
-
-  // chosenYear: any;
-
-  // chosenYearHandler(normalizedYear: Date) {
-  //   this.chosenYear = normalizedYear.getFullYear();
-  // }
-
-  // chosenMonthHandler(normalizedMonth: Date, datepicker: any) {
-  //   const newDate = new Date(this.chosenYear, normalizedMonth.getMonth());
-  //   this.date.setValue(newDate);
-  //   datepicker.close();
-  // }
-
+  primaryLang: any[] = [];
+  secondaryLang: any[] = [];
   audioDetails: any;
-  constructor(private toastr: ToastrService, private fb: FormBuilder, private CommonService: CommonService) { }
 
-  separatorKeysCodes: number[] = [ENTER, COMMA];
-  tagInputControl = new FormControl('');
-
-  get items(): FormArray {
-    return this.audioDetails.get('items') as FormArray;
-  }
-
-  // getTagFormControl(i: number, controlName: string): FormControl {
-  //   return this.items.at(i).get(controlName) as FormControl;
-  // }
-
-  // getFormControl(index: number, controlName: string) {
-  //   return (this.bankDetailsArray.at(index) as FormGroup).get(controlName);
-  // }
-
-  getFormControl<T = any>(index: number, controlName: string): FormControl<T> {
-    return (this.bankDetailsArray.at(index) as FormGroup).get(controlName) as FormControl<T>;
-  }
-
-  addTag(event: any, i: number): void {
-    
-    const input = event.input;
-    const value = event.value?.trim();
-
-    if (value) {
-      const tagControl = this.getFormControl(i, 'tagName');
-      const tags = tagControl.value || [];
-      if (!tags.includes(value)) {
-        tagControl.setValue([...tags, value]);
-        tagControl.markAsTouched();
-      }
-    }
-
-    // Clear the input field
-    if (input) input.value = '';
-    this.tagInputControl.setValue('');
-  }
-
-  removeTag(i: number, tag: string): void {
-    const tagControl = this.getFormControl(i, 'tagName');
-    const tags: string[] = tagControl.value || [];
-    tagControl.setValue(tags.filter((t: string) => t !== tag));
-  }
+  userCode: any;
+  userRole: any;
+  audioTags: any[] = [];
+  constructor(private toastr: ToastrService, private fb: FormBuilder, private commonServ: CommonService) { }
 
   ngOnInit() {
+    this.userRole = localStorage.getItem('role') || '';
+    this.userCode = localStorage.getItem('uId') || '';
     this.initializeAudioForm();
+    this.getMaster();
+    this.getTags();
+  }
+
+  getMaster() {
+    this.commonServ.getAPI('users/masterData').subscribe((res: any) => {
+      this.primaryLang = res.data[0].languages;
+      this.secondaryLang = [...this.primaryLang];
+    }, (err: any) => {
+      this.toastr.error('Something went wrong');
+    });
+  }
+
+  getTags() {
+    let userCode = '';
+    userCode = this.userRole === "1" ? '' : this.userCode;
+    this.commonServ.getAPI('audio/all', userCode).subscribe(
+      (res: any) => {
+        this.audioTags = res.data.allUniqueTags;
+      },
+      (err: any) => {
+        this.toastr.error('Something went wrong');
+      });
   }
 
   initializeAudioForm() {
@@ -137,9 +60,9 @@ export class DashboardComponent implements OnInit {
     return this.audioDetails.get('bankInput') as FormArray;
   }
 
-  // getFormControl(index: number, controlName: string) {
-  //   return (this.bankDetailsArray.at(index) as FormGroup).get(controlName);
-  // }
+  getFormControl(index: number, controlName: string) {
+    return (this.bankDetailsArray.at(index) as FormGroup).get(controlName);
+  }
 
   onFileSelected(event: any): void {
     const files: FileList = event.target.files;
@@ -187,18 +110,82 @@ export class DashboardComponent implements OnInit {
 
   addFormFile(file: File) {
     const fileForm = this.fb.group({
-      tagName: ['', Validators.required],
       primaryLanguage: ['', Validators.required],
       secondaryLanguage: [[], Validators.required],
       numSpeakers: ['', [Validators.required, Validators.min(2), Validators.max(10)]],
-      date: ['', Validators.required]
+      date: ['', Validators.required],
+      tags: [[], Validators.required],
     });
+
+    this.handleLanguageSelection(fileForm);
 
     this.bankDetailsArray.push(fileForm);
   }
 
+  handleLanguageSelection(fileForm: FormGroup) {
+    fileForm.get('primaryLanguage')?.valueChanges.subscribe((selectedPrimary: string) => {
+      const secondaryControl = fileForm.get('secondaryLanguage');
+      // Reset secondary selection if primary is changed
+      secondaryControl?.setValue([]);
+    });
+
+    fileForm.get('secondaryLanguage')?.valueChanges.subscribe((selectedSecondary: string[]) => {
+      const primaryControl = fileForm.get('primaryLanguage');
+      // Reset primary selection if secondary overlaps
+      if (selectedSecondary.includes(primaryControl?.value)) {
+        primaryControl?.setValue('');
+      }
+    });
+  }
+
+  getFilteredPrimaryLanguages(i: number) {
+    const selectedSecondary = this.bankDetailsArray.at(i).get('secondaryLanguage')?.value || [];
+    return this.primaryLang.filter(lang => !selectedSecondary.includes(lang.name));
+  }
+
+  getFilteredSecondaryLanguages(i: number) {
+    const selectedPrimary = this.bankDetailsArray.at(i).get('primaryLanguage')?.value;
+    return this.secondaryLang.filter(lang => lang.name !== selectedPrimary);
+  }
+
   submitForm() {
-    console.log(this.audioDetails.value);
+    const requestBody: any[] = [];
+    const formData = new FormData();
+  
+    for (let i = 0; i < this.audioFiles.length; i++) {
+      const audioDetail = this.bankDetailsArray.value[i];
+      const audioFile = this.audioFiles[i];
+  
+      const formattedAudio = {
+        audioName: audioFile?.data?.name || '',
+        noOfSpek: audioDetail.numSpeakers,
+        userId: this.userCode,
+        audioDate: this.formatDate(audioDetail.date),
+        primary_lang: audioDetail.primaryLanguage,
+        secondary_lang: audioDetail.secondaryLanguage || [],
+        tags: audioDetail.tags || []
+      };
+  
+      requestBody.push(formattedAudio);
+      formData.append('files', audioFile.data, audioFile.data.name);
+    }
+    formData.append('AudioDto', JSON.stringify(requestBody));
+  
+    //this.isLoading = true;
+    this.commonServ.postAPI('audio/upload', formData).subscribe(
+      (res: any) => {
+        //this.isLoading = false;
+        this.toastr.success('Audio uploaded successfully');
+        this.audioFiles = [];
+        this.bankDetailsArray.clear();
+        this.audioDetails.setControl('bankInput', this.fb.array([...this.bankDetailsArray.controls]));
+      },
+      (err: any) => {
+        debugger
+        //this.isLoading = false;
+        this.toastr.error(err.error.message);
+      }
+    );
   }
 
   isPlayingIndexMap: { expansion: number | null; audioFiles: number | null } = {
@@ -281,127 +268,28 @@ export class DashboardComponent implements OnInit {
   }
 
   deleteFile(index: number): void {
-    
-    if (index < 0 || index >= this.audioFiles.length || index >= this.bankDetailsArray.length) {
-      console.warn('Invalid index:', index);
-      return;
-    }
-  
-  
-    // Remove the audio file
     this.audioFiles.splice(index, 1);
-  
-    // Remove the corresponding form control
     this.bankDetailsArray.removeAt(index);
-  
+    this.audioDetails.setControl('bankInput', this.fb.array([...this.bankDetailsArray.controls]));
+    this.audioDetails.setErrors(null);
+    (this.audioDetails.get('bankInput') as FormArray).controls.forEach((group) => {
+      if (group instanceof FormGroup) {
+        Object.keys(group.controls).forEach((key) => {
+          group.get(key)?.setErrors(null);
+          group.get(key)?.markAsPristine();
+          group.get(key)?.markAsUntouched();
+        });
+      }
+    });
   }
-  
+
   trackByIndex(index: number, _: any): number {
     return index;
   }
 
-  // saveAudioFile() {
-  //   
-  //   console.log('Audio Files', this.audioFiles);
-  //   console.log('Audio Details Array', this.bankDetailsArray.value);
-    
-  //   const userId = localStorage.getItem('uId');
-  // const requestBody = [];
-
-  // for (let i = 0; i < this.audioFiles.length; i++) {
-  //   const audioDetail = this.bankDetailsArray.value[i];
-  //   const audioFile = this.audioFiles[i];
-
-  //   const formattedAudio = {
-  //     audioName: audioFile?.data?.name || '',
-  //     noOfSpek: audioDetail.numSpeakers,
-  //     userId: userId,
-  //     audioDate: audioDetail.date || '',  // If needed, format date to yyyy-mm-dd
-  //     primary_lang: audioDetail.primaryLanguage,
-  //     secondary_lang: audioDetail.secondaryLanguage || [],
-  //     tags: [audioDetail.tagName]  // Convert tagName (string) to array
-  //   };
-
-  //   requestBody.push(formattedAudio);
-  // }
-
-  // console.log('Formatted Request Body:', requestBody);
-
-  //   const formData = new FormData();
-
-  //   const renamedFiles: string[] = [];
-  //     for (let j = 0; j < this.audioFiles.length; j++) {
-  //       const originalExtension = this.audioFiles[j].data.name.substring(this.audioFiles[j].data.name.lastIndexOf('.'));
-  //       const count = j + 1;
-  //       const renamedFile = new File([this.audioFiles[j].data], { type: this.audioFiles[j].data.type });
-  //       renamedFiles.push(renamedFile.name)
-  //       formData.append('files', renamedFile);
-  //     }
-  //     temp.AudioName = renamedFiles;
-  //     TargetGrp.push(temp)
-  //     tgArr.push(this.targetGrps.targetGrpArr[i].name);
-
-  //     this.isLoading = true;
-  //   this.audioServ.postAPI('audio/upload', formData).subscribe((res: any) => {
-  //     this.isLoading = false;
-  //     this.ClearProject();
-  //     this.ClearMedia();
-  //   }, (err: any) => {
-  //     this.isLoading = false;
-  //     this.toastr.error('Somthing Went Wrong');
-  //   })
-  // }
-
   formatDate(date: Date): string {
     if (!date) return '';
     const d = new Date(date);
-    return d.toISOString().split('T')[0]; // Returns "yyyy-mm-dd"
+    return d.toISOString().split('T')[0]; 
   }
-
-  saveAudioFile() {
-    //
-    const userId = localStorage.getItem('uId');
-    const requestBody: any[] = [];
-    const formData = new FormData();
-  
-    for (let i = 0; i < this.audioFiles.length; i++) {
-      const audioDetail = this.bankDetailsArray.value[i];
-      const audioFile = this.audioFiles[i];
-  
-      const formattedAudio = {
-        audioName: audioFile?.data?.name || '',
-        noOfSpek: audioDetail.numSpeakers,
-        userId: userId,
-        audioDate: this.formatDate(audioDetail.date), // Format to yyyy-mm-dd
-        primary_lang: audioDetail.primaryLanguage,
-        secondary_lang: audioDetail.secondaryLanguage || [],
-        tags: audioDetail.tagName || []
-      };
-  
-      requestBody.push(formattedAudio);
-  
-      // Append audio file to FormData
-      formData.append('files', audioFile.data, audioFile.data.name);
-    }
-  
-    // Append JSON string of metadata
-    formData.append('requestBody', JSON.stringify(requestBody));
-    //this.isLoading = true;
-    this.CommonService.postAPI('audio/upload', formData).subscribe(
-      (res: any) => {
-        
-        //this.isLoading = false;
-        //this.ClearProject();
-        //this.ClearMedia();
-        this.toastr.success('Audio uploaded successfully');
-      },
-      (err: any) => {
-        //this.isLoading = false;
-        this.toastr.error('Something went wrong');
-      }
-    );
-  }
-  
-
-
 }
