@@ -170,7 +170,7 @@ export class ProjectDetailsComponent {
     if (this.question !== "") {
       const payload = {
         question: this.question,
-        vectorId: this.audioDetails.vectorId
+        vectorId: this.audioDetails?.vectorId ?? ['']
       }
       this.isLoading = true;
       this.audioServ.sendQueryAI('chat/chatVectorId', payload).subscribe((res: any) => {
@@ -315,8 +315,8 @@ export class ProjectDetailsComponent {
 
     const date = `${new Date().getFullYear()}-${month}-${day}`;
     const param = {
-      "TGId": this.tgId,
-      "date": date,
+      "id": this.tgId,
+      "key": date,
       "chat": this.chatHistory
     };
     this.audioServ.postAPI('transcription/chat', param, true).subscribe((res: Blob) => {
@@ -366,6 +366,8 @@ export class ProjectDetailsComponent {
             .map(audio => audio.summary)
             .filter(Boolean)
             .join('. '),
+      vectorId: audioDataArray.flatMap(audio => audio.vectorId || []),
+      
     };
 }
 
@@ -436,6 +438,7 @@ export interface AudioData {
   summary?: string;
   tags?: string[];
   userId?: string;
+  vectorId?: string[];
 }
 
 export interface TranscriptionData {
