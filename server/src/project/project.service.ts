@@ -102,8 +102,6 @@ export class ProjectService {
             audioResult?.resources[0]?.audioName,
           );
 
-          console.log('sasToken:', sasToken);
-
           const audioData: Partial<ITranscriptionProcessor> = {
             audioId: audioResult.resources[0]?.audioId,
             primaryLang: audioResult.resources[0]?.primaryLang,
@@ -121,7 +119,6 @@ export class ProjectService {
             `Transcription job for ${audio.audioId} enqueued successfully`,
           );
 
-          console.log('audioEntity:', audioResult?.resources, audio.audioId);
           // If this is the last audio, mark it in Redis
           if (index === project.audioIds.length - 1) {
             await this.redisService.set(`lastAudio`, audio.audioId);
@@ -139,7 +136,6 @@ export class ProjectService {
         data: result?.resource,
       };
     } catch (err) {
-      console.log('err:', err);
       throw new InternalServerErrorException('Failed to create project');
     }
   }

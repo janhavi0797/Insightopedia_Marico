@@ -66,10 +66,21 @@ export class AudioService {
   }
 
   postAPIBinaryData(url: string, body: any, options?: { headers?: HttpHeaders }): Observable<Blob> {
-    //debugger
     return this.http.post<Blob>(this.baseUrl + url, body, {
       ...options,
       responseType: 'blob' as 'json', // Explicitly set 'blob' as the responseType
     });
+  }
+
+  getAllAudioList(url: string, userCode?:string): Observable<any> {
+    
+    if(userCode) {
+      let params = new HttpParams().set('userId', userCode)
+      return this.http.get(this.baseUrl + url,{
+        params: params
+      });
+    } else {
+      return this.http.get(this.baseUrl + url);
+    }
   }
 }

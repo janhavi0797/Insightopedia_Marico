@@ -19,7 +19,6 @@ import { EmbeddingProcessor } from './processors/embedding.processor';
 import { createClient } from 'redis';
 import { ProjectSummaryProcessor } from './processors/projectSummary.processor';
 const C = new ConfigService();
-console.log(C.get<string>('COSMOS_DBNAME'));
 
 @Global()
 @Module({

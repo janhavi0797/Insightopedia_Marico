@@ -63,7 +63,6 @@ export class CreateProjectComponent {
     userCode = this.userRole === "1" ? '' : this.userCode;
     this.commonServ.getTagwiseAudio('audio/all', userCode).subscribe(
       (res: any) => {
-        //console.log('Tags Res', res );
         this.audioTags = res.data.allUniqueTags;
         this.audioNames = res.data.audioData;
 
@@ -80,13 +79,12 @@ export class CreateProjectComponent {
       },
       (err: any) => {
         //this.toastr.error('Something Went Wrong!');
-        //console.log('Something Went Wrong!');
       }
     );
   }
   
   filterByTag() {
-    //debugger
+    //
     if (this.selectedTag && !this.selectedTags.includes(this.selectedTag)) {
       this.selectedTags.push(this.selectedTag);
     }
@@ -120,7 +118,7 @@ export class CreateProjectComponent {
   }
 
   // getFilteredAudioFiles(): AudioFile[] {
-  //   //debugger
+  //   //
   //   if (this.filterOption === '1' && this.selectedTags.length) {
   //     return this.audioFiles.filter(file =>
   //       file.tags?.some(tag => this.selectedTags.includes(tag))

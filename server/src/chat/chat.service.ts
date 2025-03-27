@@ -90,7 +90,6 @@ export class ChatService {
 
   async getTextsByVectorIds(vectorIds: string[]): Promise<Document[]> {
     try {
-      console.log('getTextsByVectorIds', vectorIds);
       this.logger.log(`Fetching documents with vector IDs: ${vectorIds}`);
       const documents: Document[] = [];
 
@@ -248,11 +247,9 @@ export class ChatService {
 
         const project1Documents =
           await this.getTextsByVectorIds(vectorIdsProject1);
-        console.log(project1Documents);
 
         const project2Documents =
           await this.getTextsByVectorIds(vectorIdsProject2);
-        console.log(project2Documents);
 
         const targetCompareProject1 =
           await this.generateAnswerFromDocumentsWithChunks(
@@ -346,7 +343,6 @@ export class ChatService {
       const transcriptionIds = projectDocument.audioIds
         .map((id) => `'${id}'`)
         .join(', ');
-      console.log(transcriptionIds);
 
       // TODO add transcription data to the project entity
       const transcriptionData = projectDocument.transcription;
