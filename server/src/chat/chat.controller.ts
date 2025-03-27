@@ -1,7 +1,5 @@
 import {
-  Body,
   Controller,
-  Post,
   BadRequestException,
   InternalServerErrorException,
   Logger,
@@ -11,9 +9,11 @@ import {
   ValidationPipe,
   HttpException,
   HttpStatus,
+  Res,
 } from '@nestjs/common';
 import { ChatService } from './chat.service';
-import { ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { Response } from 'express';
 
 @ApiTags('Chat Managment')
 @Controller('chat')
@@ -105,6 +105,31 @@ export class ChatController {
         'An error occurred while comparing projects.',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
+    }
+  }
+
+  @Get('download')
+  @ApiOperation({ summary: 'To Download the user chat' })
+  @ApiQuery({
+    name: 'id',
+    required: true,
+    description: 'ID of the audio or project',
+  })
+  @ApiQuery({
+    name: 'key',
+    required: true,
+    description: 'Specifies whether the data belongs to a project or audio',
+  })
+  async downloadChat(
+    @Res() res: Response,
+    @Query('id') id: string,
+    @Query('chat') chat: string,
+    @Query('key') key: string,
+  ) {
+    try {
+      return await this.chatservice.downloadChat(res, id, chat, key);
+    } catch (err) {
+      Logger.error(err);
     }
   }
 }

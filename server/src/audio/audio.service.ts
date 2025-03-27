@@ -13,7 +13,6 @@ import * as fs from 'fs';
 import { InjectModel } from '@nestjs/azure-database';
 import { Container } from '@azure/cosmos';
 import { ConfigService } from '@nestjs/config';
-import { Audio } from './entity/audio.enitity';
 import { v4 as uuidv4 } from 'uuid';
 import { AudioGetAllDTO } from './dto/get-audio.dto';
 import {
@@ -22,7 +21,7 @@ import {
   generateBlobSASQueryParameters,
   StorageSharedKeyCredential,
 } from '@azure/storage-blob';
-import { ProjectEntity, User } from 'src/utils/containers';
+import { AudioEntity, ProjectEntity, User } from 'src/utils/containers';
 import * as PDFDocument from 'pdfkit';
 import { Response } from 'express';
 
@@ -36,7 +35,7 @@ export class AudioService {
   private containerClient: any;
 
   constructor(
-    @InjectModel(Audio) private readonly audioContainer: Container,
+    @InjectModel(AudioEntity) private readonly audioContainer: Container,
     @InjectModel(ProjectEntity) private readonly projectContainer: Container,
     @InjectModel(User) private readonly userContainer: Container,
     private readonly config: ConfigService,
@@ -102,6 +101,7 @@ export class AudioService {
         audioId: uuidv4(),
         audioUrl: matchingFile.sasUri,
         audioName: audioObj.audioName,
+        audioDate: audioObj.audioDate,
         userId: audioObj.userId,
         noOfSpek: audioObj.noOfSpek,
         primaryLang: audioObj.primary_lang,
@@ -256,7 +256,7 @@ export class AudioService {
           );
 
           //project Id and name
-          let projectdata = associatedProjects
+          const projectdata = associatedProjects
             .filter((project) => project.audioIds.includes(item.audioId))
             .map((project) => {
               return {
@@ -355,6 +355,10 @@ export class AudioService {
         .query(userQuerySpec)
         .fetchAll();
 
+      if (!records.length) {
+        throw new NotFoundException('No Audio Found.');
+      }
+
       if (type === 'summary' || type === 'sentiment_analysis') {
         data[type] = records[0][type];
       }
@@ -368,6 +372,10 @@ export class AudioService {
         .query(projectQuerySpec)
         .fetchAll();
 
+      if (!records.length) {
+        throw new NotFoundException('No Project Found.');
+      }
+
       if (type === 'summary' || type === 'sentiment_analysis') {
         data[type] = records[0][type];
       }
@@ -377,7 +385,7 @@ export class AudioService {
   }
 
   async generatePDF(res: Response, data: any) {
-    const { id, type, key, summary, sentiment_analysis } = data;
+    const { id, key, summary, sentiment_analysis } = data;
 
     const doc = new PDFDocument({ margin: 50, size: 'A4' });
 

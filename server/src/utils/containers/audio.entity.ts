@@ -7,6 +7,7 @@ export class AudioEntity {
   userId: string;
   tags: string[];
   audioUrl: string;
+  audioDate: string;
   primaryLang: string;
   secondaryLang: string[];
   noOfSpek: number;
