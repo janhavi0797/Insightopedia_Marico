@@ -9,13 +9,17 @@ import {
   Get,
   Query,
   InternalServerErrorException,
-  NotFoundException,
   Res,
 } from '@nestjs/common';
 import { AudioService } from './audio.service';
-import { ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express';
-import { ProjectsDto } from './dto/project.dto';
 import { Response } from 'express';
 
 @ApiTags('Audio Management')
@@ -25,6 +29,7 @@ export class AudioController {
 
   @Get('all')
   @ApiOperation({ summary: 'Get All audio and unique tag' })
+  @ApiQuery({ name: 'userId', required: false })
   async getAudio(@Query('userId') userId?: string) {
     return this.audioService.getAudio(userId);
   }
@@ -87,23 +92,22 @@ export class AudioController {
     }
   }
 
-  @Get('/projects')
-  @ApiOperation({ summary: 'Get All Projects of user.' })
-  async getAllProjects(@Query() projectsDto: ProjectsDto) {
-    const { isAllFile, userId } = projectsDto;
-    try {
-      return await this.audioService.getAllProjects(+isAllFile, userId);
-    } catch (err) {
-      if (err instanceof BadRequestException) {
-        throw new BadRequestException(`${err.message}`);
-      } else if (err instanceof NotFoundException) {
-        throw new NotFoundException(`${err.message}`);
-      }
-      throw new InternalServerErrorException(`${err.message}`);
-    }
-  }
-
   @Get('generate-pdf')
+  @ApiQuery({
+    name: 'id',
+    required: true,
+    description: 'ID of the audio or project',
+  })
+  @ApiQuery({
+    name: 'type',
+    required: true,
+    description: 'Type of data to fetch (summary or sentiment_analysis)',
+  })
+  @ApiQuery({
+    name: 'key',
+    required: true,
+    description: 'Specifies whether the data belongs to a project or audio',
+  })
   @ApiOperation({ summary: 'To Generate the PDF' })
   async generateSummeryPDF(
     @Res() res: Response,

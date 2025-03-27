@@ -1,5 +1,5 @@
-import { Job, Queue } from 'bull';
-import { InjectQueue, Process, Processor } from '@nestjs/bull';
+import { Job } from 'bull';
+import { Process, Processor } from '@nestjs/bull';
 import { InternalServerErrorException, Logger } from '@nestjs/common';
 import { AudioUtils } from 'src/utils';
 import { BullQueues, QueueProcess } from 'src/utils/enums';
@@ -43,12 +43,7 @@ export class EmbeddingProcessor {
   }
 
   @Process('send-email')
-  async sendEmail(
-    change: any,
-    recipientEmail: string,
-    userName: string,
-    projectDetails: any,
-  ) {
+  async sendEmail(recipientEmail: string, userName: string) {
     const baseUrl = process.env.APP_BASE_URL || 'http://localhost:4200';
 
     const transporter = nodemailer.createTransport({

@@ -1,11 +1,12 @@
-import { InjectModel, Repository } from '@nestjs/azure-database';
+import { InjectModel } from '@nestjs/azure-database';
 import {
   Inject,
   Injectable,
   InternalServerErrorException,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
-import { ProjectEntity, AudioEntity } from 'src/utils/containers';
+import { ProjectEntity, AudioEntity, User } from 'src/utils/containers';
 import { Container } from '@azure/cosmos';
 import { CreateProjectDto } from './dtos';
 import { v4 as uuid } from 'uuid';
@@ -37,6 +38,7 @@ export class ProjectService {
     @InjectQueue(BullQueues.TRANSCRIPTION)
     private readonly transcriptionQueue: Queue,
     @Inject('RedisService') private readonly redisService,
+    @InjectModel(User) private readonly userContainer: Container,
   ) {
     this.blobServiceClient = BlobServiceClient.fromConnectionString(
       this.config.get<string>('AZURE_STORAGE_CONNECTION_STRING'),
@@ -175,6 +177,87 @@ export class ProjectService {
     const blobUrl = `${this.containerClient.url}/${fileName}?${sasToken}`;
     Logger.log(`Generated SAS URL for blob: ${blobUrl}`);
     return Promise.resolve(blobUrl);
+  }
+
+  async getAllProjects(isAllFile: number, userId: string) {
+    const userQuerySpec = {
+      query: `SELECT * FROM c WHERE c.userid = @userId`,
+      parameters: [{ name: '@userId', value: userId }],
+    };
+
+    const { resources: userRecords } = await this.userContainer.items
+      .query(userQuerySpec)
+      .fetchAll();
+
+    if (!userRecords || userRecords.length === 0) {
+      throw new NotFoundException(`Invalid User.`);
+    }
+
+    const primaryUser = userRecords[0];
+    // Build list of userIds to query projects
+    let relevantUserIds = [userId]; // Always include self
+
+    if (isAllFile === 1 && Array.isArray(primaryUser.mapUser)) {
+      relevantUserIds = [
+        ...new Set([...relevantUserIds, ...primaryUser.mapUser]),
+      ];
+    }
+
+    //Prepare query specs with ORDER BY
+    const usersQuerySpec = {
+      query: `
+          SELECT * FROM c 
+          WHERE ARRAY_CONTAINS(@userIds, c.userid)
+          ORDER BY c._ts DESC
+        `,
+      parameters: [{ name: '@userIds', value: relevantUserIds }],
+    };
+
+    const projectsQuerySpec = {
+      query: `
+          SELECT * FROM c 
+          WHERE ARRAY_CONTAINS(@userIds, c.userId)
+          ORDER BY c._ts DESC
+        `,
+      parameters: [{ name: '@userIds', value: relevantUserIds }],
+    };
+
+    //Fetch users and projects in parallel
+    const [usersQueryResult, projectsQueryResult] = await Promise.all([
+      this.userContainer.items.query(usersQuerySpec).fetchAll(),
+      this.projectContainer.items.query(projectsQuerySpec).fetchAll(),
+    ]);
+
+    const { resources: relevantUsers } = usersQueryResult;
+    const { resources: relevantProjects } = projectsQueryResult;
+
+    //Create map of userId to userName for quick lookups
+    const userIdToNameMap = new Map(
+      relevantUsers.map((user) => [user.userid, user.userName]),
+    );
+
+    //adjust the response
+    const projectSummaries = relevantProjects.map((project) => {
+      const userName = userIdToNameMap.get(project.userId);
+      if (!userName) {
+        Logger.warn(`No matching user found for userId`);
+        return null;
+      }
+
+      return {
+        userId: project.userId,
+        userName,
+        projectName: project.projectName,
+        projectId: project.projectId,
+        status: project.isSummaryAndSentimentDone ? 1 : 0,
+      };
+    });
+
+    return {
+      status: 200,
+      count: projectSummaries.length,
+      data: projectSummaries,
+    };
   }
 
   // Get Project Details with projectId

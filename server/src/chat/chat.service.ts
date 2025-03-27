@@ -4,16 +4,19 @@ import {
   Injectable,
   Logger,
   InternalServerErrorException,
+  NotFoundException,
 } from '@nestjs/common';
 import { AzureOpenAI } from 'openai';
-import { AudioUtils } from 'src/utils/audio.utils';
 import { InjectModel } from '@nestjs/azure-database';
-import { Container, Item } from '@azure/cosmos';
+import { Container } from '@azure/cosmos';
 import {
   PROJECT_COMPARE_STATIC_INSTRUCTION,
   STATIC_INSTRUCTION,
 } from 'src/utils';
-import { ProjectEntity } from 'src/utils/containers';
+import { AudioEntity, ProjectEntity } from 'src/utils/containers';
+import { Response } from 'express';
+import * as PDFDocument from 'pdfkit';
+import { ChatDto } from './dto/chat.dto';
 
 export interface Document {
   id: string; // The text content of the document
@@ -29,6 +32,7 @@ export class ChatService {
 
   constructor(
     @InjectModel(ProjectEntity) private readonly projectContainer: Container,
+    @InjectModel(AudioEntity) private readonly audioContainer: Container,
     private readonly config: ConfigService,
   ) {
     try {
@@ -399,5 +403,157 @@ export class ChatService {
     }
 
     return chunks;
+  }
+
+  async downloadChat(res: Response, chatDto: ChatDto) {
+    const id = chatDto.id;
+    const chat = chatDto.chat;
+    const key = chatDto.key;
+
+    const doc = new PDFDocument({ margin: 50, size: 'A4' });
+
+    // Set PDF Headers
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=chat_${id}.pdf`);
+
+    doc.pipe(res);
+
+    // PDF Heading
+    doc
+      .fillColor('black') // Set text color to black
+      .fontSize(22)
+      .font('Helvetica-Bold')
+      .text(`Report for: ${key.charAt(0).toUpperCase() + key.slice(1)}`, {
+        align: 'center',
+      });
+    doc.moveDown(2);
+
+    let rows: any;
+
+    if (key == 'audio') {
+      // Audio Information Section
+      doc
+        .fillColor('#333333')
+        .fontSize(16)
+        .font('Helvetica-Bold')
+        .text('Audio Information : ', { underline: true });
+      doc.moveDown(0.5);
+
+      //query to get audio details
+      const userQuerySpec = {
+        query: `SELECT * FROM c WHERE c.audioId = @audioId`,
+        parameters: [{ name: '@audioId', value: id }],
+      };
+
+      const { resources: records } = await this.audioContainer.items
+        .query(userQuerySpec)
+        .fetchAll();
+
+      if (!records.length) {
+        throw new NotFoundException('No Audio Found.');
+      }
+
+      const record = records[0];
+
+      rows = [
+        [`Audio Name: `, `${record.audioName}`],
+        [`No of Speakers: `, `${record.noOfSpek}`],
+        [`Primary Language: `, `${record.primaryLang}`],
+        [`Secondary Language: `, `${record.secondaryLang.join(', ')}`],
+        [`Tags: `, `${record.tags.join(', ')}`],
+      ];
+    } else {
+      // Project Information Section
+      doc
+        .fillColor('#333333')
+        .fontSize(16)
+        .font('Helvetica-Bold')
+        .text('Project Information : ', { underline: true });
+      doc.moveDown(0.5);
+
+      //query to get project details
+      const projectQuerySpec = {
+        query: `SELECT * FROM c WHERE c.projectId = @projectId`,
+        parameters: [{ name: '@projectId', value: id }],
+      };
+
+      const { resources: records } = await this.projectContainer.items
+        .query(projectQuerySpec)
+        .fetchAll();
+
+      if (!records.length) {
+        throw new NotFoundException('No Project Found.');
+      }
+
+      const record = records[0];
+      const mappedAudioIds = record.audioIds;
+
+      // Query to get audionames
+      const audioQuerySpec = {
+        query: `
+      SELECT c.audioName, c.tags FROM c 
+      WHERE ARRAY_CONTAINS(@audioId, c.audioId)
+    `,
+        parameters: [{ name: '@audioId', value: mappedAudioIds }],
+      };
+
+      const { resources: projectAudios } = await this.audioContainer.items
+        .query(audioQuerySpec)
+        .fetchAll();
+
+      const audioNames = projectAudios.map((audioObj) => audioObj.audioName);
+      const allTags = projectAudios.flatMap((audioObj) => audioObj.tags);
+      const uniqueTags = [...new Set(allTags)];
+
+      rows = [
+        [`Project: `, `${record.projectName}`],
+        [`Audios: `, `${audioNames.join(', ')}`],
+        [`Tags: `, `${uniqueTags.join(', ')}`],
+      ];
+    }
+
+    rows.forEach(([title, content]) => {
+      doc
+        .fontSize(12)
+        .font('Helvetica-Bold')
+        .fillColor('#4B9CD3')
+        .text(title, { continued: true });
+      doc.font('Helvetica').fillColor('black').text(` ${content}`);
+      doc.moveDown(0.3);
+    });
+
+    doc.moveDown(1);
+
+    // Chat Section with Subtle Boxed Style
+    if (chat && chat.length > 0) {
+      doc.rect(50, doc.y, doc.page.width - 100, 25).fill('#F1C40F');
+      doc.moveDown(0.5);
+      doc
+        .fillColor('black')
+        .fontSize(16)
+        .font('Helvetica-Bold')
+        .text('Chat Transcript', { align: 'center' });
+      doc.moveDown(2);
+
+      chat.forEach((message) => {
+        doc
+          .fontSize(12)
+          .font('Helvetica-Bold')
+          .fillColor('#4B9CD3')
+          .text(`${message.from}:`, { continued: true });
+        doc.font('Helvetica').fillColor('black').text(` ${message.message}`);
+        doc.moveDown(0.3);
+      });
+
+      doc.moveDown(1);
+    }
+
+    // Finalize the PDF
+    doc.end();
+
+    return {
+      status: 200,
+      message: 'Success',
+    };
   }
 }

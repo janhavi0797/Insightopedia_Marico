@@ -1,7 +1,5 @@
 import {
-  Body,
   Controller,
-  Post,
   BadRequestException,
   InternalServerErrorException,
   Logger,
@@ -11,9 +9,14 @@ import {
   ValidationPipe,
   HttpException,
   HttpStatus,
+  Res,
+  Post,
+  Body,
 } from '@nestjs/common';
 import { ChatService } from './chat.service';
-import { ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Response } from 'express';
+import { ChatDto } from './dto/chat.dto';
 
 @ApiTags('Chat Managment')
 @Controller('chat')
@@ -22,12 +25,19 @@ export class ChatController {
 
   constructor(private readonly chatservice: ChatService) {}
 
-  @Get('chatVectorId')
-  @ApiQuery({ name: 'question', type: String, required: true })
-  @ApiQuery({ name: 'vectorId', type: [String], required: true, isArray: true })
+  @Post('chatVectorId')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        question: { type: 'string' },
+        vectorId: { type: 'array', items: { type: 'string' } },
+      },
+    },
+  })
   async askQuestionWithVectorIds(
-    @Query('question') question: string,
-    @Query('vectorId') vectorIds: string[],
+    @Body('question') question: string,
+    @Body('vectorId') vectorIds: string[],
   ): Promise<{ question: string; answer: string }> {
     console.log(question);
     console.log(vectorIds);
@@ -105,6 +115,16 @@ export class ChatController {
         'An error occurred while comparing projects.',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
+    }
+  }
+
+  @Post('download')
+  @ApiOperation({ summary: 'To Download the user chat' })
+  async downloadChat(@Res() res: Response, @Body() chatDto: ChatDto) {
+    try {
+      return await this.chatservice.downloadChat(res, chatDto);
+    } catch (err) {
+      Logger.error(err);
     }
   }
 }

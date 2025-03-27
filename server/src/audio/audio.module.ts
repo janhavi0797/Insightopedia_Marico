@@ -3,8 +3,7 @@ import { AudioService } from './audio.service';
 import { AudioController } from './audio.controller';
 import { AzureCosmosDbModule } from '@nestjs/azure-database';
 import { ConfigModule } from '@nestjs/config';
-import { Audio } from './entity/audio.enitity';
-import { ProjectEntity, User } from 'src/utils/containers';
+import { AudioEntity, ProjectEntity, User } from 'src/utils/containers';
 
 @Module({
   imports: [
@@ -15,7 +14,7 @@ import { ProjectEntity, User } from 'src/utils/containers';
       },
       {
         collection: 'Audio',
-        dto: Audio,
+        dto: AudioEntity,
       },
       {
         collection: 'Projects',

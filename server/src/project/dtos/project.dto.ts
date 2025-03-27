@@ -1,16 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 
 class ProjectsDto {
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
-  isAllFile: string;
-
-  @ApiProperty()
+  @ApiProperty({ enum: ['0', '1'] })
   @IsString()
   @IsOptional()
-  projectName?: string;
+  isAllFile: string;
 
   @ApiProperty()
   @IsString()
