@@ -10,4 +10,5 @@ export class ProjectEntity {
   summary: string;
   sentiment_analysis: string;
   id: string;
+  vectorIds: string[];
 }
