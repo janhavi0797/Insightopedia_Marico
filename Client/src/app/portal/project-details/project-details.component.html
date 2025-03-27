@@ -23,19 +23,42 @@
           </label>
         </ng-template>
         <div class="tab-content">
-          <div class="tab-content-text">
+          <!-- <div class="tab-content-text">
+            <p class="text audio-title" *ngIf="audioData.audioTitle">
+              <strong>Audio Name: {{ audioData?.audioTitle }}</strong>
+            </p>
             <p class="text" *ngFor="let audioData of audioDetails?.audiodata">
               <span class="moderator" [ngClass]="{ 'main': audioData?.speaker === 'Moderator' }">Speaker {{audioData?.speaker}} ({{audioData?.timestamp}}): </span>
               {{audioData?.transcription}}
             </p>
+          </div> -->
+          <div class="tab-content-text">
+            <ng-container *ngFor="let audioData of audioDetails?.audiodata; let i = index">
+              
+              <!-- Show Audio Title only if it's available -->
+              <p class="audio-title" *ngIf="audioData.audioTitle">
+                <strong>Audio Name :- {{ audioData.audioTitle }}</strong>
+              </p>
+          
+              <!-- Speaker details -->
+              <p class="text">
+                <span class="moderator" [ngClass]="{ 'main': audioData?.speaker === 'Moderator' }">
+                  Speaker {{ audioData?.speaker }} ({{ audioData?.timestamp }}):
+                </span>
+                {{ audioData?.transcription }}
+              </p>
+              
+            </ng-container>
           </div>
+          
+
           <div class="tab-content-model">
             <div class="model-detail">
               <h5>Audio 1</h5>
               <p>Target Group 1</p>
               <p>Nykka, Nivea Vs Parachute Safolla</p>
             </div>
-            <div class="model-audio">
+            <div class="model-audio" *ngIf="audioDetails?.audioUrl">
               <div class="controls">
                 <button (click)="seekBackward()" matTooltip="Rewind to 10 sec"><mat-icon>fast_rewind</mat-icon></button>
                     <button (click)="togglePlayPause()">
@@ -70,12 +93,27 @@
         </ng-template>
         <div class="tab-content">
           <div class="tab-content-text">
-            <p class="text" *ngFor="let audioData of audioDetails?.audiodata">
-              <span class="moderator" [ngClass]="{ 'main': audioData?.speaker === 'Moderator' }">Speaker {{audioData?.speaker}} ({{audioData?.timestamp}}): </span>
-              <span *ngIf="!isEdit">{{audioData?.translation}}</span>
-              <textarea *ngIf="isEdit" name="" id="" [(ngModel)]="audioData.translation" class="edit-textarea"></textarea>
-            </p>
+            <ng-container *ngFor="let audioData of audioDetails?.audiodata; let i = index">
+              
+              <!-- Display Audio Title only if it's available -->
+              <p class="audio-title" *ngIf="audioData.audioTitle">
+                <strong>Audio Name :- {{ audioData.audioTitle }}</strong>
+              </p>
+          
+              <!-- Speaker and Translation Section -->
+              <p class="text">
+                <span class="moderator" [ngClass]="{ 'main': audioData?.speaker === 'Moderator' }">
+                  Speaker {{ audioData?.speaker }} ({{ audioData?.timestamp }}):
+                </span>
+                
+                <!-- Toggle between text and editable textarea -->
+                <span *ngIf="!isEdit">{{ audioData?.translation }}</span>
+                <textarea *ngIf="isEdit" [(ngModel)]="audioData.translation" class="edit-textarea"></textarea>
+              </p>
+          
+            </ng-container>
           </div>
+          
           <div class="tab-content-model translation">
             <!-- <button *ngIf="!isEdit" (click)="replace(dialogTemplate)"><mat-icon>find_replace</mat-icon> Replace</button>
             <button *ngIf="!isEdit" (click)="editTranslation()"><mat-icon>edit</mat-icon> Edit</button>

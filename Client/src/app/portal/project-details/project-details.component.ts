@@ -325,37 +325,52 @@ export class ProjectDetailsComponent {
       const downloadURL = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = downloadURL;
-      link.download = 'file.pdf'; // Set the filename for download
-      link.click(); // Trigger the download
+      link.download = 'file.pdf';
+      link.click();
     }, (err) => {
       this.toastr.error('Something Went Wrong!');
     });
     return true;
   }
 
+
   combineAudioData(audioDataArray: AudioData[]): any {
     return {
-      audioName: audioDataArray.map(audio => audio.audioName).join(', '), // Combine names
-      tags: audioDataArray.flatMap(audio => audio.tags || []), // Merge all tags safely
-      audioUrls: audioDataArray.map(audio => audio.audioUrl), // Store URLs in an array
+      audioName: audioDataArray.map(audio => audio.audioName).join(', '),
+      tags: audioDataArray.flatMap(audio => audio.tags || []),
+      audioUrls: audioDataArray.map(audio => audio.audioUrl),
       sentiment_analysis: audioDataArray
         .map(audio => audio.sentiment_analysis)
         .filter(Boolean)
-        .join('. '), // Merge sentiment analysis data
-      audiodata: audioDataArray.flatMap(audio => audio.audiodata || []), // Preserve full audiodata structure
+        .join('. '),
+
+      audiodata: audioDataArray.flatMap(audio => 
+        (audio.audiodata || []).map((data, index) => ({
+          ...data,
+          audioTitle: index === 0 ? audio.audioName : undefined
+        }))
+      ),
+
       combinedTranslation: audioDataArray
         .map(audio => audio.combinedTranslation)
         .filter(Boolean)
-        .join(' '), // Merge combined translations
+        .join(' '),
+
       translation: audioDataArray.flatMap(audio => 
-        (audio.audiodata || []).map(data => data.translation)
-      ).join(' '), // Merge all translations into a single string
+        (audio.audiodata || []).map((data, index) => ({
+          translation: data.translation,
+          audioTitle: index === 0 ? audio.audioName : undefined
+        }))
+      ),
       summary: audioDataArray
-        .map(audio => audio.summary)
-        .filter(Boolean)
-        .join('. '), // Merge summaries
+            .map(audio => audio.summary)
+            .filter(Boolean)
+            .join('. '),
     };
-  }
+}
+
+
+
   
   
   
@@ -390,6 +405,7 @@ export class ProjectDetailsComponent {
   
     if (index === 0) {
       this.audioDetails = this.combineAudioData(this.allAudioDetails.AudioData);
+      console.log("combineAudioData",this.audioDetails);
     } else {
       this.audioDetails = this.allAudioDetails.AudioData[index - 1] || null;
       console.log("onAudioNameChange audioDetails", this.audioDetails);
@@ -397,7 +413,7 @@ export class ProjectDetailsComponent {
   
     if (this.audioDetails) {
       const audio = this.audioPlayer.nativeElement;
-      this.tempAudioData = this.allAudioDetails.AudioData.map((x: any) => ({ ...x })); // Create a shallow copy
+      this.tempAudioData = this.allAudioDetails.AudioData.map((x: any) => ({ ...x }));
       audio.load();
       this.isPlaying = false;
       this.currentTime = '0:00';
