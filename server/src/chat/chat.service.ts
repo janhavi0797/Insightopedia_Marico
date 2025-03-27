@@ -16,6 +16,7 @@ import {
 import { AudioEntity, ProjectEntity } from 'src/utils/containers';
 import { Response } from 'express';
 import * as PDFDocument from 'pdfkit';
+import { ChatDto } from './dto/chat.dto';
 
 export interface Document {
   id: string; // The text content of the document
@@ -404,9 +405,10 @@ export class ChatService {
     return chunks;
   }
 
-  async downloadChat(res: Response, id: string, chatData: string, key: string) {
-    // Parse the chatData
-    const chat = JSON.parse(chatData);
+  async downloadChat(res: Response, chatDto: ChatDto) {
+    const id = chatDto.id;
+    const chat = chatDto.chat;
+    const key = chatDto.key;
 
     const doc = new PDFDocument({ margin: 50, size: 'A4' });
 
