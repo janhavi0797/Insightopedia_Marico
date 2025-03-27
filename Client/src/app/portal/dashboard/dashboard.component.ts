@@ -99,7 +99,7 @@ export class DashboardComponent implements OnInit {
   }
 
   addTag(event: any, i: number): void {
-    debugger
+    
     const input = event.input;
     const value = event.value?.trim();
 
@@ -280,24 +280,13 @@ export class DashboardComponent implements OnInit {
     return this.bankDetailsArray.at(index) as FormGroup;
   }
 
-  // deleteFile(index: number): void {
-  //   debugger
-  //   console.log('Before Deletion:', this.audioFiles, this.bankDetailsArray);
-  //   this.audioFiles.splice(index, 1);
-  //   this.bankDetailsArray.removeAt(index);
-  //   this.bankDetailsArray.setValue(this.bankDetailsArray.value);
-  //   console.log('After Deletion:', this.audioFiles, this.bankDetailsArray);
-  // }
-  
-
   deleteFile(index: number): void {
-    debugger
+    
     if (index < 0 || index >= this.audioFiles.length || index >= this.bankDetailsArray.length) {
       console.warn('Invalid index:', index);
       return;
     }
   
-    console.log('Before Deletion:', this.audioFiles, this.bankDetailsArray.value);
   
     // Remove the audio file
     this.audioFiles.splice(index, 1);
@@ -305,7 +294,6 @@ export class DashboardComponent implements OnInit {
     // Remove the corresponding form control
     this.bankDetailsArray.removeAt(index);
   
-    console.log('After Deletion:', this.audioFiles, this.bankDetailsArray.value);
   }
   
   trackByIndex(index: number, _: any): number {
@@ -313,7 +301,7 @@ export class DashboardComponent implements OnInit {
   }
 
   // saveAudioFile() {
-  //   debugger
+  //   
   //   console.log('Audio Files', this.audioFiles);
   //   console.log('Audio Details Array', this.bankDetailsArray.value);
     
@@ -371,7 +359,7 @@ export class DashboardComponent implements OnInit {
   }
 
   saveAudioFile() {
-    debugger
+    //
     const userId = localStorage.getItem('uId');
     const requestBody: any[] = [];
     const formData = new FormData();
@@ -398,14 +386,10 @@ export class DashboardComponent implements OnInit {
   
     // Append JSON string of metadata
     formData.append('requestBody', JSON.stringify(requestBody));
-  
-    console.log('RequestBody:', requestBody);
-    console.log('FormData:', formData);
-  
     //this.isLoading = true;
     this.CommonService.postAPI('audio/upload', formData).subscribe(
       (res: any) => {
-        debugger
+        
         //this.isLoading = false;
         //this.ClearProject();
         //this.ClearMedia();

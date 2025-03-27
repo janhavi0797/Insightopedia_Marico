@@ -85,7 +85,7 @@ export class UserListComponent {
   }
 
   editDialog(editTemplate: TemplateRef<any>, index: number) {
-    debugger
+    
     this.userForm.controls['userName'].setValue(this.userList[index].userName);
     this.userForm.controls['userEmail'].setValue(this.userList[index].email);
     this.userForm.controls['role'].setValue(this.userList[index].rolecode);
@@ -165,7 +165,7 @@ export class UserListComponent {
   }
 
   assignMapUnmapUser(index: number) {
-    debugger
+    
     const email = this.userList[index].email;
     this.mapUnmapUsers = [];
     this.mapUnmapUsers = this.userList.filter(user => user.email !== email)

@@ -21,7 +21,6 @@ import { createClient } from 'redis';
 import { promisify } from 'util';
 import { ProjectSummaryProcessor } from './processors/projectSummary.processor';
 const C = new ConfigService();
-console.log(C.get<string>('COSMOS_DBNAME'));
 
 @Global()
 @Module({

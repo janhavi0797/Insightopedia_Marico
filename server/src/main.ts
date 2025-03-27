@@ -16,7 +16,6 @@ async function bootstrap() {
     .setTitle('Insightopedia Marico')
     .setDescription('The Median API description')
     .setVersion('0.1')
-    .addServer('/Insightopedia/backend')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

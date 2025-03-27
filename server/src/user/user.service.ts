@@ -42,8 +42,7 @@ export class UserService {
       }
 
       const sprocId = 'createUser'; // Stored procedure ID
-      const partitionKey = payload.userid; // Set partition key based on the user ID
-      console.log('30');
+      const partitionKey = payload.userid; 
       // Call the stored procedure with the correct partition key
       const { resource: result } = await this.userContainer.scripts
         .storedProcedure(sprocId)
@@ -161,8 +160,8 @@ export class UserService {
       existingUser.mapUser = payload.mapUser;
 
       // Step 5: Upsert the updated user back into CosmosDB
-      // const { resource: updatedUser } =
-      //   await this.userContainer.items.upsert(existingUser);
+      const { resource: updatedUser } =
+        await this.userContainer.items.upsert(existingUser);
 
       return {
         response: 1, // Success flag

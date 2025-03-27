@@ -29,8 +29,6 @@ export class ChatController {
     @Query('question') question: string,
     @Query('vectorId') vectorIds: string[],
   ): Promise<{ question: string; answer: string }> {
-    console.log(question);
-    console.log(vectorIds);
     // Validate input
     if (
       !question ||

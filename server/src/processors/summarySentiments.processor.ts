@@ -39,7 +39,6 @@ export class SummarySentimentsProcessor {
         combinedTranslation,
       );
       await job.log('Sentiment Analysis fetched');
-      console.log('Summary and Sentiment Fetch Completed');
 
       const transcriptionDocument: Partial<AudioEntity> = {
         audioId,
