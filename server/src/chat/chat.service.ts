@@ -16,6 +16,7 @@ import {
 import { AudioEntity, ProjectEntity } from 'src/utils/containers';
 import { Response } from 'express';
 import * as PDFDocument from 'pdfkit';
+import { ChatDto } from './dto/chat.dto';
 
 export interface Document {
   id: string; // The text content of the document
@@ -89,7 +90,6 @@ export class ChatService {
 
   async getTextsByVectorIds(vectorIds: string[]): Promise<Document[]> {
     try {
-      console.log('getTextsByVectorIds', vectorIds);
       this.logger.log(`Fetching documents with vector IDs: ${vectorIds}`);
       const documents: Document[] = [];
 
@@ -247,11 +247,9 @@ export class ChatService {
 
         const project1Documents =
           await this.getTextsByVectorIds(vectorIdsProject1);
-        console.log(project1Documents);
 
         const project2Documents =
           await this.getTextsByVectorIds(vectorIdsProject2);
-        console.log(project2Documents);
 
         const targetCompareProject1 =
           await this.generateAnswerFromDocumentsWithChunks(
@@ -345,7 +343,6 @@ export class ChatService {
       const transcriptionIds = projectDocument.audioIds
         .map((id) => `'${id}'`)
         .join(', ');
-      console.log(transcriptionIds);
 
       // TODO add transcription data to the project entity
       const transcriptionData = projectDocument.transcription;
@@ -404,9 +401,10 @@ export class ChatService {
     return chunks;
   }
 
-  async downloadChat(res: Response, id: string, chatData: string, key: string) {
-    // Parse the chatData
-    const chat = JSON.parse(chatData);
+  async downloadChat(res: Response, chatDto: ChatDto) {
+    const id = chatDto.id;
+    const chat = chatDto.chat;
+    const key = chatDto.key;
 
     const doc = new PDFDocument({ margin: 50, size: 'A4' });
 

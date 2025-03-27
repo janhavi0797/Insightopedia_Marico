@@ -33,7 +33,7 @@ export const authGuard: CanActivateFn = (route, state) => {
 
   // Role-based redirection: If userRole is 3 and trying to access /portal/dashboard, redirect
   if (userRole === 3 && (state.url === '/portal/dashboard' || state.url === '/portal/userList')) {
-    router.navigate(['/portal/allFiles']);
+    router.navigate(['/portal/all-files']);
     return false;
   }
   

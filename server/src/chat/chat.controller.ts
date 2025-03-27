@@ -14,8 +14,9 @@ import {
   Body,
 } from '@nestjs/common';
 import { ChatService } from './chat.service';
-import { ApiBody, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
+import { ChatDto } from './dto/chat.dto';
 
 @ApiTags('Chat Managment')
 @Controller('chat')
@@ -38,8 +39,6 @@ export class ChatController {
     @Body('question') question: string,
     @Body('vectorId') vectorIds: string[],
   ): Promise<{ question: string; answer: string }> {
-    console.log(question);
-    console.log(vectorIds);
     // Validate input
     if (
       !question ||
@@ -117,26 +116,11 @@ export class ChatController {
     }
   }
 
-  @Get('download')
+  @Post('download')
   @ApiOperation({ summary: 'To Download the user chat' })
-  @ApiQuery({
-    name: 'id',
-    required: true,
-    description: 'ID of the audio or project',
-  })
-  @ApiQuery({
-    name: 'key',
-    required: true,
-    description: 'Specifies whether the data belongs to a project or audio',
-  })
-  async downloadChat(
-    @Res() res: Response,
-    @Query('id') id: string,
-    @Query('chat') chat: string,
-    @Query('key') key: string,
-  ) {
+  async downloadChat(@Res() res: Response, @Body() chatDto: ChatDto) {
     try {
-      return await this.chatservice.downloadChat(res, id, chat, key);
+      return await this.chatservice.downloadChat(res, chatDto);
     } catch (err) {
       Logger.error(err);
     }

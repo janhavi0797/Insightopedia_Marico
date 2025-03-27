@@ -14,12 +14,19 @@ const routes: Routes = [
     path:'',
     component:LayoutComponent,
     children: [
-      {path:'dashboard',component:DashboardComponent, canActivate: [authGuard]},
-      {path:'all-files',component:AllFilesComponent, canActivate: [authGuard]},
-      {path:'create-project',component:CreateProjectComponent, canActivate: [authGuard]},
-      {path:'project-analysis',component:ProjectAnalysisComponent, canActivate: [authGuard]},
-      {path:'project-analysis/:projectId',component:ProjectDetailsComponent, canActivate: [authGuard]},
-      {path:'user-list',component:UserListComponent, canActivate: [authGuard]},
+      // {path:'dashboard',component:DashboardComponent, canActivate: [authGuard]},
+      // {path:'all-files',component:AllFilesComponent, canActivate: [authGuard]},
+      // {path:'create-project',component:CreateProjectComponent, canActivate: [authGuard]},
+      // {path:'project-analysis',component:ProjectAnalysisComponent, canActivate: [authGuard]},
+      // {path:'project-analysis/:projectId',component:ProjectDetailsComponent, canActivate: [authGuard]},
+      // {path:'user-list',component:UserListComponent, canActivate: [authGuard]},
+      {path:'dashboard',component:DashboardComponent},
+      {path:'all-files',component:AllFilesComponent},
+      {path:'create-project',component:CreateProjectComponent},
+      {path:'project-analysis',component:ProjectAnalysisComponent},
+      {path:'project-analysis/:projectId',component:ProjectDetailsComponent},
+      {path:'user-list',component:UserListComponent},
+      {path:'project-details',component:ProjectDetailsComponent},
     ]
   }
 ];

@@ -24,7 +24,6 @@ export class EmbeddingProcessor {
     try {
       const vectorIds =
         await this.audioUtils.generateEmbeddings(combinedTranslation);
-      console.log('vectorIds in emb', vectorIds);
       await job.log('Translation job completed');
       await this.audioUtils.updateTranscriptionDocument(
         audioId,
@@ -75,7 +74,6 @@ export class EmbeddingProcessor {
 
     try {
       await transporter.sendMail(mailOptions);
-      console.log('Email sent successfully.');
     } catch (err) {
       Logger.error(`Error in email sent ${err.message}`);
       throw new InternalServerErrorException(`${err.message}`);
