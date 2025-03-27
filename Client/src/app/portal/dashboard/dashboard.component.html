@@ -71,8 +71,9 @@
                                     <mat-form-field>
                                         <mat-label>Primary Language</mat-label>
                                         <mat-select formControlName="primaryLanguage">
-                                            <mat-option [value]="pl.name"
-                                                *ngFor="let pl of languageList">{{pl.name}}</mat-option>
+                                            <mat-option *ngFor="let pl of getFilteredPrimaryLanguages(i)" [value]="pl.name">
+                                                {{ pl.name }}
+                                              </mat-option>
                                         </mat-select>
                                         <mat-error
                                             *ngIf="getFormControl(i, 'primaryLanguage')?.touched && getFormControl(i, 'primaryLanguage')?.invalid">
@@ -84,8 +85,9 @@
                                     <mat-form-field>
                                         <mat-label>Secondary Language</mat-label>
                                         <mat-select multiple formControlName="secondaryLanguage">
-                                            <mat-option [value]="ol.name"
-                                                *ngFor="let ol of languageList">{{ol.name}}</mat-option>
+                                            <mat-option *ngFor="let ol of getFilteredSecondaryLanguages(i)" [value]="ol.name">
+                                                {{ ol.name }}
+                                              </mat-option>
                                         </mat-select>
                                         <mat-error
                                             *ngIf="getFormControl(i, 'secondaryLanguage')?.touched && getFormControl(i, 'secondaryLanguage')?.invalid">
@@ -113,7 +115,7 @@
                 </div>
             </div>
             <div class="media-footer">
-                <button [disabled]="true">Save to all files <mat-icon>save</mat-icon></button>
+                <button [disabled]="audioDetails.invalid">Save to all files <mat-icon>save</mat-icon></button>
             </div>
         </div>
     </div>

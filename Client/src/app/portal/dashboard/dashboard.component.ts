@@ -11,7 +11,7 @@ import { environment } from 'src/environments/environment';
 export class DashboardComponent implements OnInit {
   audioFiles: any[] = [];
   imageBasePath: string = environment.imageBasePath;
-  languageList = [
+  primaryLang = [
     {
       "name": "English",
       "code": "EN"
@@ -45,6 +45,7 @@ export class DashboardComponent implements OnInit {
       "code": "ML"
     }
   ];
+  secondaryLang = [...this.primaryLang]; 
   audioDetails: any;
   constructor(private toastr: ToastrService, private fb: FormBuilder) { }
 
@@ -118,7 +119,35 @@ export class DashboardComponent implements OnInit {
       date: ['', Validators.required]
     });
 
+    this.handleLanguageSelection(fileForm);
+
     this.bankDetailsArray.push(fileForm);
+  }
+
+  handleLanguageSelection(fileForm: FormGroup) {
+    fileForm.get('primaryLanguage')?.valueChanges.subscribe((selectedPrimary: string) => {
+      const secondaryControl = fileForm.get('secondaryLanguage');
+      // Reset secondary selection if primary is changed
+      secondaryControl?.setValue([]);
+    });
+
+    fileForm.get('secondaryLanguage')?.valueChanges.subscribe((selectedSecondary: string[]) => {
+      const primaryControl = fileForm.get('primaryLanguage');
+      // Reset primary selection if secondary overlaps
+      if (selectedSecondary.includes(primaryControl?.value)) {
+        primaryControl?.setValue('');
+      }
+    });
+  }
+
+  getFilteredPrimaryLanguages(i: number) {
+    const selectedSecondary = this.bankDetailsArray.at(i).get('secondaryLanguage')?.value || [];
+    return this.primaryLang.filter(lang => !selectedSecondary.includes(lang.name));
+  }
+
+  getFilteredSecondaryLanguages(i: number) {
+    const selectedPrimary = this.bankDetailsArray.at(i).get('primaryLanguage')?.value;
+    return this.secondaryLang.filter(lang => lang.name !== selectedPrimary);
   }
 
   submitForm() {
@@ -205,13 +234,22 @@ export class DashboardComponent implements OnInit {
   }
 
   deleteFile(index: number): void {
-    debugger
-    console.log('Before Deletion:', this.audioFiles, this.bankDetailsArray);
     this.audioFiles.splice(index, 1);
     this.bankDetailsArray.removeAt(index);
-    this.bankDetailsArray.setValue(this.bankDetailsArray.value);
-    console.log('After Deletion:', this.audioFiles, this.bankDetailsArray);
-  }
+    // this.bankDetailsArray.markAsTouched();
+    // this.bankDetailsArray.markAsDirty();
+    this.audioDetails.setControl('bankInput', this.fb.array([...this.bankDetailsArray.controls]));
+    this.audioDetails.setErrors(null);
+    (this.audioDetails.get('bankInput') as FormArray).controls.forEach((group) => {
+      if (group instanceof FormGroup) {
+        Object.keys(group.controls).forEach((key) => {
+          group.get(key)?.setErrors(null); 
+          group.get(key)?.markAsPristine(); 
+          group.get(key)?.markAsUntouched();
+        });
+      }
+    });
+}
 
   trackByIndex(index: number, _: any): number {
     return index;
