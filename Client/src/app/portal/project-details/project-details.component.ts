@@ -53,8 +53,8 @@ export class ProjectDetailsComponent {
     this.activeRoute.queryParams.subscribe(params => {
       this.projectId = params['projectId'];
       this.userId = params['userId'];
-      console.log("Received Project ID:", this.projectId);
-      console.log("Received User ID:", this.userId);
+      //console.log("Received Project ID:", this.projectId);
+      //console.log("Received User ID:", this.userId);
       this.getProjectDetails(this.projectId);
     });
     
@@ -68,21 +68,21 @@ export class ProjectDetailsComponent {
 
   getProjectDetails(projectId:string) {
     this.isLoading = true;
-    console.log("getProjectDetails projectId",projectId);
+    //console.log("getProjectDetails projectId",projectId);
     this.common.getProjectDetail('project/allProjectDetails', projectId).subscribe((res: any) => {
-      console.log("getProjectDetails",res.data);
-      console.log("getProjectDetails only audioDetails",res.data.projectDetails[0].AudioData);
+      //console.log("getProjectDetails",res.data);
+      //console.log("getProjectDetails only audioDetails",res.data.projectDetails[0].AudioData);
 
       this.allAudioDetails = res.data.projectDetails[0];
       //this.audioDetails = res.data.projectDetails[0].AudioData[0];
       this.audioDetails = this.combineAudioData(this.allAudioDetails.AudioData);
-      console.log("getProjectDetails only audioDetails",this.audioDetails);
+     // console.log("getProjectDetails only audioDetails",this.audioDetails);
        //this.filePath = res.data.FilePath;
        //this.vectorId = res.data.vectorId;
       this.tempAudioData = res.data.projectDetails[0].AudioData.map((x: any) => Object.assign({}, x));
       //this.audioNameArr =res.data.projectDetails[0].AudioData.map(((item: { audioName: any; })=> item.audioName));
       this.audioNameArr = ["All Project", ...res.data.projectDetails[0].AudioData.map((item: { audioName: any }) => item.audioName)];
-      console.log("audioNameArr",this.audioNameArr);
+      //console.log("audioNameArr",this.audioNameArr);
       this.audioName = this.audioNameArr[0];
       this.isLoading = false;
     }, (err: any) => {
@@ -166,7 +166,6 @@ export class ProjectDetailsComponent {
   }
 
   sendQuery() {
-    debugger
     if (this.question !== "") {
       const payload = {
         question: this.question,
@@ -275,9 +274,6 @@ export class ProjectDetailsComponent {
   // }
 
   downloadSummaryAndSenti(content: string, audioId?: string, projectId?: string): void {
-    debugger;
-    console.log(audioId)
-    console.log(projectId)
     if (!audioId && !projectId) {
       console.error("Both projectId and audioId are missing.");
       return;
@@ -296,7 +292,7 @@ export class ProjectDetailsComponent {
     }
   
     const url = `${environment.BASE_URL}audio/generate-pdf?id=${idParam}&type=${content}&key=${keyParam}`;
-    console.log("Generated URL:", url); // Debugging
+    //console.log("Generated URL:", url); // Debugging
     this.audioServ.getDownload(url);
   }
   
@@ -305,7 +301,25 @@ export class ProjectDetailsComponent {
     return typeof value === 'number' && !isNaN(value);
   }
 
-  downloadChat() {
+  downloadChat(audioId?: string, projectId?: string) {
+    if (!audioId && !projectId) {
+      console.error("Both projectId and audioId are missing.");
+      return;
+    }
+
+    let idParam = "";
+    let keyParam = "";
+  
+    if (projectId) {
+      idParam = projectId;
+      keyParam = "project";
+    } 
+    if (audioId) {
+      idParam = audioId; // Override if only audioId is present
+      keyParam = "audio";
+    }
+
+
     if(this.chatHistory.length === 0) {
       this.toastr.warning('Chat is Empty');
       return 0;
@@ -315,11 +329,11 @@ export class ProjectDetailsComponent {
 
     const date = `${new Date().getFullYear()}-${month}-${day}`;
     const param = {
-      "id": this.tgId,
-      "key": date,
+      "id": idParam,
+      "key": keyParam,
       "chat": this.chatHistory
     };
-    this.audioServ.postAPI('transcription/chat', param, true).subscribe((res: Blob) => {
+    this.audioServ.postAPI('chat/download', param, true).subscribe((res: Blob) => {
       // Handle the PDF response correctly as a Blob
       const blob = new Blob([res], { type: 'application/pdf' });
       const downloadURL = window.URL.createObjectURL(blob);
@@ -398,7 +412,7 @@ export class ProjectDetailsComponent {
 
   onAudioNameChange(event: any) {
     const index = this.audioNameArr.indexOf(event.value);
-    console.log("onAudioNameChange", index);
+    //console.log("onAudioNameChange", index);
   
     if (index === -1) {
       console.warn("Audio name not found in array.");
@@ -407,10 +421,10 @@ export class ProjectDetailsComponent {
   
     if (index === 0) {
       this.audioDetails = this.combineAudioData(this.allAudioDetails.AudioData);
-      console.log("combineAudioData",this.audioDetails);
+     // console.log("combineAudioData",this.audioDetails);
     } else {
       this.audioDetails = this.allAudioDetails.AudioData[index - 1] || null;
-      console.log("onAudioNameChange audioDetails", this.audioDetails);
+      //console.log("onAudioNameChange audioDetails", this.audioDetails);
     }
   
     if (this.audioDetails) {
