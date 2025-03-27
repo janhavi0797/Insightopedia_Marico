@@ -13,7 +13,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { ChatService } from './chat.service';
-import { ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiQuery, ApiTags } from '@nestjs/swagger';
 
 @ApiTags('Chat Managment')
 @Controller('chat')
@@ -22,12 +22,19 @@ export class ChatController {
 
   constructor(private readonly chatservice: ChatService) {}
 
-  @Get('chatVectorId')
-  @ApiQuery({ name: 'question', type: String, required: true })
-  @ApiQuery({ name: 'vectorId', type: [String], required: true, isArray: true })
+  @Post('chatVectorId')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        question: { type: 'string' },
+        vectorId: { type: 'array', items: { type: 'string' } },
+      },
+    },
+  })
   async askQuestionWithVectorIds(
-    @Query('question') question: string,
-    @Query('vectorId') vectorIds: string[],
+    @Body('question') question: string,
+    @Body('vectorId') vectorIds: string[],
   ): Promise<{ question: string; answer: string }> {
     console.log(question);
     console.log(vectorIds);

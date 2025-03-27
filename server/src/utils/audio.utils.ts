@@ -576,11 +576,17 @@ export class AudioUtils {
         SENTIMENT_ANALYSIS,
         combinedTranscription,
       );
+      const projectVecIds = audioDocuments
+        .map((audio) => {
+          return audio.vectorIds;
+        })
+        ?.flat();
 
       const existingProjectDocument: ProjectEntity = projectDocument[0];
       existingProjectDocument.summary = combinedSummary;
       existingProjectDocument.sentiment_analysis = combinedSentiment;
       existingProjectDocument.isSummaryAndSentimentDone = true;
+      existingProjectDocument.vectorIds = projectVecIds;
 
       return await this.saveProjectSummary(existingProjectDocument);
     } catch (error) {
