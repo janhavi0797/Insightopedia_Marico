@@ -45,6 +45,17 @@ export class UserListComponent {
   dataSource = new MatTableDataSource<any>([]);
   @ViewChild(MatPaginator) paginator!: MatPaginator;
 
+  // constructor(private commonServ: CommonService, private toastr: ToastrService,
+  //   private fb: FormBuilder, private dialog: MatDialog
+  // ) {
+  //   this.userForm = this.fb.group({
+  //     userName: ['', Validators.required],
+  //     userEmail: ['', [Validators.required, Validators.email]],
+  //     role: ['', Validators.required],
+  //     mapUnmapUsers: [[]]
+  //   });
+  // }
+
   constructor(private commonServ: CommonService, private toastr: ToastrService,
     private fb: FormBuilder, private dialog: MatDialog
   ) {
@@ -74,10 +85,7 @@ export class UserListComponent {
   }
 
   editDialog(editTemplate: TemplateRef<any>, index: number) {
-    // this.userForm.controls['userName'].setValue(this.dataSource.data[index].userName);
-    // this.userForm.controls['userEmail'].setValue(this.dataSource.data[index].email);
-    // this.userForm.controls['role'].setValue(this.dataSource.data[index].rolecode);
-
+    debugger
     this.userForm.controls['userName'].setValue(this.userList[index].userName);
     this.userForm.controls['userEmail'].setValue(this.userList[index].email);
     this.userForm.controls['role'].setValue(this.userList[index].rolecode);
@@ -91,6 +99,7 @@ export class UserListComponent {
       disableClose: true,
     });
   }
+
 
   submitForm() {
     const userIds = this.selectedUsers.map(user => user.userid);
@@ -156,11 +165,10 @@ export class UserListComponent {
   }
 
   assignMapUnmapUser(index: number) {
-    //const email = this.userList[index].email;
-    const email = this.dataSource.data[index].email;
+    debugger
+    const email = this.userList[index].email;
     this.mapUnmapUsers = [];
     this.mapUnmapUsers = this.userList.filter(user => user.email !== email)
-    this.mapUnmapUsers = this.dataSource.data.filter(user => user.email !== email)
     .map(user => ({
       ...user,
       selected: this.userList[index]?.mapUser?.includes(user.id) ? true : false
@@ -174,18 +182,6 @@ export class UserListComponent {
 
     this.filteredCompetetiveProduct = of(this.mapUnmapUsers);
   }
-
-  // togglePlayPause(element: any): void {
-  //   // Stop all others
-  //   this.dataSource.data.forEach(item => {
-  //     if (item !== element) item.isPlaying = false;
-  //   });
-  
-  //   element.isPlaying = !element.isPlaying;
-  // }
-
-  // filteredOptions!: Observable<any[]>;
-  // myControl = new FormControl('');
 
 }
 
