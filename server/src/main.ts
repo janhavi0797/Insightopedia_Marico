@@ -54,6 +54,6 @@ async function bootstrap() {
   const expressApp = app.getHttpAdapter().getInstance();
   expressApp.use('/admin/queues', serverAdapter.getRouter());
 
-  await app.listen(3000);
+  await app.listen(3001);
 }
 bootstrap();

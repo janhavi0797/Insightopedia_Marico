@@ -26,7 +26,7 @@ import * as PDFDocument from 'pdfkit';
 import { Response } from 'express';
 
 // const unlinkAsync = promisify(fs.unlink);
-ffmpeg.setFfmpegPath('C:/ffmpeg/ffmpeg.exe');
+ffmpeg.setFfmpegPath('/home/high.pimatri/Insightopedia/server/ffmpeg/ffmpeg.exe');
 const execAsync = promisify(exec);
 
 @Injectable()
@@ -149,12 +149,17 @@ export class AudioService {
 
         // Write the uploaded file buffer to disk temporarily
         fs.writeFileSync(tempFilePath, file.buffer);
-        const ffmpegPath = 'C:/ffmpeg/ffmpeg.exe'; // Adjust the path
+        const ffmpegPath ='/home/high.pimatri/Insightopedia/server/ffmpeg/ffmpeg.exe'; // Adjust the path
+
+        console.log(ffmpegPath);
+        console.log(tempFilePath);
 
         // Process the file with FFmpeg (noise cancellation and mono conversion)
         //const ffmpegCommand = `${ffmpegPath} -i ${tempFilePath} -af "highpass=f=300, lowpass=f=3000, afftdn=nf=-25" -ac 1 -ar 16000 ${processedFilePath}`;
-        const ffmpegCommand = `${ffmpegPath} -i "${tempFilePath}" -af "highpass=f=300, lowpass=f=3000, afftdn=nf=-25" -ac 1 -ar 16000 "${processedFilePath}"`;
-        await execAsync(ffmpegCommand);
+        // const ffmpegCommand = `${ffmpegPath} -i "${tempFilePath}" -af "highpass=f=300, lowpass=f=3000, afftdn=nf=-25" -ac 1 -ar 16000 "${processedFilePath}"`;
+
+
+        await execAsync(`ffmpeg -i "${tempFilePath}" -af "highpass=f=300, lowpass=f=3000, afftdn=nf=-25" -ac 1 -ar 16000 "${processedFilePath}"`);
 
         // Read the processed file back into a buffer
         const processedBuffer = fs.readFileSync(processedFilePath);
