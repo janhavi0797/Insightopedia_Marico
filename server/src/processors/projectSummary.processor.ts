@@ -1,5 +1,5 @@
-import { Job, Queue } from 'bull';
-import { InjectQueue, Process, Processor } from '@nestjs/bull';
+import { Job } from 'bull';
+import { Process, Processor } from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
 import { AudioUtils } from 'src/utils';
 import { BullQueues, QueueProcess } from 'src/utils/enums';

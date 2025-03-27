@@ -1,7 +1,5 @@
 import {
-  Body,
   Controller,
-  Post,
   BadRequestException,
   InternalServerErrorException,
   Logger,
@@ -11,9 +9,13 @@ import {
   ValidationPipe,
   HttpException,
   HttpStatus,
+  Res,
+  Post,
+  Body,
 } from '@nestjs/common';
 import { ChatService } from './chat.service';
-import { ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { Response } from 'express';
 
 @ApiTags('Chat Managment')
 @Controller('chat')
@@ -22,12 +24,19 @@ export class ChatController {
 
   constructor(private readonly chatservice: ChatService) {}
 
-  @Get('chatVectorId')
-  @ApiQuery({ name: 'question', type: String, required: true })
-  @ApiQuery({ name: 'vectorId', type: [String], required: true, isArray: true })
+  @Post('chatVectorId')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        question: { type: 'string' },
+        vectorId: { type: 'array', items: { type: 'string' } },
+      },
+    },
+  })
   async askQuestionWithVectorIds(
-    @Query('question') question: string,
-    @Query('vectorId') vectorIds: string[],
+    @Body('question') question: string,
+    @Body('vectorId') vectorIds: string[],
   ): Promise<{ question: string; answer: string }> {
     console.log(question);
     console.log(vectorIds);
@@ -105,6 +114,31 @@ export class ChatController {
         'An error occurred while comparing projects.',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
+    }
+  }
+
+  @Get('download')
+  @ApiOperation({ summary: 'To Download the user chat' })
+  @ApiQuery({
+    name: 'id',
+    required: true,
+    description: 'ID of the audio or project',
+  })
+  @ApiQuery({
+    name: 'key',
+    required: true,
+    description: 'Specifies whether the data belongs to a project or audio',
+  })
+  async downloadChat(
+    @Res() res: Response,
+    @Query('id') id: string,
+    @Query('chat') chat: string,
+    @Query('key') key: string,
+  ) {
+    try {
+      return await this.chatservice.downloadChat(res, id, chat, key);
+    } catch (err) {
+      Logger.error(err);
     }
   }
 }
