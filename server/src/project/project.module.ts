@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { ProjectService } from './project.service';
 import { ProjectController } from './project.controller';
 import { AzureCosmosDbModule } from '@nestjs/azure-database';
-import { ProjectEntity, AudioEntity } from 'src/utils/containers';
+import { ProjectEntity, AudioEntity, User } from 'src/utils/containers';
 import { BullModule } from '@nestjs/bull';
 import { BullQueues, ContainersEnum } from 'src/utils/enums';
 import { AudioUtils } from 'src/utils';
@@ -19,6 +19,10 @@ import { createClient } from 'redis';
       {
         dto: AudioEntity,
         collection: ContainersEnum.AUDIO,
+      },
+      {
+        dto: User,
+        collection: ContainersEnum.USER,
       },
     ]),
     BullModule.registerQueue({
