@@ -21,14 +21,15 @@
 <div class="main-body">
     <div class="sidebar">
         <ul>
-            <li routerLink="dashboard" [routerLinkActive]="['active']" #dashboardActive="routerLinkActive" *ngIf="roleCode !== '3'">
+            <li routerLink="dashboard" [routerLinkActive]="['active']" #dashboardActive="routerLinkActive">
+                <!-- *ngIf="roleCode !== '3'" -->
                 <mat-icon>home</mat-icon> Dashboard
-            </li>
-            <li routerLink="all-files" [routerLinkActive]="['active']" #allFilesActive="routerLinkActive">
-                <mat-icon>file_copy</mat-icon> All Files
             </li>
             <li routerLink="create-project" [routerLinkActive]="['active']" #compareActive="routerLinkActive">
                 <mat-icon>create_new_folder</mat-icon> Create Project
+            </li>
+            <li routerLink="all-files" [routerLinkActive]="['active']" #allFilesActive="routerLinkActive">
+                <mat-icon>file_copy</mat-icon> All Files
             </li>
             <li routerLink="project-analysis" [routerLinkActive]="['active']" #compareActive="routerLinkActive">
                 <mat-icon>apps</mat-icon> Project Analysis

@@ -37,6 +37,8 @@ import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatTableModule } from '@angular/material/table';
 import {MatRadioModule} from '@angular/material/radio';
 import { FormatTextPipe } from '../shared/format-text.pipe';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatChipsModule } from '@angular/material/chips';
 
 @NgModule({
   declarations: [
@@ -78,7 +80,9 @@ import { FormatTextPipe } from '../shared/format-text.pipe';
     MatNativeDateModule,
     MatTableModule,
     MatPaginatorModule,
-    MatRadioModule
+    MatRadioModule,
+    MatSnackBarModule,
+    MatChipsModule
   ],
   providers: [AudioService]
 })

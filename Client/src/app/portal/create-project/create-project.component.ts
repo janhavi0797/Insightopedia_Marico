@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { environment } from 'src/environments/environment';
 import { CommonService } from '../service/common.service';
 import { ToastrService } from 'ngx-toastr';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 interface AudioFile {
   name: string;
@@ -24,9 +25,27 @@ interface AudioFile {
 export class CreateProjectComponent {
 
   userCode: any;
-   userRole: any;
+  userRole: any;projectName = '';
+  audioTags: string[] = [];
+  audioNames: string[] = [];
+  selectedTags: string[] = [];
+  selectedTag: string = '';
+  audioFiles: AudioFile[] = [];
+  filterOption: string = '1';
+  selectedAudio: string = '';
+  selectedAudios: string[] = [];
+  imageBasePath: string = environment.imageBasePath;
+  isShowFooter: boolean = false;
 
-   constructor(private commonServ: CommonService, private toastr: ToastrService) {}
+  formatTime(timeInSeconds: number): string {
+    const minutes = Math.floor(timeInSeconds / 60);
+    const seconds = Math.floor(timeInSeconds % 60);
+    const formattedSeconds = seconds < 10 ? '0' + seconds : seconds;
+    return `${minutes}:${formattedSeconds}`;
+  }
+
+
+   constructor(private commonServ: CommonService, private toastr: ToastrService, private snackBar: MatSnackBar) {}
 
   ngOnInit(): void {
     this.userRole = localStorage.getItem('role') || '';
@@ -40,13 +59,11 @@ export class CreateProjectComponent {
 
 
   getTagsWiseAudio() {
-    debugger
     let userCode = '';
     userCode = this.userRole === "1" ? '' : this.userCode;
     this.commonServ.getTagwiseAudio('audio/all', userCode).subscribe(
       (res: any) => {
-        debugger
-        console.log('Tags Res', res );
+        //console.log('Tags Res', res );
         this.audioTags = res.data.allUniqueTags;
         this.audioNames = res.data.audioData;
 
@@ -63,28 +80,13 @@ export class CreateProjectComponent {
       },
       (err: any) => {
         //this.toastr.error('Something Went Wrong!');
-        console.log('Something Went Wrong!');
+        //console.log('Something Went Wrong!');
       }
     );
   }
-
-  projectName = '';
-  audioTags: string[] = [];
-  audioNames: string[] = [];
-  selectedTags: string[] = [];
-  selectedTag: string = '';
-  audioFiles: AudioFile[] = [];
-  filterOption: string = '1';
-
-  selectedAudio: string = '';
-  selectedAudios: string[] = [];
-
-  imageBasePath: string = environment.imageBasePath;
-
-  isShowFooter: boolean = false;
   
   filterByTag() {
-    debugger
+    //debugger
     if (this.selectedTag && !this.selectedTags.includes(this.selectedTag)) {
       this.selectedTags.push(this.selectedTag);
     }
@@ -99,12 +101,10 @@ export class CreateProjectComponent {
   } 
   
   removeTag(tag: string) {
-    debugger
     this.selectedTags = this.selectedTags.filter(t => t !== tag);
   }
 
   removeAudio(audio: string) {
-    debugger
     this.selectedAudios = this.selectedAudios.filter(t => t !== audio);
   }
   
@@ -119,30 +119,57 @@ export class CreateProjectComponent {
     return Array.from(audioNameSet);
   }
 
+  // getFilteredAudioFiles(): AudioFile[] {
+  //   //debugger
+  //   if (this.filterOption === '1' && this.selectedTags.length) {
+  //     return this.audioFiles.filter(file =>
+  //       file.tags?.some(tag => this.selectedTags.includes(tag))
+  //     );
+  //   }
+  
+  //   if (this.filterOption === '2' && this.selectedAudios.length) {
+  //     return this.audioFiles.filter(file =>
+  //       this.selectedAudios.includes(file.name)
+  //     );
+  //   }
+  
+  //   return this.audioFiles;
+  // }
+
   getFilteredAudioFiles(): AudioFile[] {
-    //debugger
+    let filteredFiles: AudioFile[] = [];
+  
     if (this.filterOption === '1' && this.selectedTags.length) {
-      return this.audioFiles.filter(file =>
+      filteredFiles = this.audioFiles.filter(file =>
         file.tags?.some(tag => this.selectedTags.includes(tag))
       );
-    }
-  
-    if (this.filterOption === '2' && this.selectedAudios.length) {
-      return this.audioFiles.filter(file =>
+    } else if (this.filterOption === '2' && this.selectedAudios.length) {
+      filteredFiles = this.audioFiles.filter(file =>
         this.selectedAudios.includes(file.name)
       );
+    } else {
+      filteredFiles = [...this.audioFiles];
     }
   
-    return this.audioFiles;
-  }
+    // Ensure previously selected files are included
+    const selectedOnly = this.selectedArr.filter(sel =>
+      !filteredFiles.some(f => f.name === sel.name && f.url === sel.url)
+    );
   
-
+    return [...selectedOnly, ...filteredFiles];
+  }
 
   //Media Code
   isPlayingIndexMap: { expansion: number | null; audioFiles: number | null } = {
     expansion: null,
     audioFiles: null
   };
+
+  getSliderBackground(value: number): string {
+    const progressColor = '#014FA1';
+    const remainingColor = '#DADADA';
+    return `linear-gradient(to right, ${progressColor} 0%, ${progressColor} ${value}%, ${remainingColor} ${value}%, ${remainingColor} 100%)`;
+  }
 
   togglePlayPause(index: number, audioList: any[], section: 'expansion' | 'audioFiles'): void {
     let audioElements: NodeListOf<HTMLAudioElement>;
@@ -189,13 +216,6 @@ export class CreateProjectComponent {
   //   }
   // }
 
-  formatTime(timeInSeconds: number): string {
-    const minutes = Math.floor(timeInSeconds / 60);
-    const seconds = Math.floor(timeInSeconds % 60);
-    const formattedSeconds = seconds < 10 ? '0' + seconds : seconds;
-    return `${minutes}:${formattedSeconds}`;
-  }
-
   seekAudio(event: any, index: number, audioList: any[]): void {
     const audio = document.querySelectorAll('audio')[index] as HTMLAudioElement;
     const newTime = (event.target.value / 100) * audio.duration;
@@ -215,31 +235,37 @@ export class CreateProjectComponent {
       // Update the seek bar value (progress)
       audioList[index].seekValue = (currentTime / duration) * 100;
     }
+    if (duration > 0) {
+      const progress = (currentTime / duration) * 100;
+      this.audioFiles[index].seekValue = progress;
+      this.audioFiles[index].currentTime = this.formatTime(currentTime);
+      this.audioFiles[index].durationTime = this.formatTime(duration);
+    }
+
   }
 
   selectedArr: AudioFile[] = []; // Array for selected files
 
+  isFileSelected(file: AudioFile): boolean {
+    return this.selectedArr.some(f => f.name === file.name && f.url === file.url);
+  }
+
   toggleSelectFile(file: AudioFile, event: Event): void {
-    debugger
-    // const isChecked = (event.target as HTMLInputElement).checked;
-    // console.log("selectedArr", this.selectedArr);
-    // if (isChecked) {
-    //    this.isShowFooter = true;
-    //    this.selectedArr.push(file);
-    //    //this.audioFiles = this.audioFiles.filter((f) => f !== file);
-    // }
-    // else if (!isChecked) {
-    //      this.isShowFooter = false;
-    // } else {
-    //   //this.audioFiles.push(file);
-    //   //this.selectedArr = this.selectedArr.filter((f) => f !== file);
-    // }
     const isChecked = (event.target as HTMLInputElement).checked;
   
     if (isChecked) {
       // Add the file to the selectedArr if not already there
       const alreadyExists = this.selectedArr.some(f => f.name === file.name && f.url === file.url);
       if (!alreadyExists) {
+        if (this.selectedArr.length >= 4) {
+          (event.target as HTMLInputElement).checked = false; // Uncheck the checkbox
+        this.snackBar.open('You can only select up to 4 audio files.', 'Close', {
+          duration: 3000,
+          horizontalPosition: 'center',
+          verticalPosition: 'top',
+        });
+        return;
+        }
         this.selectedArr.push(file);
       }
     } else {
@@ -252,14 +278,10 @@ export class CreateProjectComponent {
   }
 
   createNewProject() {
-    debugger
-    console.log('Project name', this.projectName);
     if (this.projectName === "") {
       this.toastr.error('Please enter project name');
       return;
     }
-
-    console.log('audio id', )
     const payload = {
       userId: this.userCode,  
       projectName: this.projectName, 
@@ -269,16 +291,22 @@ export class CreateProjectComponent {
   };
    this.commonServ.CreateProject(payload).subscribe(
     (res: any) => {
-      debugger
-      console.log('Project Created Successfully:', res);
-      this.toastr.success(res);
+      if (res.status === "success") {
+        this.toastr.success(res.message, 'Success', {
+          progressBar: true
+        });
+      }
+      else {
+          this.toastr.error(res.message, 'Error', {
+            progressBar: true
+          });
+      }
     }, 
   err => {
-    console.error('Error creating project:', err);
-    this.toastr.error(err);
+    this.toastr.error('Something Went Wrong!', 'Error', {
+      progressBar: true
+    });
   });
 } 
   
-
-
 }

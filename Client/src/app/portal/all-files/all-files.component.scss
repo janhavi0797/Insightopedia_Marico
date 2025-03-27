@@ -18,12 +18,13 @@
     .table-title {
       font-size: 24px;
       font-weight: 700;
-      color: #014FA1;
+      //color: #014FA1;
+      color: #475467;
       margin: 10px 0 25px 0;
       text-align: center;
       //text-transform: uppercase;
       letter-spacing: 1px;
-      border-bottom: 2px solid #014FA1;
+      border-bottom: 2px solid #475467;
       display: inline-block;
       padding-bottom: 8px;
       position: relative;
@@ -71,9 +72,13 @@
     th {
       position: sticky;
       top: 0;
-      background: #014FA1;
-      color: white;
+      background: #E4E7EC;
+      color: #475467;
       z-index: 2;
+    }
+
+    mat-icon-button {
+      color: #475467;
     }
   }
 }

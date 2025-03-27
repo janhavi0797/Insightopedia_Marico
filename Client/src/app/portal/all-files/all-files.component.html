@@ -27,7 +27,7 @@
       <ng-container matColumnDef="isPlaying">
         <th mat-header-cell *matHeaderCellDef> Play/Pause </th>
         <td mat-cell *matCellDef="let element">
-          <button mat-icon-button color="primary" (click)="togglePlayPause(element)">
+          <button mat-icon-button (click)="togglePlayPause(element)">
             <mat-icon *ngIf="!element.isPlaying">play_arrow</mat-icon>
             <mat-icon *ngIf="element.isPlaying">pause</mat-icon>
           </button>
