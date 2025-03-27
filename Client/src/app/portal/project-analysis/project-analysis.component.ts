@@ -6,6 +6,7 @@ import { map, Observable, startWith } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 import { CommonService } from '../service/common.service';
 import { Router } from '@angular/router';
+import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 
 @Component({
   selector: 'app-project-analysis',
@@ -17,6 +18,7 @@ export class ProjectAnalysisComponent {
   isLoading: boolean = false;
   userCode: string = '';
  ELEMENT_DATA: PeriodicElement[]=[];
+  filteredProject: any[]=[];
   constructor(private toastr: ToastrService , private common: CommonService,private router: Router) {}
 
   displayedColumns: string[] = ['userName', 'projectName', 'createdTime', 'status', 'view'];
@@ -24,12 +26,21 @@ export class ProjectAnalysisComponent {
   dataSource = new MatTableDataSource<PeriodicElement>(this.ELEMENT_DATA);
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
-
+  ngOnInit() {
+   let code = localStorage.getItem('uId') || '';
+    const param = {
+      user: code,
+      //projectName: this.selectedProject,
+      isAllFile: 1
+    }
+    this.getProjectData(param);
+  }
   ngAfterViewInit() {
     this.dataSource.paginator = this.paginator;
   }
 
   filteredOptions!: Observable<any[]>;
+  filteredOptionsProject!: Observable<any[]>;
   myControl = new FormControl('');
 
   emptyProject() {
@@ -41,6 +52,10 @@ export class ProjectAnalysisComponent {
     //   }
     //   this.getProjectData(param);
     // }
+    if (!this.myControl.value) {
+      this.filteredProject = [...this.project]; // Reset list when input is cleared
+      this.mapProjectData(this.filteredProject);
+    }
   }
 
   onOptionSelected(event: any): void {
@@ -82,11 +97,19 @@ export class ProjectAnalysisComponent {
 
   getProjectData(param:any) {
     this.isLoading = true;
-    this.common.getAllProject('audio/projects', param).subscribe((res: any) => {
+    this.common.getAllProject('project/list', param).subscribe((res: any) => {
       this.project = res.data;
-      this.mapProjectData();
+      this.mapProjectData(this.project);
       console.log("project Data",this.project);
       //this.tempAudioData = res.data.map((x: any) => Object.assign({}, x));
+      this.filteredOptionsUser = this.myUserControl.valueChanges.pipe(
+        startWith(''),
+        map(value => this.filterUsers(value || ''))
+      );
+      this.filteredOptionsProject = this.myControl.valueChanges.pipe(
+        startWith(''),
+        map(value => this.filterProjects(value || ''))
+      );
       this.count = res.count;
       this.userCode = localStorage.getItem('uId') || '';
       this.isLoading = false;
@@ -95,7 +118,24 @@ export class ProjectAnalysisComponent {
       this.toastr.error('Something Went Wrong!')
     });
   }
-
+  // filterUsers(value: string): any[] {
+  //   const filterValue = value.toLowerCase();
+  //   return this.project.filter(user => user.userName.toLowerCase().includes(filterValue));
+  // }
+  filterUsers(value: string): any[] {
+    const filterValue = value.toLowerCase();
+  
+    // Extract unique usernames
+    const uniqueUsernames = Array.from(
+      new Set(this.project.map(user => user.userName))
+    );
+  
+    // Filter unique usernames based on input value
+    return uniqueUsernames
+      .filter(userName => userName.toLowerCase().includes(filterValue))
+      .map(userName => ({ userName })); // Ensure the structure matches mat-option
+  }
+  
   selectedProjects: Map<string, string> = new Map();
   myUserControl = new FormControl('');
   filteredOptionsUser!: Observable<any[]>;
@@ -107,9 +147,62 @@ export class ProjectAnalysisComponent {
     }
  }
 
- emptyUser() {}
+ emptyUser() {
+  if (!this.myControl.value) {
+    this.filteredProject = [...this.project]; // Reset list when input is cleared
+    this.mapProjectData(this.filteredProject);
+  }
+ }
 
- onOptionSelectedUser(event: any): void {}
+//  onOptionSelectedUser(event: any): void {
+
+//  }
+
+onOptionSelectedUser(event: any): void {
+  const searchUser = event.option.value;
+  console.log("searchUser", searchUser);
+
+  if (searchUser) {
+    this.filteredProject = this.project.filter(project =>
+      project.userName?.toLowerCase() === searchUser.toLowerCase()
+    );
+  } else {
+    this.filteredProject = [...this.project]; // Restore original data when input is cleared
+  }
+
+  console.log("Filtered Project:", this.filteredProject);
+  this.mapProjectData(this.filteredProject);
+}
+
+filterProjects(value: string): any[] {
+  const filterValue = value.toLowerCase();
+
+  // Extract unique project names
+  const uniqueProjects = Array.from(
+    new Set(this.project.map(proj => proj.projectName))
+  );
+
+  // Filter unique project names based on input value
+  return uniqueProjects
+    .filter(projectName => projectName.toLowerCase().includes(filterValue))
+    .map(projectName => ({ projectName: projectName })); // Ensure structure matches mat-option
+}
+
+onOptionSelectedProject(event: any): void {
+  const searchProject = event.option.value;
+  console.log("Selected Project:", searchProject);
+
+  if (searchProject) {
+    this.filteredProject = this.project.filter(proj => proj.projectName === searchProject);
+  } else {
+    this.filteredProject = [...this.project]; // Restore full list when input is cleared
+  }
+
+  this.mapProjectData(this.filteredProject);
+}
+
+
+
 
  viewDetails(projectId: string, userId: string) {
   console.log("View-param1",projectId);
@@ -119,8 +212,8 @@ export class ProjectAnalysisComponent {
   });
  }
 
- mapProjectData(): void {
-   this.ELEMENT_DATA = this.project.map((item) => ({
+ mapProjectData(mapData:any[]): void {
+   this.ELEMENT_DATA = mapData.map((item) => ({
     userName: item.userName,
     userId:item.userId,
     projectName: item.projectName,

@@ -42,11 +42,11 @@
           <form class="example-form">
             <mat-form-field class="example-full-width">
               <mat-label>Search by Project Name</mat-label>
-              <input type="text" placeholder="Search Project Name" aria-label="ProjName" matInput [formControl]="myControl"
+              <input type="text" placeholder="Search Project Name" aria-label="projectName" matInput [formControl]="myControl"
                 [matAutocomplete]="auto" (keyup)="emptyProject()">
-              <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onOptionSelected($event)">
-                <mat-option *ngFor="let option of filteredOptions | async;"
-                  [value]="option?.ProjName">{{option?.ProjName}}</mat-option>
+              <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onOptionSelectedProject($event)">
+                <mat-option *ngFor="let option of filteredOptionsProject | async;"
+                  [value]="option?.projectName">{{option?.projectName}}</mat-option>
               </mat-autocomplete>
             </mat-form-field>
           </form>
@@ -93,7 +93,7 @@
         <ng-container matColumnDef="view">
             <th mat-header-cell *matHeaderCellDef> Actions </th>
             <td mat-cell *matCellDef="let element"> 
-                <button [disabled]="element.status == 1" class="view-btn" (click)="viewDetails(element.projectId, element.userId)">View</button>
+                <button [disabled]="element.status !== 1" class="view-btn" (click)="viewDetails(element.projectId, element.userId)">View</button>
             </td>
           </ng-container>
   

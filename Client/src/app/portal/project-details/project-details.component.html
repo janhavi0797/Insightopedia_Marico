@@ -1,9 +1,9 @@
 <div class="tab-container">
     <div class="tab-header">
       <button (click)="back()" matTooltip="Back"><mat-icon>arrow_back</mat-icon></button>
-      <h3>{{allAudioDetails?.TGName}}</h3>
+      <h3>{{allAudioDetails?.projectName}}</h3>
       <mat-form-field appearance="outline" class="full-width">
-        <mat-label>Audio Name</mat-label>
+        <mat-label>Filter By</mat-label>
         <mat-select [(ngModel)]="audioName" (selectionChange)="onAudioNameChange($event)" [disabled]="isEdit">
             <mat-option *ngFor="let audioNm of audioNameArr;let i=index" [value]="audioNm">{{ audioNm }}</mat-option>
         </mat-select>
@@ -100,7 +100,7 @@
             <p class="text"> <span class="moderator">Summary : </span>{{audioDetails?.summary}}</p>
           </div>
           <div class="tab-content-model translation">
-            <button (click)="downloadSummaryAndSenti('summary')"><mat-icon>cloud_download</mat-icon> Download Summary</button>
+            <button (click)="downloadSummaryAndSenti('summary',audioDetails?.audioId,allAudioDetails?.projectId)"><mat-icon>cloud_download</mat-icon> Download Summary</button>
           </div>
         </div>
       </mat-tab>
@@ -124,7 +124,7 @@
             <div class="text" [innerHTML]="audioDetails?.sentiment_analysis | formatText"></div>
           </div>
           <div class="tab-content-model translation">
-            <button (click)="downloadSummaryAndSenti('sentimental-analysis')"><mat-icon>cloud_download</mat-icon> Download Sentiment
+            <button (click)="downloadSummaryAndSenti('sentimental-analysis',audioDetails?.audioId,allAudioDetails?.projectId)"><mat-icon>cloud_download</mat-icon> Download Sentiment
               Analysis</button>
           </div>
         </div>

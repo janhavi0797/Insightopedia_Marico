@@ -74,12 +74,14 @@ export class ProjectDetailsComponent {
       console.log("getProjectDetails only audioDetails",res.data.projectDetails[0].AudioData);
 
       this.allAudioDetails = res.data.projectDetails[0];
-      this.audioDetails = res.data.projectDetails[0].AudioData[0];
+      //this.audioDetails = res.data.projectDetails[0].AudioData[0];
+      this.audioDetails = this.combineAudioData(this.allAudioDetails.AudioData);
       console.log("getProjectDetails only audioDetails",this.audioDetails);
        //this.filePath = res.data.FilePath;
        //this.vectorId = res.data.vectorId;
       this.tempAudioData = res.data.projectDetails[0].AudioData.map((x: any) => Object.assign({}, x));
-      this.audioNameArr =res.data.projectDetails[0].AudioData.map(((item: { audioName: any; })=> item.audioName));
+      //this.audioNameArr =res.data.projectDetails[0].AudioData.map(((item: { audioName: any; })=> item.audioName));
+      this.audioNameArr = ["All Project", ...res.data.projectDetails[0].AudioData.map((item: { audioName: any }) => item.audioName)];
       console.log("audioNameArr",this.audioNameArr);
       this.audioName = this.audioNameArr[0];
       this.isLoading = false;
@@ -160,14 +162,15 @@ export class ProjectDetailsComponent {
     if (this.messageHistorySub) {
       this.messageHistorySub.unsubscribe();
     }
-    this.router.navigate(["portal/allFiles"]);
+    this.router.navigate(["portal/project-analysis"]);
   }
 
   sendQuery() {
+    debugger
     if (this.question !== "") {
       const payload = {
         question: this.question,
-        vectorId: this.audioDetails.VectorId
+        vectorId: this.audioDetails.vectorId
       }
       this.isLoading = true;
       this.audioServ.sendQueryAI('chat/chatVectorId', payload).subscribe((res: any) => {
@@ -266,10 +269,37 @@ export class ProjectDetailsComponent {
 
   }
 
-  downloadSummaryAndSenti(content:string) {
-    const url = `${environment.BASE_URL}transcription/generate-pdf?tgid=${this.tgId}&type=${content}&audioName=${this.audioName}`;
+  // downloadSummaryAndSenti(content:string) {
+  //   const url = `${environment.BASE_URL}audio/generate-pdf?id=${this.tgId}&type=${content}&key=${this.audioName}`;
+  //   this.audioServ.getDownload(url);
+  // }
+
+  downloadSummaryAndSenti(content: string, audioId?: string, projectId?: string): void {
+    debugger;
+    console.log(audioId)
+    console.log(projectId)
+    if (!audioId && !projectId) {
+      console.error("Both projectId and audioId are missing.");
+      return;
+    }
+  
+    let idParam = "";
+    let keyParam = "";
+  
+    if (projectId) {
+      idParam = projectId;
+      keyParam = "project";
+    } 
+    if (audioId) {
+      idParam = audioId; // Override if only audioId is present
+      keyParam = "audio";
+    }
+  
+    const url = `${environment.BASE_URL}audio/generate-pdf?id=${idParam}&type=${content}&key=${keyParam}`;
+    console.log("Generated URL:", url); // Debugging
     this.audioServ.getDownload(url);
   }
+  
 
   isValidNumber(value: any): boolean {
     return typeof value === 'number' && !isNaN(value);
@@ -303,15 +333,104 @@ export class ProjectDetailsComponent {
     return true;
   }
 
+  combineAudioData(audioDataArray: AudioData[]): any {
+    return {
+      audioName: audioDataArray.map(audio => audio.audioName).join(', '), // Combine names
+      tags: audioDataArray.flatMap(audio => audio.tags || []), // Merge all tags safely
+      audioUrls: audioDataArray.map(audio => audio.audioUrl), // Store URLs in an array
+      sentiment_analysis: audioDataArray
+        .map(audio => audio.sentiment_analysis)
+        .filter(Boolean)
+        .join('. '), // Merge sentiment analysis data
+      audiodata: audioDataArray.flatMap(audio => audio.audiodata || []), // Preserve full audiodata structure
+      combinedTranslation: audioDataArray
+        .map(audio => audio.combinedTranslation)
+        .filter(Boolean)
+        .join(' '), // Merge combined translations
+      translation: audioDataArray.flatMap(audio => 
+        (audio.audiodata || []).map(data => data.translation)
+      ).join(' '), // Merge all translations into a single string
+      summary: audioDataArray
+        .map(audio => audio.summary)
+        .filter(Boolean)
+        .join('. '), // Merge summaries
+    };
+  }
+  
+  
+  
+  
+  
+  
+
+  // onAudioNameChange(event: any) {
+  //   let index = this.audioNameArr.indexOf(event.value);
+  //   console.log("onAudioNameChange",index);
+  //   if(index == 0){
+  //     this.audioDetails = this.combineAudioData(this.allAudioDetails);
+  //   }else{
+  //     this.audioDetails = this.allAudioDetails.AudioData[index - 1];
+  //     console.log("onAudioNameChange audioDetails",this.audioDetails);
+  //   }
+  //   const audio = this.audioPlayer.nativeElement;
+  //   this.tempAudioData = this.allAudioDetails.AudioData[index].audiodata.map((x: any) => Object.assign({}, x));
+  //   audio.load();
+  //   this.isPlaying = false;
+  //   this.currentTime = '0:00';
+  // }
+
   onAudioNameChange(event: any) {
     const index = this.audioNameArr.indexOf(event.value);
-    console.log("onAudioNameChange",index);
-    this.audioDetails = this.allAudioDetails.AudioData[index];
-    console.log("onAudioNameChange audioDetails",this.audioDetails);
-    const audio = this.audioPlayer.nativeElement;
-    this.tempAudioData = this.allAudioDetails.AudioData[index].audiodata.map((x: any) => Object.assign({}, x));
-    audio.load();
-    this.isPlaying = false;
-    this.currentTime = '0:00';
+    console.log("onAudioNameChange", index);
+  
+    if (index === -1) {
+      console.warn("Audio name not found in array.");
+      return;
+    }
+  
+    if (index === 0) {
+      this.audioDetails = this.combineAudioData(this.allAudioDetails.AudioData);
+    } else {
+      this.audioDetails = this.allAudioDetails.AudioData[index - 1] || null;
+      console.log("onAudioNameChange audioDetails", this.audioDetails);
+    }
+  
+    if (this.audioDetails) {
+      const audio = this.audioPlayer.nativeElement;
+      this.tempAudioData = this.allAudioDetails.AudioData.map((x: any) => ({ ...x })); // Create a shallow copy
+      audio.load();
+      this.isPlaying = false;
+      this.currentTime = '0:00';
+    } else {
+      console.warn("No audio details found for the selected index.");
+    }
   }
+  
+
+
+
+}
+export interface AudioData {
+  audioId: string;
+  audioName: string;
+  audioUrl: string;
+  audiodata: TranscriptionData[];
+  combinedTranslation?: string;
+  sentiment_analysis?: string;
+  summary?: string;
+  tags?: string[];
+  userId?: string;
+}
+
+export interface TranscriptionData {
+  speaker: string | number;
+  timestamp: string;
+  transcription: string;
+  translation: string;
+}
+
+export interface ProjectDetails {
+  projectDetails: {
+    AudioData: AudioData[];
+  }[];
 }

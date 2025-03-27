@@ -304,7 +304,7 @@ export class ProjectService {
             summary: item.summary,
             sentiment_analysis: item.sentiment_analysis,
             combinedTranslation: item.combinedTranslation,
-            vectorId: item.vectorId,
+            vectorId: item.vectorIds,
           };
         }),
       );
