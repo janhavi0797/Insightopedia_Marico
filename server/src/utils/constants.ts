@@ -37,7 +37,7 @@ You are an expert in sentiment analysis. Given multiple sentiment summaries, you
 export const SUMMARY = 'Summary';
 export const SENTIMENT_ANALYSIS = 'SA';
 export const PROJECT_SENTIMENT_ANALYSIS = 'project_sentiment';
-export const PROJECT_SUMMARY='project_summary';
+export const PROJECT_SUMMARY = 'project_summary';
 
 export const PROJECT_COMPARE = (
   text: string,
@@ -105,11 +105,10 @@ export const MODERATOR_RECOGNITION = `You are an expert at analyzing textual con
                         on their role and actions within the discussion.            
                         Provide a brief explanation for your choice.`;
 
-
 export const PROJECT_SUMMARIZATION_PROMPT_TEMPLATE = (
-                          summaryLength: number,
-                          texts: string,
-                        ) => `
+  summaryLength: number,
+  texts: string,
+) => `
                         You are an expert summarizer. Your task is to create a comprehensive project-level summary based on multiple audio transcriptions. 
                         
                         ### Guidelines:
@@ -150,5 +149,3 @@ Provide a detailed sentiment analysis including:
 3. **Sentiment trends** observed across the audios.
 4. **Recommendations or insights** based on the analysis.
 `;
-
-                        

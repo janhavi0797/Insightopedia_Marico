@@ -42,7 +42,7 @@ export class UserService {
       }
 
       const sprocId = 'createUser'; // Stored procedure ID
-      const partitionKey = payload.userid; 
+      const partitionKey = payload.userid;
       // Call the stored procedure with the correct partition key
       const { resource: result } = await this.userContainer.scripts
         .storedProcedure(sprocId)
