@@ -5,11 +5,9 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { join } from 'path';
 import { promisify } from 'util';
 import { exec } from 'child_process';
 import * as ffmpeg from 'fluent-ffmpeg';
-import * as fs from 'fs';
 import { InjectModel } from '@nestjs/azure-database';
 import { Container } from '@azure/cosmos';
 import { ConfigService } from '@nestjs/config';
@@ -24,6 +22,9 @@ import {
 import { AudioEntity, ProjectEntity, User } from 'src/utils/containers';
 import * as PDFDocument from 'pdfkit';
 import { Response } from 'express';
+import { BullQueues, QueueProcess } from 'src/utils/enums';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
 
 // const unlinkAsync = promisify(fs.unlink);
 ffmpeg.setFfmpegPath('C:/ffmpeg/ffmpeg.exe');
@@ -38,6 +39,7 @@ export class AudioService {
     @InjectModel(AudioEntity) private readonly audioContainer: Container,
     @InjectModel(ProjectEntity) private readonly projectContainer: Container,
     @InjectModel(User) private readonly userContainer: Container,
+    @InjectQueue(BullQueues.UPLOAD) private readonly uploadQueue: Queue,
     private readonly config: ConfigService,
   ) {
     this.blobServiceClient = BlobServiceClient.fromConnectionString(
@@ -77,38 +79,22 @@ export class AudioService {
       );
     }
 
-    const sasUrls = await this.uploadAudioFiles(files);
-
-    const processedData = uploadAudioDto.map((audioObj) => {
-      // Normalize audioName for matching (remove extension if present)
-      const normalizedAudioName = audioObj.audioName.replace(/\.[^/.]+$/, '');
-      // Find matching file by fileName (remove extension for comparison)
-      const matchingFile = sasUrls.find((file) => {
-        const normalizedFileName = file.fileName.replace(/\.[^/.]+$/, '');
-        return normalizedFileName === normalizedAudioName;
-      });
-
-      if (!matchingFile) {
-        Logger.error(
-          `No matching file found for audioName: ${audioObj.audioName}`,
-        );
-        throw new BadRequestException(
-          `No matching file found for audioName: ${audioObj.audioName}`,
-        );
-      }
-
-      return {
-        audioId: uuidv4(),
-        audioUrl: matchingFile.sasUri,
-        audioName: audioObj.audioName,
-        audioDate: audioObj.audioDate,
-        userId: audioObj.userId,
-        noOfSpek: audioObj.noOfSpek,
-        primaryLang: audioObj.primary_lang,
-        secondaryLang: audioObj.secondary_lang,
-        tags: audioObj.tags,
-      };
+    await this.uploadQueue.add(QueueProcess.UPLOAD_AUDIO, {
+      files,
+      uploadAudioDto,
     });
+
+    const processedData = uploadAudioDto.map((audioObj) => ({
+      audioId: uuidv4(),
+      audioName: audioObj.audioName,
+      audioDate: audioObj.audioDate,
+      userId: audioObj.userId,
+      uploadStatus: 0,
+      noOfSpek: audioObj.noOfSpek,
+      primaryLang: audioObj.primary_lang,
+      secondaryLang: audioObj.secondary_lang,
+      tags: audioObj.tags,
+    }));
 
     try {
       for (const items of processedData) {
@@ -121,78 +107,6 @@ export class AudioService {
     } catch (err) {
       Logger.error(`${err.message}`);
       throw new InternalServerErrorException(`${err.message}`);
-    }
-  }
-
-  async uploadAudioFiles(
-    files: Express.Multer.File[],
-  ): Promise<{ fileName: string; sasUri: string }[]> {
-    try {
-      const sasUrls: { fileName: string; sasUri: string }[] = [];
-
-      const uploadDir = join(process.cwd(), 'uploads');
-
-      // Check if the 'uploads' directory exists, if not, create it
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
-      }
-
-      const uploadPromises = files.map(async (file) => {
-        const tempFilePath = join(
-          'uploads',
-          `${Date.now()}-${file.originalname}`,
-        );
-        const processedFilePath = join(
-          'uploads',
-          `processed-${Date.now()}-${file.originalname}`,
-        );
-
-        // Write the uploaded file buffer to disk temporarily
-        fs.writeFileSync(tempFilePath, file.buffer);
-        const ffmpegPath = 'C:/ffmpeg/ffmpeg.exe'; // Adjust the path
-
-        // Process the file with FFmpeg (noise cancellation and mono conversion)
-        //const ffmpegCommand = `${ffmpegPath} -i ${tempFilePath} -af "highpass=f=300, lowpass=f=3000, afftdn=nf=-25" -ac 1 -ar 16000 ${processedFilePath}`;
-        const ffmpegCommand = `${ffmpegPath} -i "${tempFilePath}" -af "highpass=f=300, lowpass=f=3000, afftdn=nf=-25" -ac 1 -ar 16000 "${processedFilePath}"`;
-        await execAsync(ffmpegCommand);
-
-        // Read the processed file back into a buffer
-        const processedBuffer = fs.readFileSync(processedFilePath);
-
-        const blockBlobClient = this.containerClient.getBlockBlobClient(
-          file.originalname,
-        );
-        const uploadBlobResponse =
-          await blockBlobClient.uploadData(processedBuffer);
-
-        Logger.log(
-          `Blob ${file.originalname} uploaded successfully: ${uploadBlobResponse.requestId}`,
-        );
-
-        const sasUri = blockBlobClient.url;
-        const fileName = file.originalname;
-
-        const filePaths = [tempFilePath, processedFilePath];
-
-        filePaths.forEach((filePath) => {
-          fs.unlink(filePath, (err) => {
-            if (err) {
-              Logger.error(`Failed to delete file: ${filePath}`, err);
-              throw new InternalServerErrorException(
-                `Failed to delete file: ${filePath}`,
-              );
-            }
-          });
-        });
-
-        sasUrls.push({ fileName, sasUri });
-      });
-
-      await Promise.all(uploadPromises);
-      return sasUrls;
-    } catch (error) {
-      Logger.error(`Failed to upload audio files: ${error.message}`);
-      throw new InternalServerErrorException('Error uploading audio files');
     }
   }
 

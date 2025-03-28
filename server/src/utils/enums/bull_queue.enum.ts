@@ -4,6 +4,7 @@ export enum BullQueues {
   SUMMARY = 'summary',
   EMBEDDING = 'embedding',
   PROJECT_SUMMARY = 'project-summary',
+  UPLOAD = 'upload',
 }
 
 export enum QueueProcess {
@@ -12,4 +13,5 @@ export enum QueueProcess {
   SUMMARY_AUDIO = 'summarize-audio',
   EMBEDDING_AUDIO = 'embedding-audio',
   PROJECT_SUMMARY_AUDIO = 'project-summary-audio',
+  UPLOAD_AUDIO = 'upload-audio',
 }
