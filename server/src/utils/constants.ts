@@ -36,6 +36,8 @@ You are an expert in sentiment analysis. Given multiple sentiment summaries, you
 
 export const SUMMARY = 'Summary';
 export const SENTIMENT_ANALYSIS = 'SA';
+export const PROJECT_SENTIMENT_ANALYSIS = 'project_sentiment';
+export const PROJECT_SUMMARY='project_summary';
 
 export const PROJECT_COMPARE = (
   text: string,
@@ -102,3 +104,51 @@ export const MODERATOR_RECOGNITION = `You are an expert at analyzing textual con
                         Please carefully read the provided text and determine who the moderator is based
                         on their role and actions within the discussion.            
                         Provide a brief explanation for your choice.`;
+
+
+export const PROJECT_SUMMARIZATION_PROMPT_TEMPLATE = (
+                          summaryLength: number,
+                          texts: string,
+                        ) => `
+                        You are an expert summarizer. Your task is to create a comprehensive project-level summary based on multiple audio transcriptions. 
+                        
+                        ### Guidelines:
+                        - Aim for a summary that is approximately **${summaryLength} words** long.
+                        - **Synthesize key ideas and insights** across all the provided transcriptions.
+                        - Identify **common themes, important points, and recurring topics**.
+                        - Focus on capturing the essence of the discussions without unnecessary details.
+                        - Provide a **cohesive and well-structured summary** that reflects the overall conversation.
+                        - End the summary with a clear and concise **conclusion** that reflects the primary takeaways.
+                        
+                        ### Audio Transcriptions:
+                        ${texts}
+                        
+                        ### Deliverable:
+                        Provide a single, clear, and accurate project-level summary based on the above guidelines.
+                        `;
+
+export const PROJECT_SENTIMENT_ANALYSIS_PROMPT = (texts: string) => `
+You are an expert in sentiment analysis. Your task is to perform a comprehensive sentiment analysis across multiple audio transcriptions for a project.
+
+### Guidelines:
+- **Aggregate and analyze** the sentiments from all the provided texts.
+- Identify and list all the **positive, negative, and neutral sentiments**.
+- Provide a detailed **explanation** for each sentiment and why it is categorized as such.
+- Detect any **patterns or trends** in the sentiments across the different audios.
+- If there are **conflicting sentiments**, determine the overall sentiment that is most dominant and explain why.
+- Provide a clear **sentiment score** for the project as a whole (e.g., Positive, Negative, or Neutral).
+- Offer **recommendations or insights** based on the sentiment trends.
+
+### Context:
+These are the multiple audio transcriptions:
+${texts}
+
+### Deliverable:
+Provide a detailed sentiment analysis including:
+1. **List of positive, negative, and neutral sentiments** with explanations.
+2. **Overall sentiment** for the project with justification.
+3. **Sentiment trends** observed across the audios.
+4. **Recommendations or insights** based on the analysis.
+`;
+
+                        
