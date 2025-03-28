@@ -10,6 +10,10 @@ import axios from 'axios';
 import { ChatCompletionMessageParam } from 'openai/resources';
 import {
   MODERATOR_RECOGNITION,
+  PROJECT_SENTIMENT_ANALYSIS,
+  PROJECT_SENTIMENT_ANALYSIS_PROMPT,
+  PROJECT_SUMMARIZATION_PROMPT_TEMPLATE,
+  PROJECT_SUMMARY,
   SENTIMENT_ANALYSIS,
   SENTIMENT_ANALYSIS_PROMPT,
   SUMMARIZATION_PROMPT_TEMPLATE,
@@ -152,7 +156,7 @@ export class AudioUtils {
       const response = await axios.post(apiUrl, transcriptionRequest, {
         headers,
       });
-      const transcriptionUrl = response.headers['location']; 
+      const transcriptionUrl = response.headers['location'];
       const transcriptionId = transcriptionUrl.split('/').pop(); // Extract transcription ID
 
       // Poll the status of the transcription until it is complete
@@ -236,8 +240,17 @@ export class AudioUtils {
     return SUMMARIZATION_PROMPT_TEMPLATE(summaryLength, text);
   }
 
+  generateProjectSummarizationPrompt(text: string) {
+    const summaryLength = 500;
+    return PROJECT_SUMMARIZATION_PROMPT_TEMPLATE(summaryLength, text);
+  }
+
   generateSentimenAnalysisPrompt(text: string) {
     return SENTIMENT_ANALYSIS_PROMPT(text);
+  }
+
+  generateProjectSentimenAnalysisPrompt(text: string) {
+    return PROJECT_SENTIMENT_ANALYSIS_PROMPT(text);
   }
 
   async getSummaryAndSentiments(purpose: string, text: string) {
@@ -257,10 +270,20 @@ export class AudioUtils {
 
     // 2️⃣ **Summarize Each Chunk**
     for (const chunk of chunks) {
-      const prompt =
-        purpose === 'Summary'
-          ? this.generateSummarizationPrompt(chunk)
-          : this.generateSentimenAnalysisPrompt(chunk);
+      const prompt = (() => {
+        switch (purpose) {
+          case 'Summary':
+            return this.generateSummarizationPrompt(chunk);
+          case 'SA':
+            return this.generateSentimenAnalysisPrompt(chunk);
+          case 'project_summary':
+            return this.generateProjectSummarizationPrompt(chunk); // Assuming multiple texts
+          case 'project_sentiment':
+            return this.generateProjectSentimenAnalysisPrompt(chunk); // Assuming multiple texts
+          default:
+            throw new Error(`Invalid purpose: ${purpose}`);
+        }
+      })();
 
       const messages: ChatCompletionMessageParam[] = [
         { role: 'user', content: prompt },
@@ -563,11 +586,11 @@ export class AudioUtils {
         .join('\n\n');
 
       const combinedSummary = await this.getSummaryAndSentiments(
-        SUMMARY,
+        PROJECT_SUMMARY,
         combinedTranscription,
       );
       const combinedSentiment = await this.getSummaryAndSentiments(
-        SENTIMENT_ANALYSIS,
+        PROJECT_SENTIMENT_ANALYSIS,
         combinedTranscription,
       );
       const projectVecIds = audioDocuments
