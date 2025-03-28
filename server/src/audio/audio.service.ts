@@ -14,7 +14,7 @@ import { InjectModel } from '@nestjs/azure-database';
 import { Container } from '@azure/cosmos';
 import { ConfigService } from '@nestjs/config';
 import { v4 as uuidv4 } from 'uuid';
-import { AudioGetAllDTO } from './dto/get-audio.dto';
+import { AudioGetAllDTO, EditAudioTagDTO } from './dto/get-audio.dto';
 import {
   BlobSASPermissions,
   BlobServiceClient,
@@ -268,6 +268,7 @@ export class AudioService {
           return {
             audioId: item.audioId,
             audioName: item.audioName,
+            uploadStatus: item.uploadStatus,
             userId: item.userId,
             tags: item.tags || [],
             audioUrl: fileUrl, // Now it's a resolved string, not a Promise<string>
@@ -571,5 +572,73 @@ export class AudioService {
       status: 200,
       message: 'PDF Generated successfully.',
     };
+  }
+
+  async editAudioTag(payload: EditAudioTagDTO) {
+    try {
+      // Step 1: Validate payload (Ensure required fields are provided)
+      if (!payload || !payload.audioId) {
+        return {
+          statusCode: 404,
+          message: 'Audio Data required for Tag update',
+        };
+      }
+      if (payload.tags) {
+        if (!Array.isArray(payload.tags)) {
+          return {
+            statusCode: 400,
+            message: 'Tags should be an array',
+          };
+        }
+        if (payload.tags.length == 0) {
+          return {
+            statusCode: 400,
+            message: 'At least one tag is required',
+          };
+        } else if (payload.tags.length > 4) {
+          return {
+            statusCode: 400,
+            message: 'Maximum 4 tags allowed',
+          };
+        } else if (payload.tags.includes('')) {
+          return {
+            statusCode: 400,
+            message: 'Tags should not contain empty values',
+          };
+        }
+      }
+      // Step 2: Fetch the user based on email (assuming email is unique)
+      const querySpecTag = {
+        query: 'SELECT * FROM c WHERE c.audioId = @audioId',
+        parameters: [{ name: '@audioId', value: payload.audioId }],
+      };
+
+      const { resources: existingAudio } = await this.audioContainer.items
+        .query(querySpecTag)
+        .fetchAll();
+      // Step 3: Handle case when user is not found
+      if (!existingAudio || existingAudio.length === 0) {
+        return {
+          statusCode: 404,
+          message: 'No matching data available in database',
+        };
+      }
+
+      const existingAudioData = existingAudio[0];
+      existingAudioData.tags = payload.tags;
+
+      // Step 5: Upsert the updated user back into CosmosDB
+        await this.audioContainer.items.upsert(existingAudioData);
+
+      return {
+        statusCode: 200,
+        message: 'Tags updated successfully',
+      };
+    } catch (error) {
+      return {
+        statusCode: 500,
+        message: error.message,
+      };
+    }
   }
 }

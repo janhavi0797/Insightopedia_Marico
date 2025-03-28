@@ -165,7 +165,7 @@ export class UserService {
 
       return {
         response: 1, // Success flag
-        message: payload.name + ' updated successfully',
+        message: updatedUser.userName + ' updated successfully',
       };
     } catch (error) {
       console.error('Error updating user:', error.message);

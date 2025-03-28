@@ -13,13 +13,7 @@ export class EmbeddingProcessor {
 
   @Process({ name: QueueProcess.EMBEDDING_AUDIO, concurrency: 5 }) // Handle jobs in the 'translate-audio' queue
   async handleTranslationJob(job: Job) {
-    const {
-      transcriptionDocument,
-      combinedTranslation,
-      audioId,
-      fileName,
-      projectId,
-    } = job.data;
+    const { combinedTranslation, audioId, fileName, projectId } = job.data;
     await job.log(`Processing translation job for ${audioId}`);
     try {
       const vectorIds =

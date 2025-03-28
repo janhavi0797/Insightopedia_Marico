@@ -18,7 +18,6 @@ import { SummarySentimentsProcessor } from './processors/summarySentiments.proce
 import { EmbeddingProcessor } from './processors/embedding.processor';
 import { createClient } from 'redis';
 import { ProjectSummaryProcessor } from './processors/projectSummary.processor';
-const C = new ConfigService();
 
 @Global()
 @Module({

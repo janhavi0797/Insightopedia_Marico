@@ -15,4 +15,15 @@ export class AudioGetAllDTO {
 
   @IsNotEmpty()
   audioUrl: string;
+
+  @IsNotEmpty()
+  uploadStatus: number;
+}
+
+export class EditAudioTagDTO {
+  @IsNotEmpty()
+  audioId: string;
+
+  @IsArray()
+  tags: string[];
 }

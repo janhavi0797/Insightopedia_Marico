@@ -14,10 +14,8 @@ import {
   PROJECT_SENTIMENT_ANALYSIS_PROMPT,
   PROJECT_SUMMARIZATION_PROMPT_TEMPLATE,
   PROJECT_SUMMARY,
-  SENTIMENT_ANALYSIS,
   SENTIMENT_ANALYSIS_PROMPT,
   SUMMARIZATION_PROMPT_TEMPLATE,
-  SUMMARY,
 } from './constants';
 import { response } from 'express';
 import { ChatService } from 'src/chat/chat.service';
@@ -38,8 +36,6 @@ export class AudioUtils {
   private readonly logger = new Logger(AudioUtils.name);
 
   constructor(
-    @InjectModel(ProjectEntity)
-    private readonly transcriptionContainer: Container,
     @InjectModel(AudioEntity) private readonly AudioContainer: Container,
     @InjectModel(ProjectEntity) private readonly ProjectContainer: Container,
     private readonly chatService: ChatService,
@@ -157,7 +153,6 @@ export class AudioUtils {
         headers,
       });
       const transcriptionUrl = response.headers['location'];
-      const transcriptionId = transcriptionUrl.split('/').pop(); // Extract transcription ID
 
       // Poll the status of the transcription until it is complete
       return await this.getTranscriptionResult(
@@ -354,9 +349,6 @@ export class AudioUtils {
         existingDocument.combinedTranslation =
           transcriptionDocument.combinedTranslation;
         existingDocument.vectorIds = transcriptionDocument.vectorIds;
-
-        const response =
-          await this.AudioContainer.items.upsert(existingDocument);
       } else {
         const response = await this.AudioContainer.items.create(
           transcriptionDocument,

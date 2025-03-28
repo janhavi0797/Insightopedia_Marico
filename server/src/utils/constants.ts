@@ -1,5 +1,3 @@
-import { text } from 'stream/consumers';
-
 export const SUMMARIZATION_PROMPT_TEMPLATE = (
   summaryLength: number,
   text: string,

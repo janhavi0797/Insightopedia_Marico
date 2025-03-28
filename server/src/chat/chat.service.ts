@@ -340,9 +340,6 @@ export class ChatService {
       }
 
       const projectDocument = existingDocuments[0];
-      const transcriptionIds = projectDocument.audioIds
-        .map((id) => `'${id}'`)
-        .join(', ');
 
       // TODO add transcription data to the project entity
       const transcriptionData = projectDocument.transcription;
