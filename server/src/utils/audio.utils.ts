@@ -152,7 +152,7 @@ export class AudioUtils {
       const response = await axios.post(apiUrl, transcriptionRequest, {
         headers,
       });
-      const transcriptionUrl = response.headers['location']; 
+      const transcriptionUrl = response.headers['location'];
       const transcriptionId = transcriptionUrl.split('/').pop(); // Extract transcription ID
 
       // Poll the status of the transcription until it is complete

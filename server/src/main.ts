@@ -23,9 +23,9 @@ async function bootstrap() {
 
   app.enableCors({
     origin: ['http://localhost:4200'], // Replace with your Angular app's URL
-   //origin: ['https://maricointellivoice.atriina.com'],
+    //origin: ['https://maricointellivoice.atriina.com'],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    credentials: true,  // If you are using cookies or authorization headers
+    credentials: true, // If you are using cookies or authorization headers
   });
 
   const serverAdapter = new ExpressAdapter();
@@ -45,6 +45,7 @@ async function bootstrap() {
   const projectSummaryQueue = app.get<Queue>(
     getQueueToken(BullQueues.PROJECT_SUMMARY),
   );
+  const uploadQueue = app.get<Queue>(getQueueToken(BullQueues.UPLOAD));
 
   createBullBoard({
     queues: [
@@ -53,6 +54,7 @@ async function bootstrap() {
       new BullAdapter(summaryQueue),
       new BullAdapter(embeddingQueue),
       new BullAdapter(projectSummaryQueue),
+      new BullAdapter(uploadQueue),
     ],
     serverAdapter,
   });
@@ -61,9 +63,6 @@ async function bootstrap() {
   const expressApp = app.getHttpAdapter().getInstance();
   expressApp.use('/admin/queues', serverAdapter.getRouter());
 
-  await app.listen(3001);
+  await app.listen(3000);
 }
 bootstrap();
-
-
-
