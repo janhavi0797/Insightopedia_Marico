@@ -68,6 +68,9 @@ import { ProjectSummaryProcessor } from './processors/projectSummary.processor';
     BullModule.registerQueue({
       name: BullQueues.PROJECT_SUMMARY,
     }),
+    BullModule.registerQueue({
+      name: BullQueues.UPLOAD,
+    }),
     AudioModule,
     UserModule,
     ProjectModule,

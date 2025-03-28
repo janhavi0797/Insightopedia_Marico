@@ -11,6 +11,7 @@ export class AudioEntity {
   primaryLang: string;
   secondaryLang: string[];
   noOfSpek: number;
+  uploadStatus: number;
   audiodata: Audiodata[];
   isTranscriptionFetched: boolean;
   summary: string;
