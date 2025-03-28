@@ -18,7 +18,6 @@ export class UserController {
   @Get('all') // GET /users/all
   @ApiOperation({ summary: 'Get all users' })
   async getAllUsers(@Query('userId') userId?: string) {
-    console.log(userId);
     return await this.userService.getAllUsers(userId);
   }
 

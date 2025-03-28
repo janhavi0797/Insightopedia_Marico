@@ -1,0 +1,193 @@
+.table-wrapper {
+    margin: 10px;
+    padding: 10px;
+    background: #fafafa;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    height: 100%; /* Optional if you want full height layout */
+  
+    // .table-header-row {
+    //   display: flex;
+    //   justify-content: space-between;
+    //   align-items: center;
+    //   flex-wrap: wrap;
+    //   margin-bottom: 10px;
+  
+    //   .table-title {
+    //     font-size: 24px;
+    //     font-weight: 700;
+    //     color: #014FA1;
+    //     margin: 10px 0 25px 0;
+    //     text-align: center;
+    //     //text-transform: uppercase;
+    //     letter-spacing: 1px;
+    //     border-bottom: 2px solid #014FA1;
+    //     display: inline-block;
+    //     padding-bottom: 8px;
+    //     position: relative;
+    //   }
+  
+    //   .search-align-right {
+    //     max-width: 350px;
+    //     width: 100%;
+    //   }
+      
+    //   .search-align-right mat-form-field {
+    //     width: 100%;
+    //   }
+      
+    // }
+
+    .allfiles-container-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px;
+
+        ::ng-deep mat-form-field .mat-mdc-form-field-subscript-wrapper {
+            display: none;
+        }
+
+        &-tabs {
+            button {
+                padding: 10px 12px 10px 12px;
+                font-weight: 500;
+                font-size: 16px;
+                outline: none;
+                border: 1px solid #79747E;
+                background-color: #ffffff;
+
+                span {
+                    background-color: #014FA1;
+                    color: #ffffff;
+                    border-radius: 16px;
+                    font-size: 14px;
+                    padding: 2px 8px 2px 8px;
+                    margin-left: 10px;
+                }
+
+                &.active {
+                    background-color: #D4E5F7;
+                    transition: 0.5s;
+                }
+            }
+
+            #allfilebtn {
+                border-radius: 100px 0px 0px 100px;
+            }
+
+            #myfilebtn {
+                border-radius: 0px 100px 100px 0px;
+            }
+        }
+
+        .allfiles-container-header-search {
+            display: flex;
+            align-items: center;
+
+            form {
+                margin-right: 10px;
+            }
+        }
+    }
+
+    .mat-table-container {
+      flex: 1 1 auto;
+      overflow: auto;
+      max-height: 500px;
+      max-width: 100%; 
+
+      .view-btn {
+        background-color: #014FA1;
+        font-size: 12px;
+        font-weight: 500;
+        margin-right: 10px;
+        border: none;
+        outline: none;
+        color: #fff;
+        padding: 4px 8px;
+        border-radius: 7px;
+    }
+    
+    .view-btn:disabled {
+        background-color: #79747E;
+        cursor: not-allowed;
+    }
+    
+    .status-processing {
+        background-color: rgba(255, 255, 153);
+        color: black;
+    }
+    
+    .status-completed {
+        background-color: rgb(68, 228, 68, 0.8);
+        color: white;
+    }
+    
+    .status-failed {
+        background-color: rgba(255, 99, 71);
+        color: white;
+    }
+    
+    .edit-button {
+        border: none;
+        outline: none;
+    }   
+}
+  
+    .mat-paginator-wrapper {
+      position: sticky;
+      bottom: 0;
+      background-color: #fafafa;
+      z-index: 10;
+      padding-top: 10px;
+      border-top: 1px solid #ddd;
+    }
+  
+    table.mat-table {
+      width: auto !important;
+      min-width: 100%;
+      table-layout: auto;
+      border-collapse: separate;
+      border-spacing: 0;
+  
+      th.mat-header-cell,
+      td.mat-cell {
+        white-space: nowrap;
+        padding: 12px 16px;
+      }
+  
+      th {
+        position: sticky;
+        top: 0;
+        background: #014FA1;
+        color: white;
+        z-index: 2;
+      }
+    }
+  }
+  
+  /* Responsive tweaks */
+  @media screen and (max-width: 768px) {
+    th.mat-header-cell, td.mat-cell {
+        padding: 10px;
+        font-size: 14px;
+      }
+    .table-header-row {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+    }
+  
+    .search-align-right {
+      max-width: 100%;
+    }
+  
+    .table-title {
+      text-align: left;
+    }
+  }
+  
+  

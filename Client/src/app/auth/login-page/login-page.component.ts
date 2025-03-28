@@ -56,7 +56,7 @@ export class LoginPageComponent {
         localStorage.setItem('userName',res.existingUser.userName);
         localStorage.setItem('role',res.existingUser.rolecode)
         if(res.existingUser.rolecode === "3") {
-          this.router.navigate(['/portal/allFiles'])
+          this.router.navigate(['/portal/all-files'])
         } else {
           this.router.navigate(['/portal/dashboard'])
         }

@@ -156,8 +156,7 @@ export class AudioUtils {
       const response = await axios.post(apiUrl, transcriptionRequest, {
         headers,
       });
-      const transcriptionUrl = response.headers['location']; // Get the URL to check transcription status
-      console.log(transcriptionUrl, 'transcriptionUrl');
+      const transcriptionUrl = response.headers['location']; 
       const transcriptionId = transcriptionUrl.split('/').pop(); // Extract transcription ID
 
       // Poll the status of the transcription until it is complete
@@ -359,12 +358,10 @@ export class AudioUtils {
 
         const response =
           await this.AudioContainer.items.upsert(existingDocument);
-        console.log('Document updated successfully:');
       } else {
         const response = await this.AudioContainer.items.create(
           transcriptionDocument,
         );
-        console.log('Document created successfully:');
         return response;
       }
 
@@ -570,14 +567,11 @@ export class AudioUtils {
       const { resources: projectDocument } = await this.ProjectContainer.items
         .query(query)
         .fetchAll();
-      console.log('projectDocument:', projectDocument);
-
       if (projectDocument.length === 0) {
         throw new Error('Project not found');
       }
 
       const audioIds = (projectDocument[0] as ProjectEntity).audioIds;
-      console.log('audioIds:', audioIds);
 
       const audioQueue = {
         query: 'SELECT * FROM c WHERE ARRAY_CONTAINS(@audioIds, c.audioId)',

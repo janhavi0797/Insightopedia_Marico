@@ -29,6 +29,7 @@ export class InfoComponent {
   }
 
   logout() {
+    
     this.msalService.logout();
     localStorage.removeItem('User');
   }

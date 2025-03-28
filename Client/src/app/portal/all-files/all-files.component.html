@@ -1,1 +1,80 @@
-<p>all-files works!</p>
+<div class="table-wrapper mat-elevation-z8">
+  <!-- Header Section -->
+  <div class="table-header-row">
+    <h2 class="table-title">Audio Files Overview</h2>
+    <!-- project filter code -->
+
+  <div class="search-align-right">
+    <form class="example-form">
+      <mat-form-field class="example-full-width">
+        <mat-label>Search by Project Name</mat-label>
+        <input type="text" placeholder="Search Project Name" aria-label="ProjName"
+          matInput [formControl]="myControl" [matAutocomplete]="auto"
+          (keyup)="emptyProject()">
+  
+        <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onOptionSelected($event)">
+          <mat-option *ngFor="let option of filteredOptions | async" [value]="option">
+            {{ option }}
+          </mat-option>
+        </mat-autocomplete>
+      </mat-form-field>
+    </form>
+  </div>
+
+  </div>
+
+  <!-- Table and Scroll Container -->
+  <div class="mat-table-container">
+    <table mat-table [dataSource]="dataSource" class="mat-table">
+  
+      <!-- Play/Pause Column -->
+      <ng-container matColumnDef="audioUrl">
+        <th mat-header-cell *matHeaderCellDef> Play/Pause </th>
+        <td mat-cell *matCellDef="let element">
+          <audio #audioRef [src]="element.audioUrl" (ended)="onAudioEnded(element)"></audio>
+      
+          <button mat-icon-button (click)="togglePlayPause(element, audioRef)">
+            <mat-icon *ngIf="!element.isPlaying">play_arrow</mat-icon>
+            <mat-icon *ngIf="element.isPlaying">pause</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <!-- Audio File Column -->
+      <ng-container matColumnDef="audioName">
+        <th mat-header-cell *matHeaderCellDef> Audio File </th>
+        <td mat-cell *matCellDef="let element"> {{element.audioName}} </td>
+      </ng-container>
+
+      <!-- Tags Column -->
+      <ng-container matColumnDef="tags">
+        <th mat-header-cell *matHeaderCellDef> Tags </th>
+        <td mat-cell *matCellDef="let element">
+          {{ element.tags?.join(', ') }}
+        </td>
+      </ng-container>
+
+      <!-- Associated Project Column -->
+      <ng-container matColumnDef="projects">
+        <th mat-header-cell *matHeaderCellDef> Associated Project(s) </th>
+        <td mat-cell *matCellDef="let element"> {{element.projectName}} </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns" class="header"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+    </table>
+  </div>
+
+ <!-- Paginator outside the scrollable table -->
+ <div class="mat-paginator-wrapper">
+  <mat-paginator [pageSizeOptions]="[10, 30, 50]" showFirstLastButtons aria-label="Select page of periodic elements">
+  </mat-paginator>
+</div>
+
+</div>
+
+
+
+
+
+  

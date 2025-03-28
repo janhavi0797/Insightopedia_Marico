@@ -31,7 +31,8 @@ export function initializeMsal(msalService: MsalService): () => Promise<void> {
 
 @NgModule({
   declarations: [
-    AppComponent
+    AppComponent,
+    
   ],
   imports: [
     BrowserModule,
