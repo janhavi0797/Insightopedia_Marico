@@ -419,7 +419,7 @@ export class ChatService {
       .fillColor('black') // Set text color to black
       .fontSize(22)
       .font('Helvetica-Bold')
-      .text(`Report for: ${key.charAt(0).toUpperCase() + key.slice(1)}`, {
+      .text(`Report for: Chat`, {
         align: 'center',
       });
     doc.moveDown(2);
