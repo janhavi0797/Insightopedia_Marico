@@ -19,7 +19,6 @@ export class AudioEntity {
   combinedTranslation: string;
   vectorIds: string[];
   status: number;
-  uploadStatus: number;
 }
 
 class Audiodata {

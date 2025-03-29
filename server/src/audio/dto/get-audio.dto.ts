@@ -27,3 +27,31 @@ export class EditAudioTagDTO {
   @IsArray()
   tags: string[];
 }
+
+export class GetAllFilesDTO {
+  @IsNotEmpty()
+  audioId: string;
+
+  @IsNotEmpty()
+  audioName: string;
+
+  @IsNotEmpty()
+  userId: string;
+
+  @IsArray()
+  tags: string[];
+
+  @IsNotEmpty()
+  audioUrl: string;
+
+  @IsNotEmpty()
+  uploadStatus: number;
+
+  @IsArray()
+  projectDetails: string[];
+
+  @IsNotEmpty()
+  _ts: number;
+
+}
+
