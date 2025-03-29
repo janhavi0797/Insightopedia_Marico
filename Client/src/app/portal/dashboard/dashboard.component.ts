@@ -19,6 +19,8 @@ export class DashboardComponent implements OnInit {
   userCode: any;
   userRole: any;
   audioTags: any[] = [];
+  isLoading: boolean = false;
+  today: Date = new Date();
   constructor(private toastr: ToastrService, private fb: FormBuilder, private commonServ: CommonService) { }
 
   ngOnInit() {
@@ -30,10 +32,13 @@ export class DashboardComponent implements OnInit {
   }
 
   getMaster() {
+    this.isLoading = true;
     this.commonServ.getAPI('users/masterData').subscribe((res: any) => {
+      this.isLoading = false;
       this.primaryLang = res.data[0].languages;
       this.secondaryLang = [...this.primaryLang];
     }, (err: any) => {
+      this.isLoading = false;
       this.toastr.error('Something went wrong');
     });
   }
@@ -41,11 +46,14 @@ export class DashboardComponent implements OnInit {
   getTags() {
     let userCode = '';
     userCode = this.userRole === "1" ? '' : this.userCode;
+    this.isLoading = true;
     this.commonServ.getAPI('audio/all', userCode).subscribe(
       (res: any) => {
+        this.isLoading = false;
         this.audioTags = res.data.allUniqueTags;
       },
       (err: any) => {
+        this.isLoading = false;
         this.toastr.error('Something went wrong');
       });
   }
@@ -53,7 +61,7 @@ export class DashboardComponent implements OnInit {
   initializeAudioForm() {
     this.audioDetails = this.fb.group({
       bankInput: this.fb.array([]),
-    })
+    });
   }
 
   get bankDetailsArray(): FormArray {
@@ -88,7 +96,7 @@ export class DashboardComponent implements OnInit {
   }
 
   addFile(files: FileList): boolean {
-    if (files.length > 4) {
+    if(this.audioFiles.length + files.length > 4) {
       this.toastr.warning('You can only upload 4 files at a time');
       return false;
     }

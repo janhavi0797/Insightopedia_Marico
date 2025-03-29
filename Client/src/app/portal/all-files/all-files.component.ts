@@ -51,14 +51,13 @@ export class AllFilesComponent {
   allProjects: string[] = [];
 
    // mat table code 
-   displayedColumns: string[] = ['audioUrl', 'audioName', 'tags', 'projects'];
+   displayedColumns: string[] = ['audioUrl', 'audioName', 'tags', 'projects', 'status', 'action'];
    dataSource = new MatTableDataSource<any>([]);
    @ViewChild(MatPaginator) paginator!: MatPaginator;
 
    constructor(private audioServ: AudioService, private toastr: ToastrService) {}
 
    ngOnInit() {
-    this.isLoading = true;
     this.getAllAudioList();
 
     this.filteredOptions = this.myControl.valueChanges.pipe(
@@ -68,10 +67,8 @@ export class AllFilesComponent {
   }
 
   getAllAudioList() {
-    
     this.isLoading = true;
     this.audioServ.getAllAudioList('audio/all').subscribe((res: any) => {
-      
       this.isLoading = false;
       const audioList: Audio[] = res?.data?.audioData || [];
   
