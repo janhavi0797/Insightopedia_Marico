@@ -133,4 +133,12 @@ export class AudioController {
   async editUser(@Body() payload: EditAudioTagDTO) {
     return await this.audioService.editAudioTag(payload);
   }
+
+  @Get('allFiles')
+  @ApiOperation({ summary: 'Get All audio and unique tag and project name' })
+  @ApiQuery({ name: 'userId', required: false })
+  async getAllFilesData(@Query('userId') userId?: string) {
+    return this.audioService.getAllFilesData(userId);
+  }
+
 }

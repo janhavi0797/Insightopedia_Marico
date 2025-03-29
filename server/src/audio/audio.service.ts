@@ -12,7 +12,7 @@ import { InjectModel } from '@nestjs/azure-database';
 import { Container } from '@azure/cosmos';
 import { ConfigService } from '@nestjs/config';
 import { v4 as uuidv4 } from 'uuid';
-import { AudioGetAllDTO, EditAudioTagDTO } from './dto/get-audio.dto';
+import { AudioGetAllDTO, EditAudioTagDTO, GetAllFilesDTO } from './dto/get-audio.dto';
 import {
   BlobSASPermissions,
   BlobServiceClient,
@@ -555,4 +555,108 @@ export class AudioService {
       };
     }
   }
+
+  async getAllFilesData(userId?: string) {
+    try {
+      let sqlQuery = 'SELECT * FROM c ORDER BY c._ts DESC';
+      if (userId) {
+        sqlQuery = `SELECT * FROM c WHERE c.userId = @userId ORDER BY c._ts DESC`;
+      }
+  
+      const querySpec = {
+        query: sqlQuery,
+        parameters: userId ? [{ name: '@userId', value: userId }] : [],
+      };
+  
+      const { resources } = await this.audioContainer.items
+        .query(querySpec)
+        .fetchAll();
+  
+      if (!resources || resources.length === 0) {
+        return {
+          statusCode: 404,
+          message: 'No audio records found',
+          data: { audioData: [], allUniqueTags: [] },
+        };
+      }
+  
+      let projectQuery = `SELECT * FROM c`;
+      if (userId) {
+        projectQuery = `SELECT * FROM c WHERE c.userId = @userId`;
+      }
+  
+      const projectQuerySpec = {
+        query: projectQuery,
+        parameters: userId ? [{ name: '@userId', value: userId }] : [],
+      };
+  
+      const { resources: projects } = await this.projectContainer.items
+        .query(projectQuerySpec)
+        .fetchAll();
+  
+      let associatedProjects = [];
+      if (projects.length > 0) {
+        associatedProjects = projects.map((project) => ({
+          projectId: project.projectId,
+          projectName: project.projectName,
+          audioIds: project.audioIds,
+        }));
+      }
+  
+      const uniqueAudioMap: Map<string, GetAllFilesDTO> = new Map();
+  
+      for (const item of resources) {
+        const fileUrl = await this.generateBlobSasUrl(
+          item.audioName.substring(item.audioName.lastIndexOf('/') + 1)
+        );
+  
+        const projectNames = associatedProjects
+          .filter((project) => project.audioIds.includes(item.audioId))
+          .map((project) => project.projectName);
+  
+        if (projectNames.length === 0) {
+          projectNames.push();
+        }
+  
+        if (uniqueAudioMap.has(item.audioId)) {
+          uniqueAudioMap.get(item.audioId)!.projectDetails.push(...projectNames);
+        } else {
+          // Otherwise, add a new entry
+          uniqueAudioMap.set(item.audioId, {
+            audioId: item.audioId,
+            audioName: item.audioName,
+            uploadStatus: item.uploadStatus,
+            userId: item.userId,
+            tags: item.tags || [],
+            audioUrl: fileUrl,
+            projectDetails: projectNames,
+            _ts: item._ts,
+          });
+        }
+      }
+  
+      const audioData = Array.from(uniqueAudioMap.values()).sort((a, b) => b._ts - a._ts);
+  
+      const allUniqueTags = [...new Set(audioData.flatMap((audio) => audio.tags))];
+  
+      return {
+        statusCode: 200,
+        message: 'Audio records fetched successfully',
+        data: {
+          audioData,
+          allUniqueTags,
+        },
+      };
+    } catch (error) {
+      Logger.error('Error fetching audio records:', error);
+  
+      return {
+        statusCode: 500,
+        message: 'Failed to fetch audio records',
+        data: null,
+        error: error.message,
+      };
+    }
+  }
+  
 }
