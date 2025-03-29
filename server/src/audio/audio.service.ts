@@ -113,10 +113,10 @@ export class AudioService {
   // Get Audio ALL and User with unique tag
   async getAudio(userId?: string) {
     try {
-      let sqlQuery = 'SELECT * FROM c';
+      let sqlQuery = 'SELECT * FROM c ORDER BY c._ts DESC';
 
       if (userId) {
-        sqlQuery = `SELECT * FROM c WHERE c.userId = @userId`;
+        sqlQuery = `SELECT * FROM c WHERE c.userId = @userId ORDER BY c._ts DESC`;
       }
 
       const querySpec = {
@@ -142,42 +142,11 @@ export class AudioService {
         projectQuery = `SELECT * FROM c WHERE c.userId = @userId`;
       }
 
-      const projectQuerySpec = {
-        query: projectQuery,
-        parameters: userId ? [{ name: '@userId', value: userId }] : [],
-      };
-
-      const { resources: projects } = await this.projectContainer.items
-        .query(projectQuerySpec)
-        .fetchAll();
-
-      let associatedProjects = [];
-
-      if (projects.length > 0) {
-        associatedProjects = projects.map((project) => {
-          return {
-            projectId: project.projectId,
-            projectName: project.projectName,
-            audioIds: project.audioIds,
-          };
-        });
-      }
-
       const audioData: AudioGetAllDTO[] = await Promise.all(
         resources.map(async (item) => {
           const fileUrl = await this.generateBlobSasUrl(
             item.audioName.substring(item.audioName.lastIndexOf('/') + 1),
           );
-
-          //project Id and name
-          const projectdata = associatedProjects
-            .filter((project) => project.audioIds.includes(item.audioId))
-            .map((project) => {
-              return {
-                projectId: project.projectId,
-                projectName: project.projectName,
-              };
-            });
 
           return {
             audioId: item.audioId,
@@ -185,8 +154,7 @@ export class AudioService {
             uploadStatus: item.uploadStatus,
             userId: item.userId,
             tags: item.tags || [],
-            audioUrl: fileUrl, // Now it's a resolved string, not a Promise<string>
-            projects: projectdata,
+            audioUrl: fileUrl,
           };
         }),
       );
