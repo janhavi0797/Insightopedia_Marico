@@ -55,3 +55,7 @@ export class GetAllFilesDTO {
 
 }
 
+export class GetAllUniqueTagDTO {
+  @IsArray()
+  tags: string[];
+}
