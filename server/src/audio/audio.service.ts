@@ -12,7 +12,7 @@ import { InjectModel } from '@nestjs/azure-database';
 import { Container } from '@azure/cosmos';
 import { ConfigService } from '@nestjs/config';
 import { v4 as uuidv4 } from 'uuid';
-import { AudioGetAllDTO, EditAudioTagDTO, GetAllFilesDTO } from './dto/get-audio.dto';
+import { AudioGetAllDTO, EditAudioTagDTO, GetAllFilesDTO, GetAllUniqueTagDTO } from './dto/get-audio.dto';
 import {
   BlobSASPermissions,
   BlobServiceClient,
@@ -113,10 +113,10 @@ export class AudioService {
   // Get Audio ALL and User with unique tag
   async getAudio(userId?: string) {
     try {
-      let sqlQuery = 'SELECT * FROM c';
+      let sqlQuery = 'SELECT * FROM c ORDER BY c._ts DESC';
 
       if (userId) {
-        sqlQuery = `SELECT * FROM c WHERE c.userId = @userId`;
+        sqlQuery = `SELECT * FROM c WHERE c.userId = @userId ORDER BY c._ts DESC`;
       }
 
       const querySpec = {
@@ -142,42 +142,11 @@ export class AudioService {
         projectQuery = `SELECT * FROM c WHERE c.userId = @userId`;
       }
 
-      const projectQuerySpec = {
-        query: projectQuery,
-        parameters: userId ? [{ name: '@userId', value: userId }] : [],
-      };
-
-      const { resources: projects } = await this.projectContainer.items
-        .query(projectQuerySpec)
-        .fetchAll();
-
-      let associatedProjects = [];
-
-      if (projects.length > 0) {
-        associatedProjects = projects.map((project) => {
-          return {
-            projectId: project.projectId,
-            projectName: project.projectName,
-            audioIds: project.audioIds,
-          };
-        });
-      }
-
       const audioData: AudioGetAllDTO[] = await Promise.all(
         resources.map(async (item) => {
           const fileUrl = await this.generateBlobSasUrl(
             item.audioName.substring(item.audioName.lastIndexOf('/') + 1),
           );
-
-          //project Id and name
-          const projectdata = associatedProjects
-            .filter((project) => project.audioIds.includes(item.audioId))
-            .map((project) => {
-              return {
-                projectId: project.projectId,
-                projectName: project.projectName,
-              };
-            });
 
           return {
             audioId: item.audioId,
@@ -185,15 +154,18 @@ export class AudioService {
             uploadStatus: item.uploadStatus,
             userId: item.userId,
             tags: item.tags || [],
-            audioUrl: fileUrl, // Now it's a resolved string, not a Promise<string>
-            projects: projectdata,
+            audioUrl: fileUrl,
           };
         }),
       );
 
+      // const allUniqueTags = [
+      //   ...new Set(audioData.flatMap((audio) => audio.tags)),
+      // ];
       const allUniqueTags = [
         ...new Set(audioData.flatMap((audio) => audio.tags)),
-      ];
+      ].map((tag) => ({ name: tag }));
+      
 
       return {
         statusCode: 200,
@@ -413,6 +385,7 @@ export class AudioService {
 
     // Summary Section
     if (summary) {
+     const summaryNew = summary.replace(/\*\*(.*?)\*\*/g, '$1').trim();
       doc
         .fillColor('#4B9CD3')
         .fontSize(16)
@@ -420,7 +393,7 @@ export class AudioService {
         .text('Summary :', { underline: true });
       doc.moveDown(0.5);
 
-      doc.fillColor('black').fontSize(12).font('Helvetica').text(summary, {
+      doc.fillColor('black').fontSize(12).font('Helvetica').text(summaryNew, {
         align: 'justify',
         lineGap: 4,
       });
@@ -440,31 +413,32 @@ export class AudioService {
       const sentimentLines = sentiment_analysis.split('\n');
 
       sentimentLines.forEach((line) => {
-        if (line.includes('### Overall Sentiment Analysis:')) {
+        line = line.replace(/^#+\s*/, '').replace(/^\*\*(.*?)\*\*$/, '$1').trim();
+        if (line.includes('Overall Sentiment Analysis:')) {
           doc
             .fontSize(14)
             .fillColor('#34495E')
             .font('Helvetica-Bold')
             .text(line); // Dark Gray
-        } else if (line.includes('### Comprehensive Sentiment Analysis:')) {
+        } else if (line.includes('Comprehensive Sentiment Analysis:')) {
           doc
             .fontSize(14)
             .fillColor('#1F618D')
             .font('Helvetica-Bold')
             .text(line); // Navy Blue
-        } else if (line.includes('#### Positive Sentiments')) {
+        } else if (line.includes('Positive Sentiments')) {
           doc
             .fontSize(12)
             .fillColor('#27AE60')
             .font('Helvetica-Bold')
             .text(line); // Green
-        } else if (line.includes('#### Neutral Sentiments')) {
+        } else if (line.includes('Neutral Sentiments')) {
           doc
             .fontSize(12)
             .fillColor('#F39C12')
             .font('Helvetica-Bold')
             .text(line); // Orange
-        } else if (line.includes('#### Negative Sentiments')) {
+        } else if (line.includes('Negative Sentiments')) {
           doc
             .fontSize(12)
             .fillColor('#E74C3C')
@@ -637,7 +611,11 @@ export class AudioService {
   
       const audioData = Array.from(uniqueAudioMap.values()).sort((a, b) => b._ts - a._ts);
   
-      const allUniqueTags = [...new Set(audioData.flatMap((audio) => audio.tags))];
+      // const allUniqueTags = [...new Set(audioData.flatMap((audio) => audio.tags))];
+      const allUniqueTags = [
+        ...new Set(audioData.flatMap((audio) => audio.tags)),
+      ].map((tag) => ({ name: tag }));
+      
   
       return {
         statusCode: 200,
@@ -653,6 +631,68 @@ export class AudioService {
       return {
         statusCode: 500,
         message: 'Failed to fetch audio records',
+        data: null,
+        error: error.message,
+      };
+    }
+  }
+
+  async getUniqueTags(userId?: string) {
+    try {
+      let sqlQuery = 'SELECT * FROM c ORDER BY c._ts DESC';
+
+      if (userId) {
+        sqlQuery = `SELECT * FROM c WHERE c.userId = @userId ORDER BY c._ts DESC`;
+      }
+
+      const querySpec = {
+        query: sqlQuery,
+        parameters: userId ? [{ name: '@userId', value: userId }] : [],
+      };
+
+      const { resources } = await this.audioContainer.items
+        .query(querySpec)
+        .fetchAll();
+
+      if (!resources || resources.length === 0) {
+        return {
+          statusCode: 404,
+          message: 'No audio records found',
+          data: { audioData: [], allUniqueTags: [] },
+        };
+      }
+
+      const audioData: GetAllUniqueTagDTO[] = await Promise.all(
+        resources.map(async (item) => {
+          const fileUrl = await this.generateBlobSasUrl(
+            item.audioName.substring(item.audioName.lastIndexOf('/') + 1),
+          );
+
+          return {
+            tags: item.tags || []
+          };
+        }),
+      );
+
+      // const allUniqueTags = [
+      //   ...new Set(audioData.flatMap((audio) => audio.tags)),
+      // ];
+      const allUniqueTags = [
+        ...new Set(audioData.flatMap((audio) => audio.tags)),
+      ].map((tag) => ({ name: tag }));
+      
+
+      return {
+        statusCode: 200,
+        message: 'Audio Tags records fetched successfully',
+        data: allUniqueTags,
+      };
+    } catch (error) {
+      Logger.error('Error fetching audio tags records:', error);
+
+      return {
+        statusCode: 500,
+        message: 'Failed to fetch audio tags records',
         data: null,
         error: error.message,
       };

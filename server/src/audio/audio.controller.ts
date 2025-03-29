@@ -141,4 +141,11 @@ export class AudioController {
     return this.audioService.getAllFilesData(userId);
   }
 
+  @Get('allUniqueTag')
+  @ApiOperation({ summary: 'Get All audio and unique tag' })
+  @ApiQuery({ name: 'userId', required: false })
+  async getUniqueTags(@Query('userId') userId?: string) {
+    return this.audioService.getUniqueTags(userId);
+  }
+
 }

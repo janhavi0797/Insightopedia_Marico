@@ -162,7 +162,7 @@
             <div class="text" [innerHTML]="audioDetails?.sentiment_analysis | formatText"></div>
           </div>
           <div class="tab-content-model translation">
-            <button (click)="downloadSummaryAndSenti('sentimental-analysis',audioDetails?.audioId,allAudioDetails?.projectId)"><mat-icon>cloud_download</mat-icon> Download Sentiment
+            <button (click)="downloadSummaryAndSenti('sentiment_analysis',audioDetails?.audioId,allAudioDetails?.projectId)"><mat-icon>cloud_download</mat-icon> Download Sentiment
               Analysis</button>
           </div>
         </div>
