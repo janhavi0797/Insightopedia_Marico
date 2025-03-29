@@ -66,21 +66,14 @@ export class ProjectDetailsComponent {
 
   getProjectDetails(projectId:string) {
     this.isLoading = true;
-    //console.log("getProjectDetails projectId",projectId);
     this.common.getProjectDetail('project/allProjectDetails', projectId).subscribe((res: any) => {
-      //console.log("getProjectDetails",res.data);
-      //console.log("getProjectDetails only audioDetails",res.data.projectDetails[0].AudioData);
 
       this.allAudioDetails = res.data.projectDetails[0];
       //this.audioDetails = res.data.projectDetails[0].AudioData[0];
       this.audioDetails = this.combineAudioData(this.allAudioDetails.AudioData);
-     // console.log("getProjectDetails only audioDetails",this.audioDetails);
-       //this.filePath = res.data.FilePath;
-       //this.vectorId = res.data.vectorId;
       this.tempAudioData = res.data.projectDetails[0].AudioData.map((x: any) => Object.assign({}, x));
       //this.audioNameArr =res.data.projectDetails[0].AudioData.map(((item: { audioName: any; })=> item.audioName));
       this.audioNameArr = ["All Project", ...res.data.projectDetails[0].AudioData.map((item: { audioName: any }) => item.audioName)];
-      //console.log("audioNameArr",this.audioNameArr);
       this.audioName = this.audioNameArr[0];
       this.isLoading = false;
     }, (err: any) => {
@@ -290,7 +283,6 @@ export class ProjectDetailsComponent {
     }
   
     const url = `${environment.BASE_URL}audio/generate-pdf?id=${idParam}&type=${content}&key=${keyParam}`;
-    //console.log("Generated URL:", url); // Debugging
     this.audioServ.getDownload(url);
   }
   
@@ -394,12 +386,10 @@ export class ProjectDetailsComponent {
 
   // onAudioNameChange(event: any) {
   //   let index = this.audioNameArr.indexOf(event.value);
-  //   console.log("onAudioNameChange",index);
   //   if(index == 0){
   //     this.audioDetails = this.combineAudioData(this.allAudioDetails);
   //   }else{
   //     this.audioDetails = this.allAudioDetails.AudioData[index - 1];
-  //     console.log("onAudioNameChange audioDetails",this.audioDetails);
   //   }
   //   const audio = this.audioPlayer.nativeElement;
   //   this.tempAudioData = this.allAudioDetails.AudioData[index].audiodata.map((x: any) => Object.assign({}, x));
@@ -410,7 +400,6 @@ export class ProjectDetailsComponent {
 
   onAudioNameChange(event: any) {
     const index = this.audioNameArr.indexOf(event.value);
-    //console.log("onAudioNameChange", index);
   
     if (index === -1) {
       console.warn("Audio name not found in array.");

@@ -55,7 +55,7 @@ export class AllFilesComponent {
       this.dataSource = new MatTableDataSource(this.audioList);
       this.dataSource.paginator = this.paginator;
 
-      this.existingTags = res?.data?.allUniqueTags?.map((tag: string) => ({ name: tag })) || [];
+      this.existingTags = res?.data?.allUniqueTags;
       // this.filteredCompetetiveProduct = of(this.existingTags);
       this.tempTagArr = this.existingTags;
       this.filteredOptions = this.selectionTagControl.valueChanges.pipe(
