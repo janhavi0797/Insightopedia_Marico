@@ -52,9 +52,7 @@ export class ProjectDetailsComponent {
   ngOnInit() {
     this.activeRoute.queryParams.subscribe(params => {
       this.projectId = params['projectId'];
-      this.userId = params['userId'];
-      //console.log("Received Project ID:", this.projectId);
-      //console.log("Received User ID:", this.userId);
+      this.userId = params['userId'];;
       this.getProjectDetails(this.projectId);
     });
     
@@ -421,10 +419,8 @@ export class ProjectDetailsComponent {
   
     if (index === 0) {
       this.audioDetails = this.combineAudioData(this.allAudioDetails.AudioData);
-     // console.log("combineAudioData",this.audioDetails);
     } else {
       this.audioDetails = this.allAudioDetails.AudioData[index - 1] || null;
-      //console.log("onAudioNameChange audioDetails", this.audioDetails);
     }
   
     if (this.audioDetails) {

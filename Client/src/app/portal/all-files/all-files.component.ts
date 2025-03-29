@@ -1,40 +1,13 @@
-import {AfterViewInit, Component, ViewChild, ViewChildren, QueryList, ElementRef} from '@angular/core';
-import {MatPaginator, MatPaginatorModule} from '@angular/material/paginator';
-import {MatTableDataSource, MatTableModule} from '@angular/material/table';
-import { FormControl } from '@angular/forms';
-import { map, Observable, startWith } from 'rxjs';
+import { AfterViewInit, Component, ViewChild, ViewChildren, QueryList, ElementRef, TemplateRef } from '@angular/core';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
+import { MatTableDataSource, MatTableModule } from '@angular/material/table';
+import { FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
+import { map, Observable, of, startWith } from 'rxjs';
 import { AudioService } from '../service/audio.service';
 import { ToastrService } from 'ngx-toastr';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
-
-interface Project {
-  projectId: string;
-  projectName: string;
-}
-
-interface Audio {
-  audioId: string;
-  audioName: string;
-  audioUrl: string;
-  createdAt: string;
-  projects: Project[];
-  projectId: string;
-  projectName: string;
-  // Add other properties as needed
-}
-
-interface GroupedAudio {
-  projectName: string;
-  audios: {
-    audioId: string;
-    audioName: string;
-    audioUrl: string;
-    createdAt: string;
-    tags: string[];
-    projectId: string;
-    projectName: string;
-  }[];
-}
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { CommonService } from '../service/common.service';
 
 @Component({
   selector: 'app-all-files',
@@ -46,81 +19,59 @@ export class AllFilesComponent {
   audioList: any[] = [];
   isLoading: boolean = false;
 
-  myControl = new FormControl('');
-  filteredOptions!: Observable<string[]>;
-  allProjects: string[] = [];
+  selectionTagControl = new FormControl('');
+  filteredOptions!: Observable<any[]>;
+  existingTags: any[] = [];
 
-   // mat table code 
-   displayedColumns: string[] = ['audioUrl', 'audioName', 'tags', 'projects', 'status', 'action'];
-   dataSource = new MatTableDataSource<any>([]);
-   @ViewChild(MatPaginator) paginator!: MatPaginator;
+  // mat table code 
+  displayedColumns: string[] = ['audioUrl', 'audioName', 'tags', 'projects', 'status', 'action'];
+  dataSource = new MatTableDataSource<any>([]);
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
 
-   constructor(private audioServ: AudioService, private toastr: ToastrService) {}
+  dialogRef!: MatDialogRef<any>;
+  audioForm!: FormGroup;
+  lastFilter: string = '';
+  filteredCompetetiveProduct!: Observable<any[]>;
+  selectedUsers: any[] = [];
+  tempTagArr: any[] = [];
+  currentAudioId: string = '';
+  currentIndex!: number;
+  constructor(private audioServ: AudioService, private toastr: ToastrService, private dialog: MatDialog,
+    private fb: FormBuilder, private commonServ: CommonService
+  ) { }
 
-   ngOnInit() {
+  ngOnInit() {
     this.getAllAudioList();
-
-    this.filteredOptions = this.myControl.valueChanges.pipe(
-      startWith(''),
-      map(value => this._filterProjects(value || ''))
-    );
+    this.audioForm = this.fb.group({
+      mapUnmapUsers: [[], Validators.required]
+    });
   }
 
   getAllAudioList() {
     this.isLoading = true;
-    this.audioServ.getAllAudioList('audio/all').subscribe((res: any) => {
+    this.audioServ.getAllAudioList('audio/allFiles').subscribe((res: any) => {
       this.isLoading = false;
-      const audioList: Audio[] = res?.data?.audioData || [];
-  
-      // Grouping by projectName
-      const projectAudioMap: { [key: string]: Audio[] } = {};
-  
-      audioList.forEach((audio: Audio) => {
-        audio.projects?.forEach((project: Project) => {
-          if (!projectAudioMap[project.projectName]) {
-            projectAudioMap[project.projectName] = [];
-          }
-          projectAudioMap[project.projectName].push({
-            ...audio,
-            projectId: project.projectId,
-            projectName: project.projectName
-          });
-        });
-      });
-  
-      // Convert map to array
-      const groupedArray = Object.entries(projectAudioMap).map(([projectName, audios]) => ({
-        projectName,
-        audios
-      }));
-
-      const flattenedAudios = groupedArray.flatMap(group => {
-        return group.audios.map(audio => ({
-          ...audio,
-          projectName: group.projectName
-        }));
-      });
-      
-      // Assign to MatTableDataSource
-      this.dataSource = new MatTableDataSource(flattenedAudios);
+      this.audioList = res?.data?.audioData || [];
+      this.dataSource = new MatTableDataSource(this.audioList);
       this.dataSource.paginator = this.paginator;
 
-      this.allProjects = [...new Set(flattenedAudios.map(audio => audio.projectName))];
-      
-      this.dataSource.filterPredicate = (data: any, filter: string) => {
-        return data.projectName?.toLowerCase().includes(filter);
-      };
-  
+      this.existingTags = res?.data?.allUniqueTags?.map((tag: string) => ({ name: tag })) || [];
+      // this.filteredCompetetiveProduct = of(this.existingTags);
+      this.tempTagArr = this.existingTags;
+      this.filteredOptions = this.selectionTagControl.valueChanges.pipe(
+        startWith(''),
+        map(value => this._filter(value || '')),
+      );
     }, (err: any) => {
       this.isLoading = false;
       this.toastr.error('Something Went Wrong!');
     });
   }
 
-  _filterProjects(value: string): string[] {
+  private _filter(value: string): string[] {
     const filterValue = value.toLowerCase();
-    return this.allProjects.filter(project =>
-      project.toLowerCase().includes(filterValue)
+    return this.existingTags.filter((option: any) =>
+      option.name.toLowerCase().includes(filterValue)
     );
   }
 
@@ -129,8 +80,8 @@ export class AllFilesComponent {
     this.dataSource.filter = selectedProject.trim().toLowerCase();
   }
 
-  emptyProject() {
-    const input = this.myControl.value;
+  emptyTagSearch() {
+    const input = this.selectionTagControl.value;
     if (!input) {
       this.dataSource.filter = ''; // Show all
     }
@@ -163,13 +114,98 @@ export class AllFilesComponent {
       element.isPlaying = false;
     };
   }
-  
+
   onAudioEnded(element: any): void {
     element.isPlaying = false;
   }
 
- 
+  editDialog(editTemplate: TemplateRef<any>, index: number) {
+    this.currentAudioId = this.audioList[index].audioId;
+    this.currentIndex = index;
+    this.selectedUsers = this.audioList[index].tags?.map((tag: string) => ({ name: tag, selected: true })) || [];
+    this.audioForm.get('mapUnmapUsers')!.setValue(this.selectedUsers);
+    this.tempTagArr = this.tempTagArr.map(tag => ({
+      ...tag,
+      selected: this.selectedUsers.some(user => user.name === tag.name) // Check if name exists in selectedUsers
+    })).sort((a, b) => Number(b.selected) - Number(a.selected));;
+    this.filteredCompetetiveProduct = of(this.tempTagArr);
 
+    this.dialogRef = this.dialog.open(editTemplate, {
+      width: '30%',
+      disableClose: true,
+    });
+  }
 
+  closeDialog() {
+    this.dialogRef.close();
+    this.audioForm.reset();
+  }
+
+  filterForCompetitor() {
+    this.filteredCompetetiveProduct = of(this.lastFilter).pipe(
+      startWith<string>(''),
+      map(value => (typeof value === 'string' ? value : this.lastFilter)),
+      map(filter => this.filter(filter))
+    );
+  }
+
+  filter(filter: string): any[] {
+    this.lastFilter = filter;
+    if (filter) {
+      return this.existingTags.filter((option: any) => {
+        return option.name.toLowerCase().indexOf(filter.toLowerCase()) >= 0;
+      })
+    } else {
+      return this.existingTags.slice();
+    }
+  }
+
+  optionClicked(event: Event, user: any, index: number) {
+    debugger
+    event.stopPropagation();
+    this.toggleSelection(user, index);
+  }
+
+  toggleSelection(user: any, index: number) {
+    user.selected = !user.selected;
+
+    if (user.selected) {
+      this.selectedUsers.push(user);
+    } else {
+      const i = this.selectedUsers.findIndex((value: any) => value.name === user.name);
+      if (i > -1) {
+        this.selectedUsers.splice(i, 1);
+      }
+    }
+
+    this.audioForm.get('mapUnmapUsers')!.setValue([...this.selectedUsers]);
+    this.tempTagArr[index].selected = user.selected;
+    this.filteredCompetetiveProduct = of(this.tempTagArr);
+  }
+
+  displayFn(value: any[] | string): string {
+    return '';
+  }
+
+  editTag() {
+    const tags = this.selectedUsers.map(item => item.name);
+    const param = {
+      audioId: this.currentAudioId,
+      tags: tags
+    }
+    this.isLoading = true;
+    this.commonServ.postAPI('audio/edit-audio-tag', param).subscribe((res) => {
+      this.isLoading = false;
+      if (res.statusCode == 200) {
+        this.toastr.success('Audio updated successfully!');
+        this.audioList[this.currentIndex].tags = tags;
+        this.dataSource = new MatTableDataSource(this.audioList);
+        this.closeDialog();
+      }
+    }, (err: any) => {
+      this.isLoading = false;
+      this.toastr.error('Something Went Wrong!');
+    })
+  }
 }
 

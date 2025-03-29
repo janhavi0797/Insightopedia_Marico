@@ -100,7 +100,6 @@ export class ProjectAnalysisComponent {
     this.common.getAllProject('project/list', param).subscribe((res: any) => {
       this.project = res.data;
       this.mapProjectData(this.project);
-      //console.log("project Data",this.project);
       //this.tempAudioData = res.data.map((x: any) => Object.assign({}, x));
       this.filteredOptionsUser = this.myUserControl.valueChanges.pipe(
         startWith(''),
@@ -160,7 +159,6 @@ export class ProjectAnalysisComponent {
 
 onOptionSelectedUser(event: any): void {
   const searchUser = event.option.value;
- // console.log("searchUser", searchUser);
 
   if (searchUser) {
     this.filteredProject = this.project.filter(project =>
@@ -170,7 +168,6 @@ onOptionSelectedUser(event: any): void {
     this.filteredProject = [...this.project]; // Restore original data when input is cleared
   }
 
-  //console.log("Filtered Project:", this.filteredProject);
   this.mapProjectData(this.filteredProject);
 }
 
@@ -190,7 +187,6 @@ filterProjects(value: string): any[] {
 
 onOptionSelectedProject(event: any): void {
   const searchProject = event.option.value;
- // console.log("Selected Project:", searchProject);
 
   if (searchProject) {
     this.filteredProject = this.project.filter(proj => proj.projectName === searchProject);
@@ -205,8 +201,6 @@ onOptionSelectedProject(event: any): void {
 
 
  viewDetails(projectId: string, userId: string) {
- // console.log("View-param1",projectId);
- // console.log("View-param2",userId);
   this.router.navigate(['portal/project-details'], { 
     queryParams: { projectId, userId }
   });
