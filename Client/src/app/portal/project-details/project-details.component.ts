@@ -6,6 +6,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { Subscription } from 'rxjs';
 import { environment } from '../../../environments/environment'
 import { CommonService } from '../service/common.service';
+import { MatSelectChange } from '@angular/material/select';
 
 @Component({
   selector: 'app-project-details',
@@ -71,6 +72,9 @@ export class ProjectDetailsComponent {
       this.allAudioDetails = res.data.projectDetails[0];
       //this.audioDetails = res.data.projectDetails[0].AudioData[0];
       this.audioDetails = this.combineAudioData(this.allAudioDetails.AudioData);
+     // console.log("getProjectDetails only audioDetails",this.audioDetails);
+       //this.filePath = res.data.FilePath;
+       //this.vectorId = res.data.vectorId;
       this.tempAudioData = res.data.projectDetails[0].AudioData.map((x: any) => Object.assign({}, x));
       //this.audioNameArr =res.data.projectDetails[0].AudioData.map(((item: { audioName: any; })=> item.audioName));
       this.audioNameArr = ["All Project", ...res.data.projectDetails[0].AudioData.map((item: { audioName: any }) => item.audioName)];
@@ -398,7 +402,11 @@ export class ProjectDetailsComponent {
   //   this.currentTime = '0:00';
   // }
 
-  onAudioNameChange(event: any) {
+  onAudioNameChange(event: MatSelectChange) {
+    if (!event || !event.value) {
+      console.warn("Invalid selection event:", event);
+      return;
+    }
     const index = this.audioNameArr.indexOf(event.value);
   
     if (index === -1) {
@@ -412,7 +420,7 @@ export class ProjectDetailsComponent {
       this.audioDetails = this.allAudioDetails.AudioData[index - 1] || null;
     }
   
-    if (this.audioDetails) {
+    if (this.audioDetails && this.audioPlayer?.nativeElement) {
       const audio = this.audioPlayer.nativeElement;
       this.tempAudioData = this.allAudioDetails.AudioData.map((x: any) => ({ ...x }));
       audio.load();
