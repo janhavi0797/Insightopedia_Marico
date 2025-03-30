@@ -1,8 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, TemplateRef } from '@angular/core';
 import { environment } from 'src/environments/environment';
 import { CommonService } from '../service/common.service';
 import { ToastrService } from 'ngx-toastr';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { Router } from '@angular/router';
 
 interface AudioFile {
   name: string;
@@ -38,6 +40,7 @@ export class CreateProjectComponent {
   isLoading: boolean = false;
 
   tagList: any[] = [];
+   dialogRef!: MatDialogRef<any>;
   formatTime(timeInSeconds: number): string {
     const minutes = Math.floor(timeInSeconds / 60);
     const seconds = Math.floor(timeInSeconds % 60);
@@ -46,7 +49,8 @@ export class CreateProjectComponent {
   }
 
 
-  constructor(private commonServ: CommonService, private toastr: ToastrService, private snackBar: MatSnackBar) { }
+  constructor(private commonServ: CommonService, private toastr: ToastrService, 
+    private dialog: MatDialog, private router: Router) { }
 
   ngOnInit(): void {
     this.userRole = localStorage.getItem('role') || '';
@@ -62,8 +66,10 @@ export class CreateProjectComponent {
   getTagsWiseAudio() {
     let userCode = '';
     userCode = this.userRole === "1" ? '' : this.userCode;
+    this.isLoading = true
     this.commonServ.getTagwiseAudio('audio/all', userCode).subscribe(
       (res: any) => {
+        this.isLoading = false;
         this.tagList = res.data.allUniqueTags;
         this.audioNames = res.data.audioData;
 
@@ -79,6 +85,7 @@ export class CreateProjectComponent {
         }));
       },
       (err: any) => {
+        this.isLoading = false;
         this.toastr.error('Something Went Wrong!');
       }
     );
@@ -250,7 +257,7 @@ export class CreateProjectComponent {
     this.isShowFooter = this.selectedArr.length > 0;
   }
 
-  createNewProject() {
+  createNewProject(InfoTemplate:TemplateRef<any>) {
     if (this.projectName === "") {
       this.toastr.error('Please enter project name');
       return;
@@ -262,24 +269,37 @@ export class CreateProjectComponent {
         audioId: file.audioId,
       }))
     };
+    this.isLoading = true;
     this.commonServ.CreateProject(payload).subscribe(
       (res: any) => {
+        this.isLoading = false;
         if (res.status === "success") {
-          this.toastr.success(res.message, 'Success', {
-            progressBar: true
-          });
-        }
-        else {
-          this.toastr.error(res.message, 'Error', {
-            progressBar: true
+          this.dialogRef = this.dialog.open(InfoTemplate, {
+            width: '50%',
+            height: '40%',
+            disableClose: true,
           });
         }
       },
       err => {
-        this.toastr.error('Something Went Wrong!', 'Error', {
-          progressBar: true
-        });
+        this.toastr.error('Something Went Wrong!');
+        this.isLoading = false;
       });
+  }
+
+  closeInfo() {
+    this.projectName = '';
+    this.selectedArr = [];
+    this.selectedTags = [];
+    this.selectedAudios = [];
+    this.selectedAudio = '';
+    this.selectedTag = '';
+    this.dialogRef.close();
+  }
+
+  viewAudioProcess() {
+    this.closeInfo();
+    this.router.navigate(['/portal/project-analysis']);
   }
 
 }

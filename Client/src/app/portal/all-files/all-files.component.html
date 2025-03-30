@@ -67,7 +67,13 @@
 
       <ng-container matColumnDef="status">
         <th mat-header-cell *matHeaderCellDef> Status </th>
-        <td mat-cell *matCellDef="let element"> </td>
+        <td mat-cell *matCellDef="let element"> 
+          <label class="view-btn" [ngClass]="{
+            'status-processing': element.uploadStatus === 0,
+            'status-completed': element.uploadStatus === 1,
+            'status-failed': element.uploadStatus > 1
+          }">{{ element.uploadStatus === 0 ? 'Processing' : (element.uploadStatus === 1 ? 'Completed' : 'Failed') }}</label>
+        </td>
       </ng-container>
 
 

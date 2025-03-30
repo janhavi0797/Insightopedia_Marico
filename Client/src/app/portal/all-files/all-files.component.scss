@@ -9,15 +9,16 @@
     justify-content: space-between;
     align-items: center;
     padding: 10px 15px 0 15px;
+
     .table-title {
       font-size: 22px;
       font-weight: 600;
       color: #014FA1;
       margin: 10px 0 25px 0;
       text-align: center;
-    }   
+    }
   }
-  
+
   .mat-table-container {
     overflow: auto;
 
@@ -25,13 +26,13 @@
       width: auto !important;
       border-collapse: separate;
       border-spacing: 0;
-  
+
       th.mat-header-cell,
       td.mat-cell {
         white-space: nowrap;
         padding: 12px 16px;
       }
-  
+
       th {
         position: sticky;
         top: 0;
@@ -39,7 +40,7 @@
         color: #475467;
         z-index: 2;
       }
-      
+
       .edit-btn {
         background-color: #014FA1;
         font-size: 12px;
@@ -50,7 +51,39 @@
         color: #fff;
         padding: 4px 8px;
         border-radius: 7px;
-    }
+      }
+
+      .view-btn {
+        background-color: #014FA1;
+        font-size: 12px;
+        font-weight: 500;
+        margin-right: 10px;
+        border: none;
+        outline: none;
+        color: #fff;
+        padding: 4px 8px;
+        border-radius: 7px;
+      }
+
+      .view-btn:disabled {
+        background-color: #79747E;
+        cursor: not-allowed;
+      }
+
+      .status-processing {
+        background-color: rgba(255, 255, 153);
+        color: black;
+      }
+
+      .status-completed {
+        background-color: rgb(68, 228, 68, 0.8);
+        color: white;
+      }
+
+      .status-failed {
+        background-color: rgba(255, 99, 71);
+        color: white;
+      }
     }
   }
 
@@ -62,12 +95,14 @@
     border-top: 1px solid #EDEFF1;
   }
 
-  
+
 }
 
 /* Responsive tweaks */
 @media screen and (max-width: 768px) {
-  th.mat-header-cell, td.mat-cell {
+
+  th.mat-header-cell,
+  td.mat-cell {
     padding: 10px;
     font-size: 14px;
   }
@@ -88,4 +123,3 @@
     text-align: left;
   }
 }
-

@@ -97,14 +97,26 @@
   </div>
   <div class="project-footer">
     <mat-form-field appearance="outline" class="project-name">
-        <mat-label>Project Name</mat-label>
-        <input matInput type="text" [(ngModel)]="projectName" placeholder="Enter project name" required />
-      </mat-form-field>
-      <button [disabled]="projectName === '' || selectedArr.length === 0" (click)="createNewProject()">
-        Merge, transcript and analyse
-      </button>
+      <mat-label>Project Name</mat-label>
+      <input matInput type="text" [(ngModel)]="projectName" placeholder="Enter project name" />
+    </mat-form-field>
+    <button [disabled]="projectName === '' || selectedArr.length === 0" (click)="createNewProject(InfoTemplate)">
+      Merge, transcript and analyse
+    </button>
   </div>
 </div>
+
+<ng-template #InfoTemplate>
+  <div class="info-container">
+    <img [src]="imageBasePath + 'assets/Img/dashboard/file-process.png'" alt="">
+    <h5>Project submitted for processing!</h5>
+    <p>An email with link will be send to when the processing is complete.</p>
+    <div class="info-btn">
+      <button class="cl-btn" (click)="closeInfo()">Close</button>
+      <button class="add-btn" (click)="viewAudioProcess()">View Audio Process Status</button>
+    </div>
+  </div>
+</ng-template>
 
 <div *ngIf="isLoading" class="spinner">
   <mat-spinner></mat-spinner>
