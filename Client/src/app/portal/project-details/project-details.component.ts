@@ -6,6 +6,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { Subscription } from 'rxjs';
 import { environment } from '../../../environments/environment'
 import { CommonService } from '../service/common.service';
+import { MatSelectChange } from '@angular/material/select';
 
 @Component({
   selector: 'app-project-details',
@@ -410,7 +411,11 @@ export class ProjectDetailsComponent {
   //   this.currentTime = '0:00';
   // }
 
-  onAudioNameChange(event: any) {
+  onAudioNameChange(event: MatSelectChange) {
+    if (!event || !event.value) {
+      console.warn("Invalid selection event:", event);
+      return;
+    }
     const index = this.audioNameArr.indexOf(event.value);
     //console.log("onAudioNameChange", index);
   
@@ -427,7 +432,7 @@ export class ProjectDetailsComponent {
       //console.log("onAudioNameChange audioDetails", this.audioDetails);
     }
   
-    if (this.audioDetails) {
+    if (this.audioDetails && this.audioPlayer?.nativeElement) {
       const audio = this.audioPlayer.nativeElement;
       this.tempAudioData = this.allAudioDetails.AudioData.map((x: any) => ({ ...x }));
       audio.load();
