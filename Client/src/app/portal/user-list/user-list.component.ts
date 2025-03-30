@@ -45,17 +45,6 @@ export class UserListComponent {
   dataSource = new MatTableDataSource<any>([]);
   @ViewChild(MatPaginator) paginator!: MatPaginator;
 
-  // constructor(private commonServ: CommonService, private toastr: ToastrService,
-  //   private fb: FormBuilder, private dialog: MatDialog
-  // ) {
-  //   this.userForm = this.fb.group({
-  //     userName: ['', Validators.required],
-  //     userEmail: ['', [Validators.required, Validators.email]],
-  //     role: ['', Validators.required],
-  //     mapUnmapUsers: [[]]
-  //   });
-  // }
-
   constructor(private commonServ: CommonService, private toastr: ToastrService,
     private fb: FormBuilder, private dialog: MatDialog
   ) {
