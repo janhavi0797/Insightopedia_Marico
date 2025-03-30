@@ -77,7 +77,8 @@ export class ProjectDetailsComponent {
       this.allAudioDetails = res.data.projectDetails[0];
       //this.audioDetails = res.data.projectDetails[0].AudioData[0];
       this.audioDetails = this.combineAudioData(this.allAudioDetails.AudioData);
-     // console.log("getProjectDetails only audioDetails",this.audioDetails);
+      //console.log("getProjectDetails only audioDetails",this.audioDetails.summary);
+      //console.log("getProjectDetails only audioDetails",this.audioDetails.sentiment_analysis);
        //this.filePath = res.data.FilePath;
        //this.vectorId = res.data.vectorId;
       this.tempAudioData = res.data.projectDetails[0].AudioData.map((x: any) => Object.assign({}, x));

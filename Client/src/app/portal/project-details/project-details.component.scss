@@ -74,6 +74,20 @@
                         color: #014FA1 !important;
                     }
                 }
+                ::ng-deep h1 {
+                    color: darkslategray;
+                    font-size: 20px;
+                    font-weight: bold;
+                    letter-spacing: 1px;
+                    margin-top: 1rem;
+                  }
+                  
+                  ::ng-deep h2 {
+                    color: #014FA1;
+                    font-size: 16px;
+                    margin-top: 0.5rem;
+                  }
+                  
             }
 
             .tab-content-model {
