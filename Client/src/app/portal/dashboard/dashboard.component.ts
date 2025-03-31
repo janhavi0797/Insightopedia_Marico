@@ -19,7 +19,6 @@ export class DashboardComponent implements OnInit {
   userCode: any;
   userRole: any;
   audioTags: any[] = [];
-  isLoading: boolean = false;
   today: Date = new Date();
   constructor(private toastr: ToastrService, private fb: FormBuilder, private commonServ: CommonService) { }
 
@@ -32,13 +31,13 @@ export class DashboardComponent implements OnInit {
   }
 
   getMaster() {
-    this.isLoading = true;
+    this.commonServ.showSpin();
     this.commonServ.getAPI('users/masterData').subscribe((res: any) => {
-      this.isLoading = false;
+      this.commonServ.hideSpin();
       this.primaryLang = res.data[0].languages;
       this.secondaryLang = [...this.primaryLang];
     }, (err: any) => {
-      this.isLoading = false;
+      this.commonServ.hideSpin();
       this.toastr.error('Something went wrong');
     });
   }
@@ -46,14 +45,14 @@ export class DashboardComponent implements OnInit {
   getTags() {
     let userCode = '';
     userCode = this.userRole === "1" ? '' : this.userCode;
-    this.isLoading = true;
+    this.commonServ.showSpin();
     this.commonServ.getAPI('audio/all', userCode).subscribe(
       (res: any) => {
-        this.isLoading = false;
+        this.commonServ.hideSpin();
         this.audioTags = res.data.allUniqueTags;
       },
       (err: any) => {
-        this.isLoading = false;
+        this.commonServ.hideSpin();
         this.toastr.error('Something went wrong');
       });
   }
@@ -179,17 +178,17 @@ export class DashboardComponent implements OnInit {
     }
     formData.append('AudioDto', JSON.stringify(requestBody));
   
-    this.isLoading = true;
+    this.commonServ.showSpin();
     this.commonServ.postAPI('audio/upload', formData).subscribe(
       (res: any) => {
-        this.isLoading = false;
+        this.commonServ.hideSpin();
         this.toastr.success('Audio uploaded successfully');
         this.audioFiles = [];
         this.bankDetailsArray.clear();
         this.audioDetails.setControl('bankInput', this.fb.array([...this.bankDetailsArray.controls]));
       },
       (err: any) => {
-        this.isLoading = false;
+        this.commonServ.hideSpin();
         this.toastr.error(err.error.message);
       }
     );
