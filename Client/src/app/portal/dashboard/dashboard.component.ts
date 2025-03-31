@@ -278,16 +278,21 @@ export class DashboardComponent implements OnInit {
     this.audioFiles.splice(index, 1);
     this.bankDetailsArray.removeAt(index);
     this.audioDetails.setControl('bankInput', this.fb.array([...this.bankDetailsArray.controls]));
-    this.audioDetails.setErrors(null);
+    //this.audioDetails.setErrors(null);
+    this.audioDetails.updateValueAndValidity();
     (this.audioDetails.get('bankInput') as FormArray).controls.forEach((group) => {
       if (group instanceof FormGroup) {
         Object.keys(group.controls).forEach((key) => {
-          group.get(key)?.setErrors(null);
-          group.get(key)?.markAsPristine();
-          group.get(key)?.markAsUntouched();
+          const control = group.get(key);
+          control?.updateValueAndValidity();
+          // group.get(key)?.setErrors(null);
+          // group.get(key)?.markAsPristine();
+          // group.get(key)?.markAsUntouched();
         });
       }
     });
+    this.audioDetails.markAsTouched();
+    this.audioDetails.markAsDirty();
   }
 
   trackByIndex(index: number, _: any): number {

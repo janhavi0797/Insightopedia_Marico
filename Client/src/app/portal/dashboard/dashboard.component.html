@@ -1,8 +1,7 @@
 <div class="media-container">
     <div class="media-inner-cont">
         <div class="media-header">
-            <h3>Media Upload</h3>
-            <p>Format supported are MP3</p>
+            <h2>Media Upload</h2>
             <div class="upload-box" (drop)="onDrop($event)" (dragover)="onDragOver($event)"
                 (dragleave)="onDragLeave($event)">
                 <input type="file" #fileDropRef id="fileDropRef" (change)="onFileSelected($event)" multiple
@@ -10,7 +9,7 @@
                 <img [src]="imageBasePath + 'assets/Img/dashboard/upload-file.png'" alt="upload-file">
                 <div class="upload-label">
                     <label for="fileDropRef">Drag your file(s) or <span>browse</span></label>
-                    <label class="validation-msg">Maximum Upload File Size is 4GB</label>
+                    <label class="validation-msg">Maximum Upload File Size is 4GB / Format supported are MP3 & MP4</label>
                 </div>
             </div>
         </div>
@@ -98,7 +97,7 @@
                                     </mat-error>
                                 </mat-form-field>
                                 <mat-form-field>
-                                    <mat-label>Choose a date</mat-label>
+                                    <mat-label>Audio Date</mat-label>
                                     <input matInput [matDatepicker]="picker" formControlName="date" [max]="today">
                                     <mat-hint>MM/DD/YYYY</mat-hint>
                                     <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
@@ -134,7 +133,7 @@
             </div>
         </div>
         <div class="media-footer">
-            <button [disabled]="audioDetails.invalid" (click)="submitForm()">Save to all files
+            <button [disabled]="audioDetails.invalid || audioFiles.length == 0" (click)="submitForm()">Save to all files
                 <mat-icon>save</mat-icon></button>
         </div>
     </div>
