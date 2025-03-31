@@ -117,8 +117,8 @@
                                 <mat-form-field>
                                     <mat-label>Tags</mat-label>
                                     <mat-select multiple formControlName="tags">
-                                        <mat-option *ngFor="let ol of audioTags" [value]="ol">
-                                            {{ ol }}
+                                        <mat-option *ngFor="let ol of audioTags" [value]="ol.name">
+                                            {{ ol.name }}
                                         </mat-option>
                                     </mat-select>
                                     <mat-error
