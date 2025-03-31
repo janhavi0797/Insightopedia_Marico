@@ -161,7 +161,6 @@ export class AllFilesComponent {
   }
 
   optionClicked(event: Event, user: any, index: number) {
-    debugger
     event.stopPropagation();
     this.toggleSelection(user, index);
   }

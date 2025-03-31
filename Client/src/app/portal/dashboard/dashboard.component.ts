@@ -189,7 +189,6 @@ export class DashboardComponent implements OnInit {
         this.audioDetails.setControl('bankInput', this.fb.array([...this.bankDetailsArray.controls]));
       },
       (err: any) => {
-        debugger
         //this.isLoading = false;
         this.toastr.error(err.error.message);
       }

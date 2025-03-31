@@ -42,6 +42,11 @@ export class FormatTextPipe implements PipeTransform {
 
       // Remove colons (:) from paragraphs
       value = value.replace(/<p>(.*?)\s*:\s*<\/p>/g, '<p>$1</p>');
+    // Remove all colons (:) from the text ********
+     // value = value.replace(/:/g, '');
+
+     // Remove all occurrences of #, *, and :
+value = value.replace(/[#*:]/g, '');
 
    // Remove multiple new lines to prevent extra spacing
    value = value.replace(/\n{2,}/g, '\n');
