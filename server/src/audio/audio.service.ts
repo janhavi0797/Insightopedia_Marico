@@ -12,7 +12,12 @@ import { InjectModel } from '@nestjs/azure-database';
 import { Container } from '@azure/cosmos';
 import { ConfigService } from '@nestjs/config';
 import { v4 as uuidv4 } from 'uuid';
-import { AudioGetAllDTO, EditAudioTagDTO, GetAllFilesDTO, GetAllUniqueTagDTO } from './dto/get-audio.dto';
+import {
+  AudioGetAllDTO,
+  EditAudioTagDTO,
+  GetAllFilesDTO,
+  GetAllUniqueTagDTO,
+} from './dto/get-audio.dto';
 import {
   BlobSASPermissions,
   BlobServiceClient,
@@ -165,7 +170,6 @@ export class AudioService {
       const allUniqueTags = [
         ...new Set(audioData.flatMap((audio) => audio.tags)),
       ].map((tag) => ({ name: tag }));
-      
 
       return {
         statusCode: 200,
@@ -385,7 +389,7 @@ export class AudioService {
 
     // Summary Section
     if (summary) {
-     const summaryNew = summary.replace(/\*\*(.*?)\*\*/g, '$1').trim();
+      const summaryNew = summary.replace(/\*\*(.*?)\*\*/g, '$1').trim();
       doc
         .fillColor('#4B9CD3')
         .fontSize(16)
@@ -413,7 +417,10 @@ export class AudioService {
       const sentimentLines = sentiment_analysis.split('\n');
 
       sentimentLines.forEach((line) => {
-        line = line.replace(/^#+\s*/, '').replace(/^\*\*(.*?)\*\*$/, '$1').trim();
+        line = line
+          .replace(/^#+\s*/, '')
+          .replace(/^\*\*(.*?)\*\*$/, '$1')
+          .trim();
         if (line.includes('Overall Sentiment Analysis:')) {
           doc
             .fontSize(14)
@@ -516,7 +523,7 @@ export class AudioService {
       existingAudioData.tags = payload.tags;
 
       // Step 5: Upsert the updated user back into CosmosDB
-        await this.audioContainer.items.upsert(existingAudioData);
+      await this.audioContainer.items.upsert(existingAudioData);
 
       return {
         statusCode: 200,
@@ -536,16 +543,16 @@ export class AudioService {
       if (userId) {
         sqlQuery = `SELECT * FROM c WHERE c.userId = @userId ORDER BY c._ts DESC`;
       }
-  
+
       const querySpec = {
         query: sqlQuery,
         parameters: userId ? [{ name: '@userId', value: userId }] : [],
       };
-  
+
       const { resources } = await this.audioContainer.items
         .query(querySpec)
         .fetchAll();
-  
+
       if (!resources || resources.length === 0) {
         return {
           statusCode: 404,
@@ -553,21 +560,21 @@ export class AudioService {
           data: { audioData: [], allUniqueTags: [] },
         };
       }
-  
+
       let projectQuery = `SELECT * FROM c`;
       if (userId) {
         projectQuery = `SELECT * FROM c WHERE c.userId = @userId`;
       }
-  
+
       const projectQuerySpec = {
         query: projectQuery,
         parameters: userId ? [{ name: '@userId', value: userId }] : [],
       };
-  
+
       const { resources: projects } = await this.projectContainer.items
         .query(projectQuerySpec)
         .fetchAll();
-  
+
       let associatedProjects = [];
       if (projects.length > 0) {
         associatedProjects = projects.map((project) => ({
@@ -576,24 +583,26 @@ export class AudioService {
           audioIds: project.audioIds,
         }));
       }
-  
+
       const uniqueAudioMap: Map<string, GetAllFilesDTO> = new Map();
-  
+
       for (const item of resources) {
         const fileUrl = await this.generateBlobSasUrl(
-          item.audioName.substring(item.audioName.lastIndexOf('/') + 1)
+          item.audioName.substring(item.audioName.lastIndexOf('/') + 1),
         );
-  
+
         const projectNames = associatedProjects
           .filter((project) => project.audioIds.includes(item.audioId))
           .map((project) => project.projectName);
-  
+
         if (projectNames.length === 0) {
           projectNames.push();
         }
-  
+
         if (uniqueAudioMap.has(item.audioId)) {
-          uniqueAudioMap.get(item.audioId)!.projectDetails.push(...projectNames);
+          uniqueAudioMap
+            .get(item.audioId)!
+            .projectDetails.push(...projectNames);
         } else {
           // Otherwise, add a new entry
           uniqueAudioMap.set(item.audioId, {
@@ -608,15 +617,16 @@ export class AudioService {
           });
         }
       }
-  
-      const audioData = Array.from(uniqueAudioMap.values()).sort((a, b) => b._ts - a._ts);
-  
+
+      const audioData = Array.from(uniqueAudioMap.values()).sort(
+        (a, b) => b._ts - a._ts,
+      );
+
       // const allUniqueTags = [...new Set(audioData.flatMap((audio) => audio.tags))];
       const allUniqueTags = [
         ...new Set(audioData.flatMap((audio) => audio.tags)),
       ].map((tag) => ({ name: tag }));
-      
-  
+
       return {
         statusCode: 200,
         message: 'Audio records fetched successfully',
@@ -627,7 +637,7 @@ export class AudioService {
       };
     } catch (error) {
       Logger.error('Error fetching audio records:', error);
-  
+
       return {
         statusCode: 500,
         message: 'Failed to fetch audio records',
@@ -669,7 +679,7 @@ export class AudioService {
           );
 
           return {
-            tags: item.tags || []
+            tags: item.tags || [],
           };
         }),
       );
@@ -680,7 +690,6 @@ export class AudioService {
       const allUniqueTags = [
         ...new Set(audioData.flatMap((audio) => audio.tags)),
       ].map((tag) => ({ name: tag }));
-      
 
       return {
         statusCode: 200,
@@ -698,5 +707,4 @@ export class AudioService {
       };
     }
   }
-  
 }
