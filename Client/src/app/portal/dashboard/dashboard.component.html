@@ -145,7 +145,7 @@
                                 <mat-form-field class="full-width">
                                     <mat-label>Tags</mat-label>
                                     <mat-select multiple formControlName="tags">
-                                      <mat-option *ngFor="let ol of filteredTags" [value]="ol.name">
+                                      <mat-option *ngFor="let ol of audioTags" [value]="ol.name">
                                         {{ ol.name }}
                                       </mat-option>
                                     </mat-select>

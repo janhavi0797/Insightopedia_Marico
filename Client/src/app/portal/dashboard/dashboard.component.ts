@@ -31,10 +31,6 @@ export class DashboardComponent implements OnInit {
     this.initializeAudioForm();
     this.getMaster();
     this.getTags();
-    this.audioDetails.get('tagInput')?.valueChanges.subscribe((value: any) => {
-      console.log("Tag Input Value:", value);
-    });
-    
   }
 
   getMaster() {
@@ -51,14 +47,12 @@ export class DashboardComponent implements OnInit {
 
 
   getTags() {
-    let userCode = '';
     //userCode = this.userRole === "1" ? '' : this.userCode;
     this.commonServ.showSpin();
-    this.commonServ.getAPI('audio/allUniqueTag', userCode).subscribe(
+    this.commonServ.getAPI('audio/allUniqueTag').subscribe(
       (res: any) => {
         this.isLoading = false;
         this.audioTags = res.data;
-        this.filteredTags = [...this.audioTags];
         this.commonServ.hideSpin();
       },
       (err: any) => {
@@ -123,7 +117,6 @@ export class DashboardComponent implements OnInit {
     //const newTag = tagControl; // Ensure it's not undefined or empty
     if (newTag && !this.audioTags.some(tag => tag.name === newTag)) {
       this.audioTags.push({ name: newTag });
-      this.filteredTags = [...this.audioTags]; // Refresh filtered options
       const selectedTags = this.audioDetails.get('tags')?.value || [];
       this.audioDetails.get('tags')?.setValue([...selectedTags, newTag]); // Add new tag to selected list
     }

@@ -69,13 +69,9 @@ export class ProjectDetailsComponent {
     this.common.showSpin();
     this.common.getProjectDetail('project/allProjectDetails', projectId).subscribe((res: any) => {
       this.allAudioDetails = res.data.projectDetails[0];
-      //console.log("getProjectDetails only allAudioDetails",this.allAudioDetails);
       this.allProjectAudioDetails = res.data;
       //this.audioDetails = res.data.projectDetails[0].AudioData[0];
       this.audioDetails = this.combineAudioData(this.allProjectAudioDetails);
-
-      //console.log("combineAudioData of page refresh audioDetails",this.audioDetails);
-      //console.log("getProjectDetails only allAudioDetails",this.allAudioDetails);
        //this.filePath = res.data.FilePath;
        //this.vectorId = res.data.vectorId;
       this.tempAudioData = res.data.projectDetails[0].AudioData.map((x: any) => Object.assign({}, x));
@@ -481,7 +477,6 @@ export class ProjectDetailsComponent {
   
     if (index === 0) {
       this.audioDetails = this.combineAudioData(this.allProjectAudioDetails);
-      console.log("onAudioNameChange",this.audioDetails)
     } else {
       this.audioDetails = this.allAudioDetails.AudioData[index - 1] || null;
     }
