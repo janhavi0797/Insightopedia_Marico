@@ -52,7 +52,6 @@ export class GetAllFilesDTO {
 
   @IsNotEmpty()
   _ts: number;
-
 }
 
 export class GetAllUniqueTagDTO {

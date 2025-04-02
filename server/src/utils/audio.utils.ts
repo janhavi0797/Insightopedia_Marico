@@ -22,6 +22,7 @@ import { ChatService } from 'src/chat/chat.service';
 import { BullQueues, QueueProcess } from './enums';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
+import { EmailHelper } from './email.helper';
 
 export interface Document {
   id: string; // Document ID
@@ -43,6 +44,7 @@ export class AudioUtils {
     @Inject('RedisService') private readonly redisService,
     @InjectQueue(BullQueues.PROJECT_SUMMARY)
     private readonly projectSummaryQueue: Queue,
+    private readonly emailHelper: EmailHelper,
   ) {
     this.translateClient = new Translate({
       key: this.configService.get<string>('TRANSALATION_APIKEY'),
@@ -345,12 +347,12 @@ export class AudioUtils {
         existingDocument.audiodata = transcriptionDocument.audiodata;
         existingDocument.summary = transcriptionDocument.summary;
         existingDocument.sentiment_analysis =
-        transcriptionDocument.sentiment_analysis;
+          transcriptionDocument.sentiment_analysis;
         existingDocument.combinedTranslation =
           transcriptionDocument.combinedTranslation;
         existingDocument.vectorIds = transcriptionDocument.vectorIds;
         const response =
-           await this.AudioContainer.items.upsert(existingDocument);
+          await this.AudioContainer.items.upsert(existingDocument);
       } else {
         const response = await this.AudioContainer.items.create(
           transcriptionDocument,
@@ -518,35 +520,45 @@ export class AudioUtils {
     stage: QueueProcess,
     projectId: string,
   ): Promise<void> {
-    const lastAudioId = await this.redisService.get(`lastAudio`);
-    this.logger.log(
-      `Last audio id: ${lastAudioId}, and current Audio Id ${audioId}`,
-    );
+    const key = `project:${projectId}:audioStages`;
+    const audioStages = JSON.parse((await this.redisService.get(key)) || '{}');
 
-    const key = `audio:${audioId}project:${projectId}:stages`;
-    const stages = JSON.parse((await this.redisService.get(key)) || '{}');
-    stages[stage] = true;
-    await this.redisService.set(key, JSON.stringify(stages));
+    // Update the stage completion status for the current audio
+    if (!audioStages[audioId]) {
+      audioStages[audioId] = {};
+    }
+    audioStages[audioId][stage] = true;
+
+    // Save the updated stages back to Redis
+    await this.redisService.set(key, JSON.stringify(audioStages));
     this.logger.log(`Stage ${stage} completed for audio ${audioId}`);
 
+    // Log the current status of all stages for all audios
+    this.logger.log(`Current stage status for project ${projectId}:`);
+    Object.entries(audioStages).forEach(([audioId, stages]) => {
+      this.logger.log(`Audio ID: ${audioId}`);
+      Object.entries(stages).forEach(([stage, status]) => {
+        this.logger.log(`  Stage: ${stage}, Status: ${status}`);
+      });
+    });
+
+    // Check if all stages are completed for all audios in the project
+    const allAudiosCompleted = Object.values(audioStages).every((audio) =>
+      [
+        QueueProcess.TRANSCRIPTION_AUDIO,
+        QueueProcess.TRANSLATION_AUDIO,
+        QueueProcess.SUMMARY_AUDIO,
+        QueueProcess.EMBEDDING_AUDIO,
+      ].every((requiredStage) => audio[requiredStage]),
+    );
     // Check if all stages are completed for this audio
-    if (
-      stages[QueueProcess.TRANSCRIPTION_AUDIO] &&
-      stages[QueueProcess.TRANSLATION_AUDIO] &&
-      stages[QueueProcess.SUMMARY_AUDIO] &&
-      stages[QueueProcess.EMBEDDING_AUDIO]
-    ) {
-      this.logger.log(`All stages completed for audio ${audioId}`);
-      const lastAudioId = await this.redisService.get(`lastAudio`);
-      if (audioId === lastAudioId) {
-        this.logger.log(`All stages completed for the last audio ${audioId}`);
-        // Trigger the project audio process
-        await this.projectSummaryQueue.add(QueueProcess.PROJECT_SUMMARY_AUDIO, {
-          ...stages,
-          projectId,
-        });
-        this.logger.log(`Combined Audio Project job enqueued`);
-      }
+    if (allAudiosCompleted) {
+      this.logger.log(`All stages completed for the project ${projectId}`);
+      // Trigger the project audio process
+      await this.projectSummaryQueue.add(QueueProcess.PROJECT_SUMMARY_AUDIO, {
+        projectId,
+      });
+      this.logger.log(`Combined Audio Project job enqueued`);
     }
   }
 
@@ -609,6 +621,10 @@ export class AudioUtils {
     try {
       const response =
         await this.ProjectContainer.items.upsert(projectDocument);
+
+      await this.emailHelper.sendProjectCreationEmail(
+        projectDocument.projectId,
+      );
       return response;
     } catch (error) {
       console.error('Error saving project summary:', error.message);

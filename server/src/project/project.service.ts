@@ -26,6 +26,7 @@ import {
   AudioDataDTO,
   GetProjectDetailsDto,
 } from './dtos/get_project_details.dto';
+import { EmailHelper } from 'src/utils';
 
 @Injectable()
 export class ProjectService {
@@ -39,6 +40,7 @@ export class ProjectService {
     private readonly transcriptionQueue: Queue,
     @Inject('RedisService') private readonly redisService,
     @InjectModel(User) private readonly userContainer: Container,
+    private readonly emailService:EmailHelper
   ) {
     this.blobServiceClient = BlobServiceClient.fromConnectionString(
       this.config.get<string>('AZURE_STORAGE_CONNECTION_STRING'),
@@ -118,11 +120,6 @@ export class ProjectService {
           Logger.log(
             `Transcription job for ${audio.audioId} enqueued successfully`,
           );
-
-          // If this is the last audio, mark it in Redis
-          if (index === project.audioIds.length - 1) {
-            await this.redisService.set(`lastAudio`, audio.audioId);
-          }
         });
         Promise.all(audioPromises).then(() => {
           Logger.log(`Transcription jobs enqueued successfully`);
@@ -337,5 +334,9 @@ export class ProjectService {
         error: error.message,
       };
     }
+  }
+
+  async sendProjectEmail(projectId:string){
+    return await this.emailService.sendProjectCreationEmail(projectId)
   }
 }

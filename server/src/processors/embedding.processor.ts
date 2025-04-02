@@ -1,7 +1,7 @@
 import { Job } from 'bull';
 import { Process, Processor } from '@nestjs/bull';
 import { InternalServerErrorException, Logger } from '@nestjs/common';
-import { AudioUtils } from 'src/utils';
+import { AudioUtils, EmailHelper } from 'src/utils';
 import { BullQueues, QueueProcess } from 'src/utils/enums';
 import nodemailer from 'nodemailer';
 
@@ -9,7 +9,10 @@ import nodemailer from 'nodemailer';
 export class EmbeddingProcessor {
   private readonly logger = new Logger(EmbeddingProcessor.name);
 
-  constructor(private readonly audioUtils: AudioUtils) {} // Service containing translation logic
+  constructor(
+    private readonly audioUtils: AudioUtils,
+    private readonly emailHelper: EmailHelper,
+  ) {} // Service containing translation logic
 
   @Process({ name: QueueProcess.EMBEDDING_AUDIO, concurrency: 5 }) // Handle jobs in the 'translate-audio' queue
   async handleTranslationJob(job: Job) {
@@ -29,48 +32,14 @@ export class EmbeddingProcessor {
         QueueProcess.EMBEDDING_AUDIO,
         projectId,
       );
+
+      await job.log('Stage completed successfully');
     } catch (error) {
+      await this.emailHelper.sendProjectCreationFailureEmail(projectId);
+      await job.log('Project creation failed email sent successfully');
+
       this.logger.error(`Translation job failed: ${error.message}`);
       throw error;
-    }
-  }
-
-  @Process('send-email')
-  async sendEmail(recipientEmail: string, userName: string) {
-    const baseUrl = process.env.APP_BASE_URL || 'http://localhost:4200';
-
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_SERVER,
-      port: process.env.EMAIL_PORT,
-      secure: false, // Use STARTTLS
-      auth: {
-        user: process.env.EMAIL_USER, // Office 365 email
-        pass: process.env.EMAIL_PASS, // Office 365 app password
-      },
-      tls: {
-        ciphers: 'SSLv3',
-      },
-    });
-
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: recipientEmail,
-      subject: 'Project Successfully Created',
-      html: `
-        <p>Hi ${userName},</p>
-      <p>The project is successfully created on the portal.</p>
-    
-      <p>You can view the details by clicking on the link below:</p>
-      <a href="${baseUrl}/portal/allFiles/audioDetails/${test}">View Audio Details</a>
-      <p>Best regards,<br>Marico Team</p>
-      `,
-    };
-
-    try {
-      await transporter.sendMail(mailOptions);
-    } catch (err) {
-      Logger.error(`Error in email sent ${err.message}`);
-      throw new InternalServerErrorException(`${err.message}`);
     }
   }
 }

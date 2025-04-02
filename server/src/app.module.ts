@@ -9,9 +9,9 @@ import { Container, CosmosClient } from '@azure/cosmos';
 import { UserModule } from './user/user.module';
 import { ProjectModule } from './project/project.module';
 import { BullQueues, ContainersEnum } from './utils/enums';
-import { AudioUtils } from './utils';
+import { AudioUtils, EmailHelper } from './utils';
 import { TranscriptionProcessor } from './processors/transcription.processor';
-import { AudioEntity, ProjectEntity } from './utils/containers';
+import { AudioEntity, ProjectEntity, User } from './utils/containers';
 import { ChatModule } from './chat/chat.module';
 import { TranslationProcessor } from './processors/translation.processor';
 import { SummarySentimentsProcessor } from './processors/summarySentiments.processor';
@@ -51,6 +51,10 @@ import { ProjectSummaryProcessor } from './processors/projectSummary.processor';
       {
         dto: AudioEntity,
         collection: ContainersEnum.AUDIO,
+      },
+      {
+        dto: User,
+        collection: ContainersEnum.USER,
       },
     ]),
     BullModule.registerQueue({
@@ -99,6 +103,7 @@ import { ProjectSummaryProcessor } from './processors/projectSummary.processor';
     EmbeddingProcessor,
     ProjectSummaryProcessor,
     AudioUtils,
+    EmailHelper,
     {
       provide: 'RedisService',
       useFactory: () => {
