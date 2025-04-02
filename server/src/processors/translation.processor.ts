@@ -1,7 +1,7 @@
 import { Job, Queue } from 'bull';
 import { InjectQueue, Process, Processor } from '@nestjs/bull';
 import { Logger } from '@nestjs/common';
-import { AudioUtils } from 'src/utils';
+import { AudioUtils, EmailHelper } from 'src/utils';
 import { BullQueues, QueueProcess } from 'src/utils/enums';
 import {
   ISummaryProcessor,
@@ -15,6 +15,7 @@ export class TranslationProcessor {
   constructor(
     private readonly audioUtils: AudioUtils,
     @InjectQueue(BullQueues.SUMMARY) private readonly summaryQueue: Queue,
+    private readonly emailHelper: EmailHelper,
   ) {} // Service containing translation logic
 
   @Process({ name: QueueProcess.TRANSLATION_AUDIO, concurrency: 5 }) // Handle jobs in the 'translate-audio' queue
@@ -53,6 +54,8 @@ export class TranslationProcessor {
 
       return { updatedTextArray, combinedTranslation, audioId, fileName };
     } catch (error) {
+      await this.emailHelper.sendProjectCreationFailureEmail(projectId);
+
       this.logger.error(`Translation job failed: ${error.message}`);
       throw error;
     }

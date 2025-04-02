@@ -1,5 +1,6 @@
 import * as nodemailer from 'nodemailer';
 import {
+  Inject,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -15,6 +16,7 @@ export class EmailHelper {
   constructor(
     @InjectModel(ProjectEntity) private readonly ProjectContainer: Container,
     @InjectModel(User) private readonly UserContainer: Container,
+    @Inject('RedisService') private readonly redisService,
   ) {}
 
   async sendEmail(
@@ -54,6 +56,13 @@ export class EmailHelper {
   }
   async sendProjectCreationEmail(projectId: string): Promise<void> {
     try {
+      const emailSentKey = `project:${projectId}:successEmailSent`;
+      const emailSent = await this.redisService.get(emailSentKey);
+      if (emailSent) {
+        this.logger.log(`Success email already sent for project ${projectId}`);
+        return; // Skip sending the email
+      }
+
       const query = {
         query: 'SELECT * FROM c WHERE c.projectId = @projectId',
         parameters: [{ name: '@projectId', value: projectId }],
@@ -111,6 +120,13 @@ export class EmailHelper {
 
   async sendProjectCreationFailureEmail(projectId: string): Promise<void> {
     try {
+      const emailSentKey = `project:${projectId}:failedEmailSent`;
+      const emailSent = await this.redisService.get(emailSentKey);
+      if (emailSent) {
+        this.logger.log(`Success email already sent for project ${projectId}`);
+        return; // Skip sending the email
+      }
+
       const query = {
         query: 'SELECT * FROM c WHERE c.projectId = @projectId',
         parameters: [{ name: '@projectId', value: projectId }],
@@ -156,6 +172,9 @@ export class EmailHelper {
       <p>Best regards,<br>Marico Team</p>
         `;
       await this.sendEmail(recipientEmail, subject, htmlContent);
+      // Mark the success email as sent in Redis
+      await this.redisService.set(emailSentKey, 'true');
+      this.logger.log(`Success email sent for project ${projectId}`);
     } catch (error) {
       this.logger.error(
         `Error in sending project creation failure email: ${error.message}`,

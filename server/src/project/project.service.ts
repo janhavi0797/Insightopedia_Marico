@@ -118,11 +118,6 @@ export class ProjectService {
           Logger.log(
             `Transcription job for ${audio.audioId} enqueued successfully`,
           );
-
-          // If this is the last audio, mark it in Redis
-          if (index === project.audioIds.length - 1) {
-            await this.redisService.set(`lastAudio`, audio.audioId);
-          }
         });
         Promise.all(audioPromises).then(() => {
           Logger.log(`Transcription jobs enqueued successfully`);

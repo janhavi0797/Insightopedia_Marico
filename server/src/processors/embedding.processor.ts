@@ -34,11 +34,6 @@ export class EmbeddingProcessor {
       );
 
       await job.log('Stage completed successfully');
-
-      // Send email notification after successful embedding
-
-      await this.emailHelper.sendProjectCreationEmail(projectId);
-      await job.log('Email sent successfully');
     } catch (error) {
       await this.emailHelper.sendProjectCreationFailureEmail(projectId);
       await job.log('Project creation failed email sent successfully');

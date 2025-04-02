@@ -5,6 +5,7 @@ import { Logger } from '@nestjs/common';
 import { SENTIMENT_ANALYSIS, SUMMARY } from 'src/utils/constants';
 import { BullQueues, QueueProcess } from 'src/utils/enums';
 import { AudioEntity } from 'src/utils/containers';
+import { EmailHelper } from 'src/utils';
 
 @Processor(BullQueues.SUMMARY)
 export class SummarySentimentsProcessor {
@@ -13,6 +14,7 @@ export class SummarySentimentsProcessor {
   constructor(
     private readonly audioUtils: AudioUtils,
     @InjectQueue(BullQueues.EMBEDDING) private readonly embeddingQueue: Queue,
+    private readonly emailHelper: EmailHelper,
   ) {}
   @Process({ name: QueueProcess.SUMMARY_AUDIO, concurrency: 5 })
   async handleTranscriptionJob(job: Job) {
@@ -73,6 +75,8 @@ export class SummarySentimentsProcessor {
       await this.embeddingQueue.add(QueueProcess.EMBEDDING_AUDIO, embeddingJob);
       return { transcriptionDocument };
     } catch (error) {
+      await this.emailHelper.sendProjectCreationFailureEmail(projectId);
+
       this.logger.error(`Transcription job failed: ${error.message}`);
       throw error;
     }
