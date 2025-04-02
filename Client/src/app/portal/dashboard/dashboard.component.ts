@@ -22,7 +22,7 @@ export class DashboardComponent implements OnInit {
   audioTags: any[] = [];
   today: Date = new Date();
   filteredTags: any[] = [];
-  isLoading: boolean=true;
+  isLoading: boolean = true;
   constructor(private toastr: ToastrService, private fb: FormBuilder, private commonServ: CommonService) { }
 
   ngOnInit() {
@@ -51,9 +51,11 @@ export class DashboardComponent implements OnInit {
     this.commonServ.showSpin();
     this.commonServ.getAPI('audio/allUniqueTag').subscribe(
       (res: any) => {
-        this.isLoading = false;
-        this.audioTags = res.data;
         this.commonServ.hideSpin();
+        if (res.statusCode === 200) {
+          this.audioTags = res.data;
+        }
+
       },
       (err: any) => {
         this.commonServ.hideSpin();
@@ -85,15 +87,13 @@ export class DashboardComponent implements OnInit {
   filterTags() {
     const firstFormGroup = this.bankDetailsArray.at(0) as FormGroup;
     if (!firstFormGroup) {
-      console.error("No form group found at index 0!");
       return;
     }
     const tagControl = firstFormGroup.get('tagInput');
     if (!tagControl) {
-      console.error("Tag Input Control Not Found!");
       return;
     }
-    const newTag = tagControl.value?.trim(); 
+    const newTag = tagControl.value?.trim();
     const inputValue = newTag.toLowerCase();
     this.filteredTags = this.audioTags.filter(tag => tag.name.toLowerCase().includes(inputValue));
   }
@@ -104,27 +104,27 @@ export class DashboardComponent implements OnInit {
     //const tagControl = (this.bankDetailsArray.at(0) as FormGroup)?.get('tagInput')?.value ?? '';
     const firstFormGroup = this.bankDetailsArray.at(index) as FormGroup;
     if (!firstFormGroup) {
-      console.error("No form group found at index 0!");
+      //console.error("No form group found at index 0!");
       return;
     }
     const tagControl = firstFormGroup.get('tagInput');
 
     if (!tagControl) {
-      console.error("Tag Input Control Not Found!");
+      //console.error("Tag Input Control Not Found!");
       return;
     }
-    const newTag = tagControl.value?.trim(); 
+    const newTag = tagControl.value?.trim();
     //const newTag = tagControl; // Ensure it's not undefined or empty
     if (newTag && !this.audioTags.some(tag => tag.name === newTag)) {
       this.audioTags.push({ name: newTag });
       const selectedTags = this.audioDetails.get('tags')?.value || [];
       this.audioDetails.get('tags')?.setValue([...selectedTags, newTag]); // Add new tag to selected list
     }
-  
+
     tagControl.setValue(''); // Clear input field
   }
-  
-  
+
+
 
   onDrop(event: DragEvent): void {
     event.preventDefault();
@@ -144,7 +144,7 @@ export class DashboardComponent implements OnInit {
   }
 
   addFile(files: FileList): boolean {
-    if(this.audioFiles.length + files.length > 4) {
+    if (this.audioFiles.length + files.length > 4) {
       this.toastr.warning('You can only upload 4 files at a time');
       return false;
     }
@@ -208,11 +208,11 @@ export class DashboardComponent implements OnInit {
   submitForm() {
     const requestBody: any[] = [];
     const formData = new FormData();
-  
+
     for (let i = 0; i < this.audioFiles.length; i++) {
       const audioDetail = this.bankDetailsArray.value[i];
       const audioFile = this.audioFiles[i];
-  
+
       const formattedAudio = {
         audioName: audioFile?.data?.name || '',
         noOfSpek: audioDetail.numSpeakers,
@@ -222,12 +222,12 @@ export class DashboardComponent implements OnInit {
         secondary_lang: audioDetail.secondaryLanguage || [],
         tags: audioDetail.tags || []
       };
-  
+
       requestBody.push(formattedAudio);
       formData.append('files', audioFile.data, audioFile.data.name);
     }
     formData.append('AudioDto', JSON.stringify(requestBody));
-  
+
     this.commonServ.showSpin();
     this.commonServ.postAPI('audio/upload', formData).subscribe(
       (res: any) => {
@@ -351,6 +351,6 @@ export class DashboardComponent implements OnInit {
   formatDate(date: Date): string {
     if (!date) return '';
     const d = new Date(date);
-    return d.toISOString().split('T')[0]; 
+    return d.toISOString().split('T')[0];
   }
 }

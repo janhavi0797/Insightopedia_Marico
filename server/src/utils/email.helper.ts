@@ -88,7 +88,6 @@ export class EmailHelper {
         .query(userQuery)
         .fetchAll();
 
-      console.log(userDocuments, 'userDocuments');
       if (userDocuments.length === 0) {
         this.logger.error(`No user found with ID: ${userId}`);
         throw new InternalServerErrorException(

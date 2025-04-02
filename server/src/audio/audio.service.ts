@@ -668,7 +668,7 @@ export class AudioService {
         return {
           statusCode: 404,
           message: 'No audio records found',
-          data: { audioData: [], allUniqueTags: [] },
+          data:[],
         };
       }
 
@@ -702,7 +702,7 @@ export class AudioService {
       return {
         statusCode: 500,
         message: 'Failed to fetch audio tags records',
-        data: null,
+        data: [],
         error: error.message,
       };
     }
