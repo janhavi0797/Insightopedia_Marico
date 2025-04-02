@@ -345,10 +345,12 @@ export class AudioUtils {
         existingDocument.audiodata = transcriptionDocument.audiodata;
         existingDocument.summary = transcriptionDocument.summary;
         existingDocument.sentiment_analysis =
-          transcriptionDocument.sentiment_analysis;
+        transcriptionDocument.sentiment_analysis;
         existingDocument.combinedTranslation =
           transcriptionDocument.combinedTranslation;
         existingDocument.vectorIds = transcriptionDocument.vectorIds;
+        const response =
+           await this.AudioContainer.items.upsert(existingDocument);
       } else {
         const response = await this.AudioContainer.items.create(
           transcriptionDocument,
