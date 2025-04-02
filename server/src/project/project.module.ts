@@ -6,6 +6,7 @@ import { ProjectEntity, AudioEntity, User } from 'src/utils/containers';
 import { BullModule } from '@nestjs/bull';
 import { BullQueues, ContainersEnum } from 'src/utils/enums';
 import { createClient } from 'redis';
+import { EmailHelper } from 'src/utils';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { createClient } from 'redis';
   ],
   controllers: [ProjectController],
   providers: [
+    EmailHelper,
     ProjectService,
     {
       provide: 'RedisService',

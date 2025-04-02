@@ -50,4 +50,26 @@ export class ProjectController {
     }
     return this.projectService.getProject(projectId);
   }
+
+  @Get('send-email')
+  @ApiOperation({ summary: 'Send Project creation email to user.' })
+  async sendProjectEmail(@Query('projectId') projectId: string) {
+    try {
+      if (!projectId) {
+        throw new BadRequestException('Project ID is required');
+      }
+      await this.projectService.sendProjectEmail(projectId);
+      return {
+        status: 200,
+        message: 'Email Sent successfully.',
+      };
+    } catch (err) {
+      if (err instanceof BadRequestException) {
+        throw new BadRequestException(`${err.message}`);
+      } else if (err instanceof NotFoundException) {
+        throw new NotFoundException(`${err.message}`);
+      }
+      throw new InternalServerErrorException(`${err.message}`);
+    }
+  }
 }
