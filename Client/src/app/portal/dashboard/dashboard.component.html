@@ -15,7 +15,7 @@
         </div>
         <div class="media-body">
             <div class="upload-list">
-                <div class="subtitle">
+                <div class="subtitle" *ngIf="audioFiles.length > 0">
                     <h3>Add details about the audios</h3>
                 </div>
 
@@ -96,6 +96,37 @@
                                             language is required</span>
                                     </mat-error>
                                 </mat-form-field>
+                                <!-- <mat-form-field>
+                                    <mat-label>Choose a date</mat-label>
+                                    <input matInput [matDatepicker]="picker" formControlName="date" [max]="today">
+                                    <mat-hint>MM/DD/YYYY</mat-hint>
+                                    <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+                                    <mat-datepicker #picker></mat-datepicker>
+                                    <mat-error
+                                        *ngIf="getFormControl(i, 'date')?.touched && getFormControl(i, 'date')?.invalid">
+                                        <span *ngIf="getFormControl(i, 'date')?.errors?.['required']">Date is
+                                            required</span>
+                                        <span *ngIf="getFormControl(i, 'date')?.errors?.['matDatepickerMax']">Future
+                                            dates are not allowed</span>
+                                    </mat-error>
+                                </mat-form-field> -->
+                            </div>
+
+                            <div class="audio-form">
+                                <!-- <mat-form-field>
+                                    <mat-label>Tags</mat-label>
+                                    <mat-select multiple formControlName="tags">
+                                        <mat-option *ngFor="let ol of audioTags" [value]="ol.name">
+                                            {{ ol.name }}
+                                        </mat-option>
+                                    </mat-select>
+                                    <mat-error
+                                        *ngIf="getFormControl(i, 'tags')?.touched && getFormControl(i, 'tags')?.invalid">
+                                        <span *ngIf="getFormControl(i, 'tags')?.errors?.['required']">Tags is
+                                            required</span>
+                                    </mat-error>
+                                </mat-form-field> -->
+
                                 <mat-form-field>
                                     <mat-label>Audio Date</mat-label>
                                     <input matInput [matDatepicker]="picker" formControlName="date" [max]="today">
@@ -110,22 +141,28 @@
                                             dates are not allowed</span>
                                     </mat-error>
                                 </mat-form-field>
-                            </div>
-
-                            <div class="audio-form">
-                                <mat-form-field>
+                               
+                                <mat-form-field class="full-width">
                                     <mat-label>Tags</mat-label>
                                     <mat-select multiple formControlName="tags">
-                                        <mat-option *ngFor="let ol of audioTags" [value]="ol.name">
-                                            {{ ol.name }}
-                                        </mat-option>
+                                      <mat-option *ngFor="let ol of filteredTags" [value]="ol.name">
+                                        {{ ol.name }}
+                                      </mat-option>
                                     </mat-select>
-                                    <mat-error
-                                        *ngIf="getFormControl(i, 'tags')?.touched && getFormControl(i, 'tags')?.invalid">
-                                        <span *ngIf="getFormControl(i, 'tags')?.errors?.['required']">Tags is
-                                            required</span>
-                                    </mat-error>
-                                </mat-form-field>
+                                    <mat-error *ngIf="getFormControl(i, 'tags')?.touched && getFormControl(i, 'tags')?.invalid">
+                                        <span *ngIf="getFormControl(i, 'tags')?.errors?.['required']">Tags are required</span>
+                                      </mat-error>
+                                  </mat-form-field>
+                                  
+                                  <mat-form-field class="full-width">
+                                    <mat-label>Add Tags</mat-label>
+                                    <input matInput formControlName="tagInput"  placeholder="Type to filter or add a tag" />
+                                    <button mat-icon-button (click)="addTag(i)" matSuffix>
+                                      <mat-icon>add</mat-icon>
+                                    </button>
+                                  </mat-form-field>
+                                  
+                                
                             </div>
                         </li>
                     </ul>
@@ -139,7 +176,3 @@
     </div>
 </div>
 
-
-<div *ngIf="isLoading" class="spinner">
-    <mat-spinner></mat-spinner>
-</div>

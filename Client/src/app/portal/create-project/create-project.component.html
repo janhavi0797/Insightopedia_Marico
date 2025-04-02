@@ -110,14 +110,10 @@
   <div class="info-container">
     <img [src]="imageBasePath + 'assets/Img/dashboard/file-process.png'" alt="">
     <h5>Project submitted for processing!</h5>
-    <p>An email with link will be send to when the processing is complete.</p>
+    <p>You will receive an email with a link once the processing is complete.</p>
     <div class="info-btn">
       <button class="cl-btn" (click)="closeInfo()">Close</button>
       <button class="add-btn" (click)="viewAudioProcess()">View Audio Process Status</button>
     </div>
   </div>
 </ng-template>
-
-<div *ngIf="isLoading" class="spinner">
-  <mat-spinner></mat-spinner>
-</div>

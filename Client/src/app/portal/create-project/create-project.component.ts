@@ -37,7 +37,6 @@ export class CreateProjectComponent {
   selectedAudios: string[] = [];
   imageBasePath: string = environment.imageBasePath;
   isShowFooter: boolean = false;
-  isLoading: boolean = false;
 
   tagList: any[] = [];
    dialogRef!: MatDialogRef<any>;
@@ -66,10 +65,10 @@ export class CreateProjectComponent {
   getTagsWiseAudio() {
     let userCode = '';
     userCode = this.userRole === "1" ? '' : this.userCode;
-    this.isLoading = true
+    this.commonServ.showSpin();
     this.commonServ.getTagwiseAudio('audio/all', userCode).subscribe(
       (res: any) => {
-        this.isLoading = false;
+        this.commonServ.hideSpin();
         this.tagList = res.data.allUniqueTags;
         this.audioNames = res.data.audioData;
 
@@ -85,7 +84,7 @@ export class CreateProjectComponent {
         }));
       },
       (err: any) => {
-        this.isLoading = false;
+        this.commonServ.hideSpin();
         this.toastr.error('Something Went Wrong!');
       }
     );
@@ -269,10 +268,10 @@ export class CreateProjectComponent {
         audioId: file.audioId,
       }))
     };
-    this.isLoading = true;
+    this.commonServ.showSpin();
     this.commonServ.CreateProject(payload).subscribe(
       (res: any) => {
-        this.isLoading = false;
+        this.commonServ.hideSpin();
         if (res.status === "success") {
           this.dialogRef = this.dialog.open(InfoTemplate, {
             width: '50%',
@@ -283,7 +282,7 @@ export class CreateProjectComponent {
       },
       err => {
         this.toastr.error('Something Went Wrong!');
-        this.isLoading = false;
+        this.commonServ.hideSpin();
       });
   }
 

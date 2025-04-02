@@ -10,6 +10,7 @@ import { CommonService } from '../service/common.service';
   styleUrls: ['./dashboard.component.scss']
 })
 export class DashboardComponent implements OnInit {
+  tagInput: string = '';
   audioFiles: any[] = [];
   imageBasePath: string = environment.imageBasePath;
   primaryLang: any[] = [];
@@ -19,8 +20,9 @@ export class DashboardComponent implements OnInit {
   userCode: any;
   userRole: any;
   audioTags: any[] = [];
-  isLoading: boolean = false;
   today: Date = new Date();
+  filteredTags: any[] = [];
+  isLoading: boolean=true;
   constructor(private toastr: ToastrService, private fb: FormBuilder, private commonServ: CommonService) { }
 
   ngOnInit() {
@@ -29,31 +31,38 @@ export class DashboardComponent implements OnInit {
     this.initializeAudioForm();
     this.getMaster();
     this.getTags();
+    this.audioDetails.get('tagInput')?.valueChanges.subscribe((value: any) => {
+      console.log("Tag Input Value:", value);
+    });
+    
   }
 
   getMaster() {
-    this.isLoading = true;
+    this.commonServ.showSpin();
     this.commonServ.getAPI('users/masterData').subscribe((res: any) => {
-      this.isLoading = false;
+      this.commonServ.hideSpin();
       this.primaryLang = res.data[0].languages;
       this.secondaryLang = [...this.primaryLang];
     }, (err: any) => {
-      this.isLoading = false;
+      this.commonServ.hideSpin();
       this.toastr.error('Something went wrong');
     });
   }
 
+
   getTags() {
     let userCode = '';
-    userCode = this.userRole === "1" ? '' : this.userCode;
-    this.isLoading = true;
-    this.commonServ.getAPI('audio/all', userCode).subscribe(
+    //userCode = this.userRole === "1" ? '' : this.userCode;
+    this.commonServ.showSpin();
+    this.commonServ.getAPI('audio/allUniqueTag', userCode).subscribe(
       (res: any) => {
         this.isLoading = false;
-        this.audioTags = res.data.allUniqueTags;
+        this.audioTags = res.data;
+        this.filteredTags = [...this.audioTags];
+        this.commonServ.hideSpin();
       },
       (err: any) => {
-        this.isLoading = false;
+        this.commonServ.hideSpin();
         this.toastr.error('Something went wrong');
       });
   }
@@ -61,6 +70,7 @@ export class DashboardComponent implements OnInit {
   initializeAudioForm() {
     this.audioDetails = this.fb.group({
       bankInput: this.fb.array([]),
+      tagInput: [''],
     });
   }
 
@@ -77,6 +87,51 @@ export class DashboardComponent implements OnInit {
     this.addFile(files);
     event.target.value = null;
   }
+
+  filterTags() {
+    const firstFormGroup = this.bankDetailsArray.at(0) as FormGroup;
+    if (!firstFormGroup) {
+      console.error("No form group found at index 0!");
+      return;
+    }
+    const tagControl = firstFormGroup.get('tagInput');
+    if (!tagControl) {
+      console.error("Tag Input Control Not Found!");
+      return;
+    }
+    const newTag = tagControl.value?.trim(); 
+    const inputValue = newTag.toLowerCase();
+    this.filteredTags = this.audioTags.filter(tag => tag.name.toLowerCase().includes(inputValue));
+  }
+
+
+  addTag(index: number) {
+    //const tagControl = this.bankDetailsArray.get('tagInput');
+    //const tagControl = (this.bankDetailsArray.at(0) as FormGroup)?.get('tagInput')?.value ?? '';
+    const firstFormGroup = this.bankDetailsArray.at(index) as FormGroup;
+    if (!firstFormGroup) {
+      console.error("No form group found at index 0!");
+      return;
+    }
+    const tagControl = firstFormGroup.get('tagInput');
+
+    if (!tagControl) {
+      console.error("Tag Input Control Not Found!");
+      return;
+    }
+    const newTag = tagControl.value?.trim(); 
+    //const newTag = tagControl; // Ensure it's not undefined or empty
+    if (newTag && !this.audioTags.some(tag => tag.name === newTag)) {
+      this.audioTags.push({ name: newTag });
+      this.filteredTags = [...this.audioTags]; // Refresh filtered options
+      const selectedTags = this.audioDetails.get('tags')?.value || [];
+      this.audioDetails.get('tags')?.setValue([...selectedTags, newTag]); // Add new tag to selected list
+    }
+  
+    tagControl.setValue(''); // Clear input field
+  }
+  
+  
 
   onDrop(event: DragEvent): void {
     event.preventDefault();
@@ -123,6 +178,7 @@ export class DashboardComponent implements OnInit {
       numSpeakers: ['', [Validators.required, Validators.min(2), Validators.max(10)]],
       date: ['', Validators.required],
       tags: [[], Validators.required],
+      tagInput: [''],
     });
 
     this.handleLanguageSelection(fileForm);
@@ -179,17 +235,17 @@ export class DashboardComponent implements OnInit {
     }
     formData.append('AudioDto', JSON.stringify(requestBody));
   
-    this.isLoading = true;
+    this.commonServ.showSpin();
     this.commonServ.postAPI('audio/upload', formData).subscribe(
       (res: any) => {
-        this.isLoading = false;
+        this.commonServ.hideSpin();
         this.toastr.success('Audio uploaded successfully');
         this.audioFiles = [];
         this.bankDetailsArray.clear();
         this.audioDetails.setControl('bankInput', this.fb.array([...this.bankDetailsArray.controls]));
       },
       (err: any) => {
-        this.isLoading = false;
+        this.commonServ.hideSpin();
         this.toastr.error(err.error.message);
       }
     );
