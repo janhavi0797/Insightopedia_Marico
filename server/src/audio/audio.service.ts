@@ -658,7 +658,7 @@ export class AudioService {
         return {
           statusCode: 404,
           message: 'No audio records found',
-          data: { audioData: [], allUniqueTags: [] },
+          data: [],
         };
       }
 
@@ -680,7 +680,7 @@ export class AudioService {
       const allUniqueTags = [
         ...new Set(audioData.flatMap((audio) => audio.tags)),
       ].map((tag) => ({ name: tag }));
-      
+      console.log("allUniqueTags",allUniqueTags);
 
       return {
         statusCode: 200,
@@ -693,7 +693,7 @@ export class AudioService {
       return {
         statusCode: 500,
         message: 'Failed to fetch audio tags records',
-        data: null,
+        data: [],
         error: error.message,
       };
     }
