@@ -32,7 +32,7 @@ import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 
 // const unlinkAsync = promisify(fs.unlink);
-ffmpeg.setFfmpegPath('C:/ffmpeg/ffmpeg.exe');
+ffmpeg.setFfmpegPath('/home/high.pimatri/Insightopedia/server/ffmpeg/ffmpeg.exe');
 const execAsync = promisify(exec);
 
 @Injectable()
