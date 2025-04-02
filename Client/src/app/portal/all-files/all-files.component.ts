@@ -17,7 +17,6 @@ import { CommonService } from '../service/common.service';
 export class AllFilesComponent {
 
   audioList: any[] = [];
-  isLoading: boolean = false;
 
   selectionTagControl = new FormControl('');
   filteredOptions!: Observable<any[]>;
@@ -48,9 +47,9 @@ export class AllFilesComponent {
   }
 
   getAllAudioList() {
-    this.isLoading = true;
+    this.commonServ.showSpin();
     this.audioServ.getAllAudioList('audio/allFiles').subscribe((res: any) => {
-      this.isLoading = false;
+      this.commonServ.hideSpin();
       this.audioList = res?.data?.audioData || [];
       this.dataSource = new MatTableDataSource(this.audioList);
       this.dataSource.paginator = this.paginator;
@@ -63,7 +62,7 @@ export class AllFilesComponent {
         map(value => this._filter(value || '')),
       );
     }, (err: any) => {
-      this.isLoading = false;
+      this.commonServ.hideSpin();
       this.toastr.error('Something Went Wrong!');
     });
   }
@@ -192,9 +191,9 @@ export class AllFilesComponent {
       audioId: this.currentAudioId,
       tags: tags
     }
-    this.isLoading = true;
+    this.commonServ.showSpin();
     this.commonServ.postAPI('audio/edit-audio-tag', param).subscribe((res) => {
-      this.isLoading = false;
+      this.commonServ.hideSpin();
       if (res.statusCode == 200) {
         this.toastr.success('Audio updated successfully!');
         this.audioList[this.currentIndex].tags = tags;
@@ -202,7 +201,7 @@ export class AllFilesComponent {
         this.closeDialog();
       }
     }, (err: any) => {
-      this.isLoading = false;
+      this.commonServ.hideSpin();
       this.toastr.error('Something Went Wrong!');
     })
   }

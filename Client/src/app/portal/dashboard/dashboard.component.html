@@ -16,7 +16,7 @@
         </div>
         <div class="media-body">
             <div class="upload-list">
-                <div class="subtitle">
+                <div class="subtitle" *ngIf="audioFiles.length > 0">
                     <h3>Add details about the audios</h3>
                 </div>
 
@@ -150,6 +150,9 @@
                                         {{ ol.name }}
                                       </mat-option>
                                     </mat-select>
+                                    <mat-error *ngIf="getFormControl(i, 'tags')?.touched && getFormControl(i, 'tags')?.invalid">
+                                        <span *ngIf="getFormControl(i, 'tags')?.errors?.['required']">Tags are required</span>
+                                      </mat-error>
                                   </mat-form-field>
                                   
                                   <mat-form-field class="full-width">
@@ -160,9 +163,7 @@
                                     </button>
                                   </mat-form-field>
                                   
-                                  <mat-error *ngIf="getFormControl(i, 'tags')?.touched && getFormControl(i, 'tags')?.invalid">
-                                    <span *ngIf="getFormControl(i, 'tags')?.errors?.['required']">Tags are required</span>
-                                  </mat-error>
+                                
                             </div>
                         </li>
                     </ul>
@@ -176,7 +177,3 @@
     </div>
 </div>
 
-
-<div *ngIf="isLoading" class="spinner">
-    <mat-spinner></mat-spinner>
-</div>
