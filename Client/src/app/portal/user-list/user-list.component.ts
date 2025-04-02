@@ -17,7 +17,6 @@ import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 export class UserListComponent {
 
   userList: any[] = [];
-  isLoading: boolean = false;
   userForm!: FormGroup;
   roles: any[] = [
     {
@@ -57,18 +56,18 @@ export class UserListComponent {
   }
 
   ngOnInit() {
-    this.isLoading = true;
     this.getUserList();
   }
 
   getUserList() {
+    this.commonServ.showSpin();
     this.commonServ.getAPI('users/all').subscribe((res: any) => {
-      this.isLoading = false;
+      this.commonServ.hideSpin();
       this.userList = res;
       this.dataSource = new MatTableDataSource(res); 
       this.dataSource.paginator = this.paginator;
     }, (err: any) => {
-      this.isLoading = false;
+      this.commonServ.hideSpin();
       this.toastr.error('Something Went Wrong!')
     });
   }

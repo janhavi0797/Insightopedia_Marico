@@ -54,9 +54,9 @@
 
           <div class="tab-content-model">
             <div class="model-detail">
-              <h5>Audio 1</h5>
-              <p>Target Group 1</p>
-              <p>Nykka, Nivea Vs Parachute Safolla</p>
+              <h2>{{allAudioDetails?.projectName}}</h2>
+              <p *ngIf="audioName !== ''">{{audioName}}</p>
+              <!-- <p>Nykka, Nivea Vs Parachute Safolla</p> -->
             </div>
             <div class="model-audio" *ngIf="audioDetails?.audioUrl">
               <div class="controls">
@@ -223,6 +223,4 @@
     </mat-tab-group>
   </div>
   
-  <div *ngIf="isLoading" class="spinner">
-    <mat-spinner></mat-spinner>
-  </div>
+ 
