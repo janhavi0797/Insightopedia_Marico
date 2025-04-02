@@ -10,6 +10,7 @@ import { CommonService } from '../service/common.service';
   styleUrls: ['./dashboard.component.scss']
 })
 export class DashboardComponent implements OnInit {
+  tagInput: string = '';
   audioFiles: any[] = [];
   imageBasePath: string = environment.imageBasePath;
   primaryLang: any[] = [];
@@ -21,6 +22,7 @@ export class DashboardComponent implements OnInit {
   audioTags: any[] = [];
   isLoading: boolean = false;
   today: Date = new Date();
+  filteredTags: any[] = [];
   constructor(private toastr: ToastrService, private fb: FormBuilder, private commonServ: CommonService) { }
 
   ngOnInit() {
@@ -29,6 +31,10 @@ export class DashboardComponent implements OnInit {
     this.initializeAudioForm();
     this.getMaster();
     this.getTags();
+    this.audioDetails.get('tagInput')?.valueChanges.subscribe((value: any) => {
+      console.log("Tag Input Value:", value);
+    });
+    
   }
 
   getMaster() {
@@ -43,6 +49,7 @@ export class DashboardComponent implements OnInit {
     });
   }
 
+
   getTags() {
     let userCode = '';
     userCode = this.userRole === "1" ? '' : this.userCode;
@@ -51,6 +58,7 @@ export class DashboardComponent implements OnInit {
       (res: any) => {
         this.isLoading = false;
         this.audioTags = res.data.allUniqueTags;
+        this.filteredTags = [...this.audioTags];
       },
       (err: any) => {
         this.isLoading = false;
@@ -61,6 +69,7 @@ export class DashboardComponent implements OnInit {
   initializeAudioForm() {
     this.audioDetails = this.fb.group({
       bankInput: this.fb.array([]),
+      tagInput: [''],
     });
   }
 
@@ -77,6 +86,51 @@ export class DashboardComponent implements OnInit {
     this.addFile(files);
     event.target.value = null;
   }
+
+  filterTags() {
+    const firstFormGroup = this.bankDetailsArray.at(0) as FormGroup;
+    if (!firstFormGroup) {
+      console.error("No form group found at index 0!");
+      return;
+    }
+    const tagControl = firstFormGroup.get('tagInput');
+    if (!tagControl) {
+      console.error("Tag Input Control Not Found!");
+      return;
+    }
+    const newTag = tagControl.value?.trim(); 
+    const inputValue = newTag.toLowerCase();
+    this.filteredTags = this.audioTags.filter(tag => tag.name.toLowerCase().includes(inputValue));
+  }
+
+
+  addTag(index: number) {
+    //const tagControl = this.bankDetailsArray.get('tagInput');
+    //const tagControl = (this.bankDetailsArray.at(0) as FormGroup)?.get('tagInput')?.value ?? '';
+    const firstFormGroup = this.bankDetailsArray.at(index) as FormGroup;
+    if (!firstFormGroup) {
+      console.error("No form group found at index 0!");
+      return;
+    }
+    const tagControl = firstFormGroup.get('tagInput');
+   debugger
+    if (!tagControl) {
+      console.error("Tag Input Control Not Found!");
+      return;
+    }
+    const newTag = tagControl.value?.trim(); 
+    //const newTag = tagControl; // Ensure it's not undefined or empty
+    if (newTag && !this.audioTags.some(tag => tag.name === newTag)) {
+      this.audioTags.push({ name: newTag });
+      this.filteredTags = [...this.audioTags]; // Refresh filtered options
+      const selectedTags = this.audioDetails.get('tags')?.value || [];
+      this.audioDetails.get('tags')?.setValue([...selectedTags, newTag]); // Add new tag to selected list
+    }
+  
+    tagControl.setValue(''); // Clear input field
+  }
+  
+  
 
   onDrop(event: DragEvent): void {
     event.preventDefault();
@@ -123,6 +177,7 @@ export class DashboardComponent implements OnInit {
       numSpeakers: ['', [Validators.required, Validators.min(2), Validators.max(10)]],
       date: ['', Validators.required],
       tags: [[], Validators.required],
+      tagInput: [''],
     });
 
     this.handleLanguageSelection(fileForm);

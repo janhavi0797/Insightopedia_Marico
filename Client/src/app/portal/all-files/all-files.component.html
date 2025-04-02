@@ -72,7 +72,8 @@
             'status-processing': element.uploadStatus === 0,
             'status-completed': element.uploadStatus === 1,
             'status-failed': element.uploadStatus > 1
-          }">{{ element.uploadStatus === 0 ? 'Processing' : (element.uploadStatus === 1 ? 'Completed' : 'Failed') }}</label>
+          }"
+         > {{ element.uploadStatus === 0 ? 'Processing' : (element.uploadStatus === 1 ? 'Completed' : 'Failed') }}</label>
         </td>
       </ng-container>
 
@@ -81,7 +82,13 @@
       <ng-container matColumnDef="action">
         <th mat-header-cell *matHeaderCellDef> Actions </th>
         <td mat-cell *matCellDef="let element; let rowIndex = index">
-          <button class="edit-btn" (click)="editDialog(EditTemplate, rowIndex)">Edit</button>
+          <button class="edit-btn" (click)="editDialog(EditTemplate, rowIndex)"
+          [disabled]="element.uploadStatus !== 1"
+          [ngStyle]="{ 
+            'pointer-events': element.uploadStatus === 1 ? 'auto' : 'none', 
+            'background-color': element.uploadStatus === 1 ? '#014FA1' : '#79747E'
+          }"
+          >Edit</button>
         </td>
       </ng-container>
 
