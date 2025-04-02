@@ -2,13 +2,14 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
+import { NgxUiLoaderService } from 'ngx-ui-loader';
 
 @Injectable({
   providedIn: 'root'
 })
 export class CommonService {
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient, private ngxService: NgxUiLoaderService) { }
   baseUrl = environment.BASE_URL;
 
   postAPI(url: string, payload: any): Observable<any> {
@@ -54,6 +55,14 @@ export class CommonService {
     let httpParams = new HttpParams()
     .set('projectId', projectId)
     return this.http.get(`${this.baseUrl}${endpoint}`, { params: httpParams });
+  }
+
+  showSpin() {
+    this.ngxService.start();
+  }
+  
+  hideSpin() {
+    this.ngxService.stop();
   }
 
 

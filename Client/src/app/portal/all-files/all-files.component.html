@@ -4,35 +4,34 @@
     <h2 class="table-title">Audio Files Overview</h2>
     <!-- project filter code -->
 
-  <div class="search-align-right">
-    <form class="example-form">
-      <mat-form-field class="example-full-width">
-        <mat-label>Search by Project Name</mat-label>
-        <input type="text" placeholder="Search Project Name" aria-label="ProjName"
-          matInput [formControl]="myControl" [matAutocomplete]="auto"
-          (keyup)="emptyProject()">
-  
-        <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onOptionSelected($event)">
-          <mat-option *ngFor="let option of filteredOptions | async" [value]="option">
-            {{ option }}
-          </mat-option>
-        </mat-autocomplete>
-      </mat-form-field>
-    </form>
-  </div>
+    <div class="search-align-right">
+      <form class="example-form">
+        <mat-form-field class="example-full-width">
+          <mat-label>Search by Tag Name</mat-label>
+          <input type="text" placeholder="Search Tag Name" aria-label="ProjName" matInput [formControl]="selectionTagControl"
+            [matAutocomplete]="auto" (keyup)="emptyTagSearch()">
+
+          <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onOptionSelected($event)">
+            <mat-option *ngFor="let option of filteredOptions | async" [value]="option.name">
+              {{ option.name }}
+            </mat-option>
+          </mat-autocomplete>
+        </mat-form-field>
+      </form>
+    </div>
 
   </div>
 
   <!-- Table and Scroll Container -->
   <div class="mat-table-container">
     <table mat-table [dataSource]="dataSource" class="mat-table">
-  
+
       <!-- Play/Pause Column -->
       <ng-container matColumnDef="audioUrl">
         <th mat-header-cell *matHeaderCellDef> Play/Pause </th>
         <td mat-cell *matCellDef="let element">
           <audio #audioRef [src]="element.audioUrl" (ended)="onAudioEnded(element)"></audio>
-      
+
           <button mat-icon-button (click)="togglePlayPause(element, audioRef)">
             <mat-icon *ngIf="!element.isPlaying">play_arrow</mat-icon>
             <mat-icon *ngIf="element.isPlaying">pause</mat-icon>
@@ -50,14 +49,47 @@
       <ng-container matColumnDef="tags">
         <th mat-header-cell *matHeaderCellDef> Tags </th>
         <td mat-cell *matCellDef="let element">
-          {{ element.tags?.join(', ') }}
+          <ng-container *ngFor="let detail of element.tags; let last = last">
+            {{ detail }}<b *ngIf="!last">, </b>
+          </ng-container>
         </td>
       </ng-container>
 
       <!-- Associated Project Column -->
       <ng-container matColumnDef="projects">
-        <th mat-header-cell *matHeaderCellDef> Associated Project(s) </th>
-        <td mat-cell *matCellDef="let element"> {{element.projectName}} </td>
+        <th mat-header-cell *matHeaderCellDef> Associated Project </th>
+        <td mat-cell *matCellDef="let element">
+          <ng-container *ngFor="let detail of element.projectDetails; let last = last">
+            {{ detail }}<b *ngIf="!last">, </b>
+          </ng-container>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef> Status </th>
+        <td mat-cell *matCellDef="let element"> 
+          <label class="view-btn" [ngClass]="{
+            'status-processing': element.uploadStatus === 0,
+            'status-completed': element.uploadStatus === 1,
+            'status-failed': element.uploadStatus > 1
+          }"
+         > {{ element.uploadStatus === 0 ? 'Processing' : (element.uploadStatus === 1 ? 'Completed' : 'Failed') }}</label>
+        </td>
+      </ng-container>
+
+
+      <!-- Play/Pause Column -->
+      <ng-container matColumnDef="action">
+        <th mat-header-cell *matHeaderCellDef> Actions </th>
+        <td mat-cell *matCellDef="let element; let rowIndex = index">
+          <button class="edit-btn" (click)="editDialog(EditTemplate, rowIndex)"
+          [disabled]="element.uploadStatus !== 1"
+          [ngStyle]="{ 
+            'pointer-events': element.uploadStatus === 1 ? 'auto' : 'none', 
+            'background-color': element.uploadStatus === 1 ? '#014FA1' : '#79747E'
+          }"
+          >Edit</button>
+        </td>
       </ng-container>
 
       <tr mat-header-row *matHeaderRowDef="displayedColumns" class="header"></tr>
@@ -65,16 +97,40 @@
     </table>
   </div>
 
- <!-- Paginator outside the scrollable table -->
- <div class="mat-paginator-wrapper">
-  <mat-paginator [pageSizeOptions]="[10, 30, 50]" showFirstLastButtons aria-label="Select page of periodic elements">
-  </mat-paginator>
-</div>
+  <!-- Paginator outside the scrollable table -->
+  <div class="mat-paginator-wrapper">
+    <mat-paginator [pageSizeOptions]="[10, 30, 50]" showFirstLastButtons aria-label="Select page of periodic elements">
+    </mat-paginator>
+  </div>
 
 </div>
 
+<ng-template #EditTemplate>
+  <div class="dialog-container">
+    <h1 mat-dialog-title class="dialog-title">Edit Tags</h1>
+    <mat-dialog-content>
+      <form [formGroup]="audioForm">
+        <mat-form-field appearance="outline" class="full-width">
+          <input type="text" placeholder="Select Tags" aria-label="Tags" matInput [matAutocomplete]="auto"
+            formControlName="mapUnmapUsers" [(ngModel)]="lastFilter" (keyup)="filterForCompetitor()">
+        </mat-form-field>
 
-
-
-
-  
+        <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayFn">
+          <mat-option *ngFor="let user of filteredCompetetiveProduct | async; let i = index" [value]="user">
+            <div (click)="optionClicked($event, user, i)">
+              <mat-checkbox [checked]="user.selected" > <!--(change)="toggleSelection(user, i)"-->
+                {{ user.name }}
+              </mat-checkbox>
+            </div>
+          </mat-option>
+        </mat-autocomplete>
+      </form>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-raised-button color="warn" (click)="closeDialog()">Cancel</button>
+      <button mat-raised-button color="primary" [disabled]="audioForm.invalid" (click)="editTag()">
+        Submit
+      </button>
+    </mat-dialog-actions>
+  </div>
+</ng-template>

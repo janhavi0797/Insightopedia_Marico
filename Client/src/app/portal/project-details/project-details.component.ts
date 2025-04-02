@@ -6,6 +6,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { Subscription } from 'rxjs';
 import { environment } from '../../../environments/environment'
 import { CommonService } from '../service/common.service';
+import { MatSelectChange } from '@angular/material/select';
 
 @Component({
   selector: 'app-project-details',
@@ -24,7 +25,6 @@ export class ProjectDetailsComponent {
   isPlaying = false;
   audioDetails: any;
   filePath: string = '';
-  isLoading: boolean = false;
 
   question: string = "";
   vectorId: string[] = [];
@@ -44,6 +44,7 @@ export class ProjectDetailsComponent {
   allAudioDetails:any;
   projectId!: string;
   userId!: string;
+  allProjectAudioDetails:any;
   
   constructor(private audioServ: AudioService, private cdr: ChangeDetectorRef, private activeRoute: ActivatedRoute,
     private router: Router, private toastr: ToastrService, private dialog: MatDialog,private common: CommonService
@@ -52,9 +53,7 @@ export class ProjectDetailsComponent {
   ngOnInit() {
     this.activeRoute.queryParams.subscribe(params => {
       this.projectId = params['projectId'];
-      this.userId = params['userId'];
-      //console.log("Received Project ID:", this.projectId);
-      //console.log("Received User ID:", this.userId);
+      this.userId = params['userId'];;
       this.getProjectDetails(this.projectId);
     });
     
@@ -67,26 +66,21 @@ export class ProjectDetailsComponent {
 
 
   getProjectDetails(projectId:string) {
-    this.isLoading = true;
-    //console.log("getProjectDetails projectId",projectId);
+    this.common.showSpin();
     this.common.getProjectDetail('project/allProjectDetails', projectId).subscribe((res: any) => {
-      //console.log("getProjectDetails",res.data);
-      //console.log("getProjectDetails only audioDetails",res.data.projectDetails[0].AudioData);
-
       this.allAudioDetails = res.data.projectDetails[0];
+      this.allProjectAudioDetails = res.data;
       //this.audioDetails = res.data.projectDetails[0].AudioData[0];
-      this.audioDetails = this.combineAudioData(this.allAudioDetails.AudioData);
-     // console.log("getProjectDetails only audioDetails",this.audioDetails);
+      this.audioDetails = this.combineAudioData(this.allProjectAudioDetails);
        //this.filePath = res.data.FilePath;
        //this.vectorId = res.data.vectorId;
       this.tempAudioData = res.data.projectDetails[0].AudioData.map((x: any) => Object.assign({}, x));
       //this.audioNameArr =res.data.projectDetails[0].AudioData.map(((item: { audioName: any; })=> item.audioName));
       this.audioNameArr = ["All Project", ...res.data.projectDetails[0].AudioData.map((item: { audioName: any }) => item.audioName)];
-      //console.log("audioNameArr",this.audioNameArr);
       this.audioName = this.audioNameArr[0];
-      this.isLoading = false;
+      this.common.hideSpin();
     }, (err: any) => {
-
+      this.common.hideSpin();
     })
   }
 
@@ -171,16 +165,16 @@ export class ProjectDetailsComponent {
         question: this.question,
         vectorId: this.audioDetails?.vectorId ?? ['']
       }
-      this.isLoading = true;
+      this.common.showSpin();
       this.audioServ.sendQueryAI('chat/chatVectorId', payload).subscribe((res: any) => {
-        this.isLoading = false;
+        this.common.hideSpin();
         this.audioServ.messageHistory.next({
           from: 'AI',
           message: res.answer
         });
         this.question = '';
       }, (err: any) => {
-        this.isLoading = false;
+        this.common.hideSpin();
         this.toastr.error('Something Went Wrong!')
       })
     } else {
@@ -196,7 +190,7 @@ export class ProjectDetailsComponent {
     this.isEdit = false;
   }
   updateTranslation() {
-    this.isLoading = true;
+    this.common.showSpin();
     const payload = {
       editData: {
         TGId: this.tgId,
@@ -209,12 +203,12 @@ export class ProjectDetailsComponent {
       if (res.statusCode === 200) {
         this.toastr.success(res.message);
         this.tempAudioData = this.audioDetails.AudioData.map((x: any) => Object.assign({}, x));
-        this.isLoading = false;
+        this.common.hideSpin();
         this.isEdit = false;
       }
     }, (err: any) => {
       this.cancelEdit();
-      this.isLoading = false;
+      this.common.hideSpin();
       this.toastr.error('Something Went Wrong!');
     });
   }
@@ -236,7 +230,7 @@ export class ProjectDetailsComponent {
       this.toastr.error('Current Text is Empty')
       return;
     }
-    this.isLoading = true;
+    this.common.showSpin();
     const regex = new RegExp(`\\b${this.currentText}\\b`, 'gi');
     this.audioDetails.AudioData.forEach((item: any) => {
       if (item.translation) {
@@ -256,13 +250,13 @@ export class ProjectDetailsComponent {
       if (res.statusCode === 200) {
         this.toastr.success(res.message);
         this.tempAudioData = this.audioDetails.AudioData.map((x: any) => Object.assign({}, x));
-        this.isLoading = false;
+        this.common.hideSpin();
         this.currentText = '';
         this.replaceText = '';
       }
     }, (err: any) => {
       this.cancelEdit();
-      this.isLoading = false;
+      this.common.hideSpin();
       this.toastr.error('Something Went Wrong!');
     })
 
@@ -292,7 +286,6 @@ export class ProjectDetailsComponent {
     }
   
     const url = `${environment.BASE_URL}audio/generate-pdf?id=${idParam}&type=${content}&key=${keyParam}`;
-    //console.log("Generated URL:", url); // Debugging
     this.audioServ.getDownload(url);
   }
   
@@ -348,42 +341,42 @@ export class ProjectDetailsComponent {
   }
 
 
-  combineAudioData(audioDataArray: AudioData[]): any {
-    return {
-      audioName: audioDataArray.map(audio => audio.audioName).join(', '),
-      tags: audioDataArray.flatMap(audio => audio.tags || []),
-      audioUrls: audioDataArray.map(audio => audio.audioUrl),
-      sentiment_analysis: audioDataArray
-        .map(audio => audio.sentiment_analysis)
-        .filter(Boolean)
-        .join('. '),
+//   combineAudioData(audioDataArray: ProjectDetails[]): any {
+//     return {
+//       audioName: audioDataArray.AudioData.map(audio => audio.audioName).join(', '),
+//       tags: audioDataArray.flatMap(audio => audio.tags || []),
+//       audioUrls: audioDataArray.map(audio => audio.audioUrl),
+//       sentiment_analysis: audioDataArray
+//         .map(audio => audio.sentiment_analysis)
+//         .filter(Boolean)
+//         .join('. '),
 
-      audiodata: audioDataArray.flatMap(audio => 
-        (audio.audiodata || []).map((data, index) => ({
-          ...data,
-          audioTitle: index === 0 ? audio.audioName : undefined
-        }))
-      ),
+//       audiodata: audioDataArray.flatMap(audio => 
+//         (audio.audiodata || []).map((data, index) => ({
+//           ...data,
+//           audioTitle: index === 0 ? audio.audioName : undefined
+//         }))
+//       ),
 
-      combinedTranslation: audioDataArray
-        .map(audio => audio.combinedTranslation)
-        .filter(Boolean)
-        .join(' '),
+//       combinedTranslation: audioDataArray
+//         .map(audio => audio.combinedTranslation)
+//         .filter(Boolean)
+//         .join(' '),
 
-      translation: audioDataArray.flatMap(audio => 
-        (audio.audiodata || []).map((data, index) => ({
-          translation: data.translation,
-          audioTitle: index === 0 ? audio.audioName : undefined
-        }))
-      ),
-      summary: audioDataArray
-            .map(audio => audio.summary)
-            .filter(Boolean)
-            .join('. '),
-      vectorId: audioDataArray.flatMap(audio => audio.vectorId || []),
+//       translation: audioDataArray.flatMap(audio => 
+//         (audio.audiodata || []).map((data, index) => ({
+//           translation: data.translation,
+//           audioTitle: index === 0 ? audio.audioName : undefined
+//         }))
+//       ),
+//       summary: audioDataArray
+//             .map(audio => audio.summary)
+//             .filter(Boolean)
+//             .join('. '),
+//       vectorId: audioDataArray.flatMap(audio => audio.vectorId || []),
       
-    };
-}
+//     };
+// }
 
 
 
@@ -396,12 +389,10 @@ export class ProjectDetailsComponent {
 
   // onAudioNameChange(event: any) {
   //   let index = this.audioNameArr.indexOf(event.value);
-  //   console.log("onAudioNameChange",index);
   //   if(index == 0){
   //     this.audioDetails = this.combineAudioData(this.allAudioDetails);
   //   }else{
   //     this.audioDetails = this.allAudioDetails.AudioData[index - 1];
-  //     console.log("onAudioNameChange audioDetails",this.audioDetails);
   //   }
   //   const audio = this.audioPlayer.nativeElement;
   //   this.tempAudioData = this.allAudioDetails.AudioData[index].audiodata.map((x: any) => Object.assign({}, x));
@@ -410,9 +401,74 @@ export class ProjectDetailsComponent {
   //   this.currentTime = '0:00';
   // }
 
-  onAudioNameChange(event: any) {
+  combineAudioData(projectDetailsArray: ProjectDetailsArray[]): any {
+    if (!Array.isArray(projectDetailsArray)) {
+        //console.error("Expected an array, but got:", projectDetailsArray);
+        projectDetailsArray = projectDetailsArray ? [projectDetailsArray] : []; 
+    }
+
+    return {
+      audioName: projectDetailsArray
+        .flatMap(proj => proj.projectDetails[0].AudioData?.map(audio => audio.audioName) ?? [])
+        .join(', '),
+
+      tags: projectDetailsArray
+        .flatMap(proj => proj.projectDetails[0].AudioData?.flatMap(audio => audio.tags ?? []) ?? []),
+
+      audioUrls: projectDetailsArray
+        .flatMap(proj => proj.projectDetails[0].AudioData?.map(audio => audio.audioUrl) ?? []),
+
+      sentiment_analysis: projectDetailsArray
+        .map(proj => proj.projectDetails[0].sentiment_analysis) // ✅ Use `.map()` for strings
+        .filter(Boolean)
+        .join('. '), // ✅ Join multiple values
+
+      audiodata: projectDetailsArray
+        .flatMap(proj =>
+          proj.projectDetails[0].AudioData?.flatMap(audio =>
+            (audio.audiodata ?? []).map((data,index) => ({
+              ...data,
+              audioTitle: index === 0 ? audio.audioName : undefined
+            }))
+          ) ?? []
+        ),
+
+      //         audiodata: audioDataArray.flatMap(audio => 
+      //   (audio.audiodata || []).map((data, index) => ({
+      //     ...data,
+      //     audioTitle: index === 0 ? audio.audioName : undefined
+      //   }))
+      // ),
+
+      translation: projectDetailsArray
+        .flatMap(proj =>
+          proj.projectDetails[0].AudioData?.flatMap(audio =>
+            (audio.audiodata ?? []).map(data => ({
+              translation: data.translation,
+              audioTitle: audio.audioName
+            }))
+          ) ?? []
+        ),
+
+      summary: projectDetailsArray
+        .map(proj => proj.projectDetails[0].summary)
+        .filter(Boolean)
+        .join('. '),
+
+      vectorId: projectDetailsArray
+        .flatMap(proj => proj.projectDetails[0].AudioData?.flatMap(audio => audio.vectorId ?? []) ?? []),
+    };
+}
+
+ 
+  
+
+  onAudioNameChange(event: MatSelectChange) {
+    if (!event || !event.value) {
+      console.warn("Invalid selection event:", event);
+      return;
+    }
     const index = this.audioNameArr.indexOf(event.value);
-    //console.log("onAudioNameChange", index);
   
     if (index === -1) {
       console.warn("Audio name not found in array.");
@@ -420,14 +476,12 @@ export class ProjectDetailsComponent {
     }
   
     if (index === 0) {
-      this.audioDetails = this.combineAudioData(this.allAudioDetails.AudioData);
-     // console.log("combineAudioData",this.audioDetails);
+      this.audioDetails = this.combineAudioData(this.allProjectAudioDetails);
     } else {
       this.audioDetails = this.allAudioDetails.AudioData[index - 1] || null;
-      //console.log("onAudioNameChange audioDetails", this.audioDetails);
     }
   
-    if (this.audioDetails) {
+    if (this.audioDetails && this.audioPlayer?.nativeElement) {
       const audio = this.audioPlayer.nativeElement;
       this.tempAudioData = this.allAudioDetails.AudioData.map((x: any) => ({ ...x }));
       audio.load();
@@ -442,6 +496,41 @@ export class ProjectDetailsComponent {
 
 
 }
+// export interface AudioData {
+//   audioId: string;
+//   audioName: string;
+//   audioUrl: string;
+//   audiodata: TranscriptionData[];
+//   combinedTranslation?: string;
+//   sentiment_analysis?: string;
+//   summary?: string;
+//   tags?: string[];
+//   userId?: string;
+//   vectorId?: string[];
+// }
+
+// export interface TranscriptionData {
+//   speaker: string | number;
+//   timestamp: string;
+//   transcription: string;
+//   translation: string;
+// }
+
+// export interface ProjectDetails {
+//     sentiment_analysis:string;
+//     summary:string;
+//     AudioData: AudioData[];
+// }
+export interface ProjectDetailsArray {
+  projectDetails: ProjectDetails[];
+}
+
+export interface ProjectDetails {
+  sentiment_analysis: string;
+  summary: string;
+  AudioData: AudioData[];
+}
+
 export interface AudioData {
   audioId: string;
   audioName: string;
@@ -460,10 +549,4 @@ export interface TranscriptionData {
   timestamp: string;
   transcription: string;
   translation: string;
-}
-
-export interface ProjectDetails {
-  projectDetails: {
-    AudioData: AudioData[];
-  }[];
 }

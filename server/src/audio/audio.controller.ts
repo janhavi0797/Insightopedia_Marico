@@ -21,6 +21,7 @@ import {
 } from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
+import { EditAudioTagDTO } from './dto/get-audio.dto';
 
 @ApiTags('Audio Management')
 @Controller('audio')
@@ -126,5 +127,24 @@ export class AudioController {
     } else {
       throw new BadRequestException(`Invalid Key Value.`);
     }
+  }
+
+  @Post('edit-audio-tag')
+  async editUser(@Body() payload: EditAudioTagDTO) {
+    return await this.audioService.editAudioTag(payload);
+  }
+
+  @Get('allFiles')
+  @ApiOperation({ summary: 'Get All audio and unique tag and project name' })
+  @ApiQuery({ name: 'userId', required: false })
+  async getAllFilesData(@Query('userId') userId?: string) {
+    return this.audioService.getAllFilesData(userId);
+  }
+
+  @Get('allUniqueTag')
+  @ApiOperation({ summary: 'Get All audio and unique tag' })
+  @ApiQuery({ name: 'userId', required: false })
+  async getUniqueTags(@Query('userId') userId?: string) {
+    return this.audioService.getUniqueTags(userId);
   }
 }

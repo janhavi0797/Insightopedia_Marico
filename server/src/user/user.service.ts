@@ -42,7 +42,7 @@ export class UserService {
       }
 
       const sprocId = 'createUser'; // Stored procedure ID
-      const partitionKey = payload.userid; 
+      const partitionKey = payload.userid;
       // Call the stored procedure with the correct partition key
       const { resource: result } = await this.userContainer.scripts
         .storedProcedure(sprocId)
@@ -165,7 +165,7 @@ export class UserService {
 
       return {
         response: 1, // Success flag
-        message: payload.name + ' updated successfully',
+        message: updatedUser.userName + ' updated successfully',
       };
     } catch (error) {
       console.error('Error updating user:', error.message);

@@ -1,91 +1,109 @@
 .table-wrapper {
-  margin: 10px;
-  padding: 10px;
-  background: #fafafa;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   display: flex;
   flex-direction: column;
-  height: 100%; /* Optional if you want full height layout */
+  box-shadow: none;
+  height: 100%;
 
   .table-header-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    flex-wrap: wrap;
-    margin-bottom: 10px;
+    padding: 10px 15px 0 15px;
 
     .table-title {
-      font-size: 24px;
-      font-weight: 700;
-      //color: #014FA1;
-      color: #475467;
+      font-size: 22px;
+      font-weight: 600;
+      color: #014FA1;
       margin: 10px 0 25px 0;
       text-align: center;
-      //text-transform: uppercase;
-      letter-spacing: 1px;
-      border-bottom: 2px solid #475467;
-      display: inline-block;
-      padding-bottom: 8px;
-      position: relative;
     }
-
-    .search-align-right {
-      max-width: 350px;
-      width: 100%;
-    }
-    
-    .search-align-right mat-form-field {
-      width: 100%;
-    }
-    
   }
+
   .mat-table-container {
-    flex: 1 1 auto;
     overflow: auto;
-    max-height: 500px;
-    max-width: 100%;
+
+    table.mat-table {
+      width: auto !important;
+      border-collapse: separate;
+      border-spacing: 0;
+
+      th.mat-header-cell,
+      td.mat-cell {
+        white-space: nowrap;
+        padding: 12px 16px;
+      }
+
+      th {
+        position: sticky;
+        top: 0;
+        background: #E4E7EC;
+        color: #475467;
+        font-size: 17px;
+        z-index: 2;
+      }
+
+      .edit-btn {
+        background-color: #014FA1;
+        font-size: 12px;
+        font-weight: 500;
+        margin-right: 10px;
+        border: none;
+        outline: none;
+        color: #fff;
+        padding: 4px 8px;
+        border-radius: 7px;
+      }
+
+      .view-btn {
+        background-color: #014FA1;
+        font-size: 12px;
+        font-weight: 500;
+        margin-right: 10px;
+        border: none;
+        outline: none;
+        color: #fff;
+        padding: 4px 8px;
+        border-radius: 7px;
+      }
+
+      .view-btn:disabled {
+        background-color: #79747E;
+        cursor: not-allowed;
+      }
+
+      .status-processing {
+        background-color: rgba(255, 255, 153);
+        color: black;
+      }
+
+      .status-completed {
+        background-color: rgb(68, 228, 68, 0.8);
+        color: white;
+      }
+
+      .status-failed {
+        background-color: rgba(255, 99, 71);
+        color: white;
+      }
+    }
   }
 
   .mat-paginator-wrapper {
     position: sticky;
     bottom: 0;
-    background-color: #fafafa;
     z-index: 10;
     padding-top: 10px;
-    border-top: 1px solid #ddd;
+    border-top: 1px solid #EDEFF1;
   }
 
-  table.mat-table {
-    width: auto !important;
-    min-width: 100%;
-    table-layout: auto;
-    border-collapse: separate;
-    border-spacing: 0;
 
-    th.mat-header-cell,
-    td.mat-cell {
-      white-space: nowrap;
-      padding: 12px 16px;
-    }
-
-    th {
-      position: sticky;
-      top: 0;
-      background: #E4E7EC;
-      color: #475467;
-      z-index: 2;
-    }
-
-    mat-icon-button {
-      color: #475467;
-    }
-  }
 }
 
 /* Responsive tweaks */
 @media screen and (max-width: 768px) {
-  th.mat-header-cell, td.mat-cell {
+
+  th.mat-header-cell,
+  td.mat-cell {
     padding: 10px;
     font-size: 14px;
   }
@@ -106,4 +124,3 @@
     text-align: left;
   }
 }
-

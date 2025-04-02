@@ -1,8 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, TemplateRef } from '@angular/core';
 import { environment } from 'src/environments/environment';
 import { CommonService } from '../service/common.service';
 import { ToastrService } from 'ngx-toastr';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { Router } from '@angular/router';
 
 interface AudioFile {
   name: string;
@@ -25,8 +27,7 @@ interface AudioFile {
 export class CreateProjectComponent {
 
   userCode: any;
-  userRole: any;projectName = '';
-  audioTags: string[] = [];
+  userRole: any; projectName = '';
   audioNames: string[] = [];
   selectedTags: string[] = [];
   selectedTag: string = '';
@@ -37,6 +38,8 @@ export class CreateProjectComponent {
   imageBasePath: string = environment.imageBasePath;
   isShowFooter: boolean = false;
 
+  tagList: any[] = [];
+   dialogRef!: MatDialogRef<any>;
   formatTime(timeInSeconds: number): string {
     const minutes = Math.floor(timeInSeconds / 60);
     const seconds = Math.floor(timeInSeconds % 60);
@@ -45,7 +48,8 @@ export class CreateProjectComponent {
   }
 
 
-   constructor(private commonServ: CommonService, private toastr: ToastrService, private snackBar: MatSnackBar) {}
+  constructor(private commonServ: CommonService, private toastr: ToastrService, 
+    private dialog: MatDialog, private router: Router) { }
 
   ngOnInit(): void {
     this.userRole = localStorage.getItem('role') || '';
@@ -61,15 +65,17 @@ export class CreateProjectComponent {
   getTagsWiseAudio() {
     let userCode = '';
     userCode = this.userRole === "1" ? '' : this.userCode;
+    this.commonServ.showSpin();
     this.commonServ.getTagwiseAudio('audio/all', userCode).subscribe(
       (res: any) => {
-        this.audioTags = res.data.allUniqueTags;
+        this.commonServ.hideSpin();
+        this.tagList = res.data.allUniqueTags;
         this.audioNames = res.data.audioData;
 
         this.audioFiles = res.data.audioData.map((audio: any) => ({
           name: audio.audioName,
           url: audio.audioUrl,
-          tags:audio.tags,
+          tags: audio.tags,
           isEdit: false,
           seekValue: 0,
           currentTime: '0:00',
@@ -78,13 +84,13 @@ export class CreateProjectComponent {
         }));
       },
       (err: any) => {
-        //this.toastr.error('Something Went Wrong!');
+        this.commonServ.hideSpin();
+        this.toastr.error('Something Went Wrong!');
       }
     );
   }
-  
+
   filterByTag() {
-    //
     if (this.selectedTag && !this.selectedTags.includes(this.selectedTag)) {
       this.selectedTags.push(this.selectedTag);
     }
@@ -96,18 +102,14 @@ export class CreateProjectComponent {
       this.selectedAudios.push(this.selectedAudio);
     }
     this.selectedAudio = '';
-  } 
-  
+  }
+
   removeTag(tag: string) {
     this.selectedTags = this.selectedTags.filter(t => t !== tag);
   }
 
   removeAudio(audio: string) {
     this.selectedAudios = this.selectedAudios.filter(t => t !== audio);
-  }
-  
-  filteredTags(): string[] {
-    return this.audioTags.filter(tag => !this.selectedTags.includes(tag));
   }
 
   filteredAudios(): string[] {
@@ -117,26 +119,9 @@ export class CreateProjectComponent {
     return Array.from(audioNameSet);
   }
 
-  // getFilteredAudioFiles(): AudioFile[] {
-  //   //
-  //   if (this.filterOption === '1' && this.selectedTags.length) {
-  //     return this.audioFiles.filter(file =>
-  //       file.tags?.some(tag => this.selectedTags.includes(tag))
-  //     );
-  //   }
-  
-  //   if (this.filterOption === '2' && this.selectedAudios.length) {
-  //     return this.audioFiles.filter(file =>
-  //       this.selectedAudios.includes(file.name)
-  //     );
-  //   }
-  
-  //   return this.audioFiles;
-  // }
-
   getFilteredAudioFiles(): AudioFile[] {
     let filteredFiles: AudioFile[] = [];
-  
+
     if (this.filterOption === '1' && this.selectedTags.length) {
       filteredFiles = this.audioFiles.filter(file =>
         file.tags?.some(tag => this.selectedTags.includes(tag))
@@ -148,12 +133,12 @@ export class CreateProjectComponent {
     } else {
       filteredFiles = [...this.audioFiles];
     }
-  
+
     // Ensure previously selected files are included
     const selectedOnly = this.selectedArr.filter(sel =>
       !filteredFiles.some(f => f.name === sel.name && f.url === sel.url)
     );
-  
+
     return [...selectedOnly, ...filteredFiles];
   }
 
@@ -206,7 +191,7 @@ export class CreateProjectComponent {
     return this.isPlayingIndexMap[section] === index;
   }
 
-   // Delete file functionality
+  // Delete file functionality
   //  deleteFile(index: number): void {
   //   this.audioFiles.splice(index, 1);
   //   if (this.isPlayingIndex === index) {
@@ -224,12 +209,12 @@ export class CreateProjectComponent {
     const audio = event.target;
     const currentTime = audio.currentTime;
     const duration = audio.duration;
-  
+
     if (!isNaN(duration)) {
       // Set formatted currentTime and duration
       audioList[index].currentTime = this.formatTime(currentTime);
       audioList[index].durationTime = this.formatTime(duration);
-  
+
       // Update the seek bar value (progress)
       audioList[index].seekValue = (currentTime / duration) * 100;
     }
@@ -250,19 +235,15 @@ export class CreateProjectComponent {
 
   toggleSelectFile(file: AudioFile, event: Event): void {
     const isChecked = (event.target as HTMLInputElement).checked;
-  
+
     if (isChecked) {
       // Add the file to the selectedArr if not already there
       const alreadyExists = this.selectedArr.some(f => f.name === file.name && f.url === file.url);
       if (!alreadyExists) {
         if (this.selectedArr.length >= 4) {
           (event.target as HTMLInputElement).checked = false; // Uncheck the checkbox
-        this.snackBar.open('You can only select up to 4 audio files.', 'Close', {
-          duration: 3000,
-          horizontalPosition: 'center',
-          verticalPosition: 'top',
-        });
-        return;
+          this.toastr.warning('You can select only 4 files at a time.');
+          return;
         }
         this.selectedArr.push(file);
       }
@@ -270,41 +251,54 @@ export class CreateProjectComponent {
       // Remove file from selectedArr by matching name + url (or other unique identifiers)
       this.selectedArr = this.selectedArr.filter(f => !(f.name === file.name && f.url === file.url));
     }
-  
+
     // Update footer visibility based on remaining selected files
     this.isShowFooter = this.selectedArr.length > 0;
   }
 
-  createNewProject() {
+  createNewProject(InfoTemplate:TemplateRef<any>) {
     if (this.projectName === "") {
       this.toastr.error('Please enter project name');
       return;
     }
     const payload = {
-      userId: this.userCode,  
-      projectName: this.projectName, 
+      userId: this.userCode,
+      projectName: this.projectName,
       audioIds: this.selectedArr.map(file => ({
-      audioId: file.audioId,
-    }))
-  };
-   this.commonServ.CreateProject(payload).subscribe(
-    (res: any) => {
-      if (res.status === "success") {
-        this.toastr.success(res.message, 'Success', {
-          progressBar: true
-        });
-      }
-      else {
-          this.toastr.error(res.message, 'Error', {
-            progressBar: true
+        audioId: file.audioId,
+      }))
+    };
+    this.commonServ.showSpin();
+    this.commonServ.CreateProject(payload).subscribe(
+      (res: any) => {
+        this.commonServ.hideSpin();
+        if (res.status === "success") {
+          this.dialogRef = this.dialog.open(InfoTemplate, {
+            width: '50%',
+            height: '40%',
+            disableClose: true,
           });
-      }
-    }, 
-  err => {
-    this.toastr.error('Something Went Wrong!', 'Error', {
-      progressBar: true
-    });
-  });
-} 
-  
+        }
+      },
+      err => {
+        this.toastr.error('Something Went Wrong!');
+        this.commonServ.hideSpin();
+      });
+  }
+
+  closeInfo() {
+    this.projectName = '';
+    this.selectedArr = [];
+    this.selectedTags = [];
+    this.selectedAudios = [];
+    this.selectedAudio = '';
+    this.selectedTag = '';
+    this.dialogRef.close();
+  }
+
+  viewAudioProcess() {
+    this.closeInfo();
+    this.router.navigate(['/portal/project-analysis']);
+  }
+
 }

@@ -340,9 +340,6 @@ export class ChatService {
       }
 
       const projectDocument = existingDocuments[0];
-      const transcriptionIds = projectDocument.audioIds
-        .map((id) => `'${id}'`)
-        .join(', ');
 
       // TODO add transcription data to the project entity
       const transcriptionData = projectDocument.transcription;
@@ -419,7 +416,7 @@ export class ChatService {
       .fillColor('black') // Set text color to black
       .fontSize(22)
       .font('Helvetica-Bold')
-      .text(`Report for: ${key.charAt(0).toUpperCase() + key.slice(1)}`, {
+      .text(`Report for: Chat`, {
         align: 'center',
       });
     doc.moveDown(2);

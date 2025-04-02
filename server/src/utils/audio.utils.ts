@@ -10,16 +10,19 @@ import axios from 'axios';
 import { ChatCompletionMessageParam } from 'openai/resources';
 import {
   MODERATOR_RECOGNITION,
-  SENTIMENT_ANALYSIS,
+  PROJECT_SENTIMENT_ANALYSIS,
+  PROJECT_SENTIMENT_ANALYSIS_PROMPT,
+  PROJECT_SUMMARIZATION_PROMPT_TEMPLATE,
+  PROJECT_SUMMARY,
   SENTIMENT_ANALYSIS_PROMPT,
   SUMMARIZATION_PROMPT_TEMPLATE,
-  SUMMARY,
 } from './constants';
 import { response } from 'express';
 import { ChatService } from 'src/chat/chat.service';
 import { BullQueues, QueueProcess } from './enums';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
+import { EmailHelper } from './email.helper';
 
 export interface Document {
   id: string; // Document ID
@@ -34,8 +37,6 @@ export class AudioUtils {
   private readonly logger = new Logger(AudioUtils.name);
 
   constructor(
-    @InjectModel(ProjectEntity)
-    private readonly transcriptionContainer: Container,
     @InjectModel(AudioEntity) private readonly AudioContainer: Container,
     @InjectModel(ProjectEntity) private readonly ProjectContainer: Container,
     private readonly chatService: ChatService,
@@ -43,6 +44,7 @@ export class AudioUtils {
     @Inject('RedisService') private readonly redisService,
     @InjectQueue(BullQueues.PROJECT_SUMMARY)
     private readonly projectSummaryQueue: Queue,
+    private readonly emailHelper: EmailHelper,
   ) {
     this.translateClient = new Translate({
       key: this.configService.get<string>('TRANSALATION_APIKEY'),
@@ -152,8 +154,7 @@ export class AudioUtils {
       const response = await axios.post(apiUrl, transcriptionRequest, {
         headers,
       });
-      const transcriptionUrl = response.headers['location']; 
-      const transcriptionId = transcriptionUrl.split('/').pop(); // Extract transcription ID
+      const transcriptionUrl = response.headers['location'];
 
       // Poll the status of the transcription until it is complete
       return await this.getTranscriptionResult(
@@ -236,8 +237,17 @@ export class AudioUtils {
     return SUMMARIZATION_PROMPT_TEMPLATE(summaryLength, text);
   }
 
+  generateProjectSummarizationPrompt(text: string) {
+    const summaryLength = 500;
+    return PROJECT_SUMMARIZATION_PROMPT_TEMPLATE(summaryLength, text);
+  }
+
   generateSentimenAnalysisPrompt(text: string) {
     return SENTIMENT_ANALYSIS_PROMPT(text);
+  }
+
+  generateProjectSentimenAnalysisPrompt(text: string) {
+    return PROJECT_SENTIMENT_ANALYSIS_PROMPT(text);
   }
 
   async getSummaryAndSentiments(purpose: string, text: string) {
@@ -257,10 +267,20 @@ export class AudioUtils {
 
     // 2️⃣ **Summarize Each Chunk**
     for (const chunk of chunks) {
-      const prompt =
-        purpose === 'Summary'
-          ? this.generateSummarizationPrompt(chunk)
-          : this.generateSentimenAnalysisPrompt(chunk);
+      const prompt = (() => {
+        switch (purpose) {
+          case 'Summary':
+            return this.generateSummarizationPrompt(chunk);
+          case 'SA':
+            return this.generateSentimenAnalysisPrompt(chunk);
+          case 'project_summary':
+            return this.generateProjectSummarizationPrompt(chunk); // Assuming multiple texts
+          case 'project_sentiment':
+            return this.generateProjectSentimenAnalysisPrompt(chunk); // Assuming multiple texts
+          default:
+            throw new Error(`Invalid purpose: ${purpose}`);
+        }
+      })();
 
       const messages: ChatCompletionMessageParam[] = [
         { role: 'user', content: prompt },
@@ -331,7 +351,6 @@ export class AudioUtils {
         existingDocument.combinedTranslation =
           transcriptionDocument.combinedTranslation;
         existingDocument.vectorIds = transcriptionDocument.vectorIds;
-
         const response =
           await this.AudioContainer.items.upsert(existingDocument);
       } else {
@@ -501,35 +520,45 @@ export class AudioUtils {
     stage: QueueProcess,
     projectId: string,
   ): Promise<void> {
-    const lastAudioId = await this.redisService.get(`lastAudio`);
-    this.logger.log(
-      `Last audio id: ${lastAudioId}, and current Audio Id ${audioId}`,
-    );
+    const key = `project:${projectId}:audioStages`;
+    const audioStages = JSON.parse((await this.redisService.get(key)) || '{}');
 
-    const key = `audio:${audioId}project:${projectId}:stages`;
-    const stages = JSON.parse((await this.redisService.get(key)) || '{}');
-    stages[stage] = true;
-    await this.redisService.set(key, JSON.stringify(stages));
+    // Update the stage completion status for the current audio
+    if (!audioStages[audioId]) {
+      audioStages[audioId] = {};
+    }
+    audioStages[audioId][stage] = true;
+
+    // Save the updated stages back to Redis
+    await this.redisService.set(key, JSON.stringify(audioStages));
     this.logger.log(`Stage ${stage} completed for audio ${audioId}`);
 
+    // Log the current status of all stages for all audios
+    this.logger.log(`Current stage status for project ${projectId}:`);
+    Object.entries(audioStages).forEach(([audioId, stages]) => {
+      this.logger.log(`Audio ID: ${audioId}`);
+      Object.entries(stages).forEach(([stage, status]) => {
+        this.logger.log(`  Stage: ${stage}, Status: ${status}`);
+      });
+    });
+
+    // Check if all stages are completed for all audios in the project
+    const allAudiosCompleted = Object.values(audioStages).every((audio) =>
+      [
+        QueueProcess.TRANSCRIPTION_AUDIO,
+        QueueProcess.TRANSLATION_AUDIO,
+        QueueProcess.SUMMARY_AUDIO,
+        QueueProcess.EMBEDDING_AUDIO,
+      ].every((requiredStage) => audio[requiredStage]),
+    );
     // Check if all stages are completed for this audio
-    if (
-      stages[QueueProcess.TRANSCRIPTION_AUDIO] &&
-      stages[QueueProcess.TRANSLATION_AUDIO] &&
-      stages[QueueProcess.SUMMARY_AUDIO] &&
-      stages[QueueProcess.EMBEDDING_AUDIO]
-    ) {
-      this.logger.log(`All stages completed for audio ${audioId}`);
-      const lastAudioId = await this.redisService.get(`lastAudio`);
-      if (audioId === lastAudioId) {
-        this.logger.log(`All stages completed for the last audio ${audioId}`);
-        // Trigger the project audio process
-        await this.projectSummaryQueue.add(QueueProcess.PROJECT_SUMMARY_AUDIO, {
-          ...stages,
-          projectId,
-        });
-        this.logger.log(`Combined Audio Project job enqueued`);
-      }
+    if (allAudiosCompleted) {
+      this.logger.log(`All stages completed for the project ${projectId}`);
+      // Trigger the project audio process
+      await this.projectSummaryQueue.add(QueueProcess.PROJECT_SUMMARY_AUDIO, {
+        projectId,
+      });
+      this.logger.log(`Combined Audio Project job enqueued`);
     }
   }
 
@@ -563,11 +592,11 @@ export class AudioUtils {
         .join('\n\n');
 
       const combinedSummary = await this.getSummaryAndSentiments(
-        SUMMARY,
+        PROJECT_SUMMARY,
         combinedTranscription,
       );
       const combinedSentiment = await this.getSummaryAndSentiments(
-        SENTIMENT_ANALYSIS,
+        PROJECT_SENTIMENT_ANALYSIS,
         combinedTranscription,
       );
       const projectVecIds = audioDocuments
@@ -592,6 +621,10 @@ export class AudioUtils {
     try {
       const response =
         await this.ProjectContainer.items.upsert(projectDocument);
+
+      await this.emailHelper.sendProjectCreationEmail(
+        projectDocument.projectId,
+      );
       return response;
     } catch (error) {
       console.error('Error saving project summary:', error.message);

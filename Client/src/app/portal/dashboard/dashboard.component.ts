@@ -10,6 +10,7 @@ import { CommonService } from '../service/common.service';
   styleUrls: ['./dashboard.component.scss']
 })
 export class DashboardComponent implements OnInit {
+  tagInput: string = '';
   audioFiles: any[] = [];
   imageBasePath: string = environment.imageBasePath;
   primaryLang: any[] = [];
@@ -19,6 +20,9 @@ export class DashboardComponent implements OnInit {
   userCode: any;
   userRole: any;
   audioTags: any[] = [];
+  today: Date = new Date();
+  filteredTags: any[] = [];
+  isLoading: boolean=true;
   constructor(private toastr: ToastrService, private fb: FormBuilder, private commonServ: CommonService) { }
 
   ngOnInit() {
@@ -30,22 +34,29 @@ export class DashboardComponent implements OnInit {
   }
 
   getMaster() {
+    this.commonServ.showSpin();
     this.commonServ.getAPI('users/masterData').subscribe((res: any) => {
+      this.commonServ.hideSpin();
       this.primaryLang = res.data[0].languages;
       this.secondaryLang = [...this.primaryLang];
     }, (err: any) => {
+      this.commonServ.hideSpin();
       this.toastr.error('Something went wrong');
     });
   }
 
+
   getTags() {
-    let userCode = '';
-    userCode = this.userRole === "1" ? '' : this.userCode;
-    this.commonServ.getAPI('audio/all', userCode).subscribe(
+    //userCode = this.userRole === "1" ? '' : this.userCode;
+    this.commonServ.showSpin();
+    this.commonServ.getAPI('audio/allUniqueTag').subscribe(
       (res: any) => {
-        this.audioTags = res.data.allUniqueTags;
+        this.isLoading = false;
+        this.audioTags = res.data;
+        this.commonServ.hideSpin();
       },
       (err: any) => {
+        this.commonServ.hideSpin();
         this.toastr.error('Something went wrong');
       });
   }
@@ -53,7 +64,8 @@ export class DashboardComponent implements OnInit {
   initializeAudioForm() {
     this.audioDetails = this.fb.group({
       bankInput: this.fb.array([]),
-    })
+      tagInput: [''],
+    });
   }
 
   get bankDetailsArray(): FormArray {
@@ -69,6 +81,50 @@ export class DashboardComponent implements OnInit {
     this.addFile(files);
     event.target.value = null;
   }
+
+  filterTags() {
+    const firstFormGroup = this.bankDetailsArray.at(0) as FormGroup;
+    if (!firstFormGroup) {
+      console.error("No form group found at index 0!");
+      return;
+    }
+    const tagControl = firstFormGroup.get('tagInput');
+    if (!tagControl) {
+      console.error("Tag Input Control Not Found!");
+      return;
+    }
+    const newTag = tagControl.value?.trim(); 
+    const inputValue = newTag.toLowerCase();
+    this.filteredTags = this.audioTags.filter(tag => tag.name.toLowerCase().includes(inputValue));
+  }
+
+
+  addTag(index: number) {
+    //const tagControl = this.bankDetailsArray.get('tagInput');
+    //const tagControl = (this.bankDetailsArray.at(0) as FormGroup)?.get('tagInput')?.value ?? '';
+    const firstFormGroup = this.bankDetailsArray.at(index) as FormGroup;
+    if (!firstFormGroup) {
+      console.error("No form group found at index 0!");
+      return;
+    }
+    const tagControl = firstFormGroup.get('tagInput');
+
+    if (!tagControl) {
+      console.error("Tag Input Control Not Found!");
+      return;
+    }
+    const newTag = tagControl.value?.trim(); 
+    //const newTag = tagControl; // Ensure it's not undefined or empty
+    if (newTag && !this.audioTags.some(tag => tag.name === newTag)) {
+      this.audioTags.push({ name: newTag });
+      const selectedTags = this.audioDetails.get('tags')?.value || [];
+      this.audioDetails.get('tags')?.setValue([...selectedTags, newTag]); // Add new tag to selected list
+    }
+  
+    tagControl.setValue(''); // Clear input field
+  }
+  
+  
 
   onDrop(event: DragEvent): void {
     event.preventDefault();
@@ -88,7 +144,7 @@ export class DashboardComponent implements OnInit {
   }
 
   addFile(files: FileList): boolean {
-    if (files.length > 4) {
+    if(this.audioFiles.length + files.length > 4) {
       this.toastr.warning('You can only upload 4 files at a time');
       return false;
     }
@@ -115,6 +171,7 @@ export class DashboardComponent implements OnInit {
       numSpeakers: ['', [Validators.required, Validators.min(2), Validators.max(10)]],
       date: ['', Validators.required],
       tags: [[], Validators.required],
+      tagInput: [''],
     });
 
     this.handleLanguageSelection(fileForm);
@@ -171,18 +228,17 @@ export class DashboardComponent implements OnInit {
     }
     formData.append('AudioDto', JSON.stringify(requestBody));
   
-    //this.isLoading = true;
+    this.commonServ.showSpin();
     this.commonServ.postAPI('audio/upload', formData).subscribe(
       (res: any) => {
-        //this.isLoading = false;
+        this.commonServ.hideSpin();
         this.toastr.success('Audio uploaded successfully');
         this.audioFiles = [];
         this.bankDetailsArray.clear();
         this.audioDetails.setControl('bankInput', this.fb.array([...this.bankDetailsArray.controls]));
       },
       (err: any) => {
-        debugger
-        //this.isLoading = false;
+        this.commonServ.hideSpin();
         this.toastr.error(err.error.message);
       }
     );
@@ -271,16 +327,21 @@ export class DashboardComponent implements OnInit {
     this.audioFiles.splice(index, 1);
     this.bankDetailsArray.removeAt(index);
     this.audioDetails.setControl('bankInput', this.fb.array([...this.bankDetailsArray.controls]));
-    this.audioDetails.setErrors(null);
+    //this.audioDetails.setErrors(null);
+    this.audioDetails.updateValueAndValidity();
     (this.audioDetails.get('bankInput') as FormArray).controls.forEach((group) => {
       if (group instanceof FormGroup) {
         Object.keys(group.controls).forEach((key) => {
-          group.get(key)?.setErrors(null);
-          group.get(key)?.markAsPristine();
-          group.get(key)?.markAsUntouched();
+          const control = group.get(key);
+          control?.updateValueAndValidity();
+          // group.get(key)?.setErrors(null);
+          // group.get(key)?.markAsPristine();
+          // group.get(key)?.markAsUntouched();
         });
       }
     });
+    this.audioDetails.markAsTouched();
+    this.audioDetails.markAsDirty();
   }
 
   trackByIndex(index: number, _: any): number {

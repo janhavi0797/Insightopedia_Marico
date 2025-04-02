@@ -9,16 +9,15 @@ import { Container, CosmosClient } from '@azure/cosmos';
 import { UserModule } from './user/user.module';
 import { ProjectModule } from './project/project.module';
 import { BullQueues, ContainersEnum } from './utils/enums';
-import { AudioUtils } from './utils';
+import { AudioUtils, EmailHelper } from './utils';
 import { TranscriptionProcessor } from './processors/transcription.processor';
-import { AudioEntity, ProjectEntity } from './utils/containers';
+import { AudioEntity, ProjectEntity, User } from './utils/containers';
 import { ChatModule } from './chat/chat.module';
 import { TranslationProcessor } from './processors/translation.processor';
 import { SummarySentimentsProcessor } from './processors/summarySentiments.processor';
 import { EmbeddingProcessor } from './processors/embedding.processor';
 import { createClient } from 'redis';
 import { ProjectSummaryProcessor } from './processors/projectSummary.processor';
-const C = new ConfigService();
 
 @Global()
 @Module({
@@ -53,6 +52,10 @@ const C = new ConfigService();
         dto: AudioEntity,
         collection: ContainersEnum.AUDIO,
       },
+      {
+        dto: User,
+        collection: ContainersEnum.USER,
+      },
     ]),
     BullModule.registerQueue({
       name: BullQueues.TRANSCRIPTION,
@@ -68,6 +71,9 @@ const C = new ConfigService();
     }),
     BullModule.registerQueue({
       name: BullQueues.PROJECT_SUMMARY,
+    }),
+    BullModule.registerQueue({
+      name: BullQueues.UPLOAD,
     }),
     AudioModule,
     UserModule,
@@ -97,6 +103,7 @@ const C = new ConfigService();
     EmbeddingProcessor,
     ProjectSummaryProcessor,
     AudioUtils,
+    EmailHelper,
     {
       provide: 'RedisService',
       useFactory: () => {

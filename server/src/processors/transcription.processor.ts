@@ -1,6 +1,6 @@
 import { InjectQueue, Process, Processor } from '@nestjs/bull';
 import { Job, Queue } from 'bull';
-import { AudioUtils } from 'src/utils';
+import { AudioUtils, EmailHelper } from 'src/utils';
 import { Logger } from '@nestjs/common';
 import { BullQueues, QueueProcess } from 'src/utils/enums';
 import {
@@ -17,6 +17,7 @@ export class TranscriptionProcessor {
     @InjectQueue(BullQueues.TRANSLATION)
     private readonly translationQueue: Queue,
     // private readonly audioService: AudioService
+    private readonly emailHelper: EmailHelper,
   ) {}
   @Process({ name: QueueProcess.TRANSCRIPTION_AUDIO, concurrency: 5 })
   async handleTranscriptionJob(job: Job) {
@@ -68,6 +69,8 @@ export class TranscriptionProcessor {
       job.log(
         `Transcription job for audioId ${audioId} failed - Stage: Error: ${error.message}`,
       );
+      await this.emailHelper.sendProjectCreationFailureEmail(projectId);
+
       throw error;
     }
     job.log(

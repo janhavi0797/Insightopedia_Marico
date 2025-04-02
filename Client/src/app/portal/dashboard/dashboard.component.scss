@@ -2,22 +2,23 @@
 .media-container {
     padding: 20px 40px 0 40px;
     height: calc(100vh - 64px);
+
     .media-inner-cont {
         height: 100%;
 
         .media-header {
             height: 25%;
-            h3,
+
             p {
                 margin-bottom: 0.5rem;
-            }
-
-            h3 {
-                font-size: 1rem;
-            }
-
-            p {
                 font-size: 0.8rem;
+            }
+
+            h2 {
+                font-size: 22px;
+                font-weight: 600;
+                color: #014FA1;
+                margin-bottom: 5px;
             }
 
             .upload-box {
@@ -62,8 +63,10 @@
         .media-body {
             height: 65%;
             overflow-y: auto;
+
             .upload-list {
                 padding: 0 10px;
+
                 .subtitle {
                     display: flex;
                     justify-content: space-between;
@@ -202,18 +205,20 @@
                             display: flex;
                             justify-content: space-between;
                             margin-top: 10px;
+
                             ::ng-deep mat-form-field {
                                 background: none;
                                 border-radius: 5px;
-                
+
                                 .mat-mdc-text-field-wrapper {
                                     background: none;
                                 }
-                
+
                                 mat-icon {
                                     cursor: pointer;
                                 }
                             }
+
                             mat-error {
                                 font-size: 10px;
                             }
@@ -223,12 +228,14 @@
                 }
             }
         }
+
         .media-footer {
             height: 10%;
             display: flex;
             justify-content: flex-end;
             align-items: center;
             border-top: 1px solid #E7E7E7;
+
             button {
                 border: none;
                 outline: none;
@@ -239,10 +246,12 @@
                 display: flex;
                 align-items: center;
                 justify-content: center;
+
                 mat-icon {
                     margin-left: 10px;
                 }
             }
+
             button:disabled {
                 background: #757575;
                 cursor: not-allowed;
