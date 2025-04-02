@@ -44,12 +44,12 @@ export class DashboardComponent implements OnInit {
 
   getTags() {
     let userCode = '';
-    userCode = this.userRole === "1" ? '' : this.userCode;
+    //userCode = this.userRole === "1" ? '' : this.userCode;
     this.commonServ.showSpin();
-    this.commonServ.getAPI('audio/all', userCode).subscribe(
+    this.commonServ.getAPI('audio/allUniqueTag', userCode).subscribe(
       (res: any) => {
         this.commonServ.hideSpin();
-        this.audioTags = res.data.allUniqueTags;
+        this.audioTags = res.data;
       },
       (err: any) => {
         this.commonServ.hideSpin();

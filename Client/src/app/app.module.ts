@@ -33,8 +33,9 @@ export function initializeMsal(msalService: MsalService): () => Promise<void> {
 
 const ngxUiLoaderConfig: NgxUiLoaderConfig = {
   fgsType: "ball-spin-clockwise", // Spinner type
+  fgsColor: '#73e653',
   overlayColor: "rgba(0, 0, 0, 0.7)", // Background color
-  pbColor: "skyblue", // Progress bar color
+  pbColor: "#73e653", // Progress bar color
   pbThickness: 5, // Progress bar thickness
   logoUrl: "assets/Img/Marico_Logo.svg.png", // Path to your image
   logoSize: 60, // Adjust size so it fits inside the spinner
