@@ -11,6 +11,8 @@ import { CommonService } from './portal/service/common.service';
 import { HttpClientModule } from '@angular/common/http';
 import { environment } from '../environments/environment';
 import { APP_BASE_HREF } from '@angular/common';
+import { NgxUiLoaderConfig, NgxUiLoaderModule } from "ngx-ui-loader";
+//import { NgxLoadingModule } from 'ngx-loading';
 
 export function MSALInstanceFactory(): IPublicClientApplication {
   return new PublicClientApplication({
@@ -29,6 +31,20 @@ export function initializeMsal(msalService: MsalService): () => Promise<void> {
   return () => msalService.instance.initialize();
 }
 
+const ngxUiLoaderConfig: NgxUiLoaderConfig = {
+  fgsType: "ball-spin-clockwise", // Spinner type
+  fgsColor: '#73e653',
+  overlayColor: "rgba(0, 0, 0, 0.7)", // Background color
+  pbColor: "#73e653", // Progress bar color
+  pbThickness: 5, // Progress bar thickness
+  logoUrl: "assets/Img/Marico_Logo.svg.png", // Path to your image
+  logoSize: 60, // Adjust size so it fits inside the spinner
+  fgsSize: 100,
+  fgsPosition: "center-center", // Center the spinner
+  logoPosition: "center-center", // Ensure it's inside the spinner
+};
+
+
 @NgModule({
   declarations: [
     AppComponent,
@@ -39,7 +55,9 @@ export function initializeMsal(msalService: MsalService): () => Promise<void> {
     AppRoutingModule,
     MsalModule,
     BrowserAnimationsModule,
-    HttpClientModule
+    HttpClientModule,
+    NgxUiLoaderModule.forRoot(ngxUiLoaderConfig),
+    //NgxLoadingModule.forRoot({}),
   ],
   providers: [
     {

@@ -25,7 +25,6 @@ export class ProjectDetailsComponent {
   isPlaying = false;
   audioDetails: any;
   filePath: string = '';
-  isLoading: boolean = false;
 
   question: string = "";
   vectorId: string[] = [];
@@ -67,25 +66,21 @@ export class ProjectDetailsComponent {
 
 
   getProjectDetails(projectId:string) {
-    this.isLoading = true;
+    this.common.showSpin();
     this.common.getProjectDetail('project/allProjectDetails', projectId).subscribe((res: any) => {
       this.allAudioDetails = res.data.projectDetails[0];
-      //console.log("getProjectDetails only allAudioDetails",this.allAudioDetails);
       this.allProjectAudioDetails = res.data;
       //this.audioDetails = res.data.projectDetails[0].AudioData[0];
       this.audioDetails = this.combineAudioData(this.allProjectAudioDetails);
-
-      //console.log("combineAudioData of page refresh audioDetails",this.audioDetails);
-      //console.log("getProjectDetails only allAudioDetails",this.allAudioDetails);
        //this.filePath = res.data.FilePath;
        //this.vectorId = res.data.vectorId;
       this.tempAudioData = res.data.projectDetails[0].AudioData.map((x: any) => Object.assign({}, x));
       //this.audioNameArr =res.data.projectDetails[0].AudioData.map(((item: { audioName: any; })=> item.audioName));
       this.audioNameArr = ["All Project", ...res.data.projectDetails[0].AudioData.map((item: { audioName: any }) => item.audioName)];
       this.audioName = this.audioNameArr[0];
-      this.isLoading = false;
+      this.common.hideSpin();
     }, (err: any) => {
-
+      this.common.hideSpin();
     })
   }
 
@@ -170,16 +165,16 @@ export class ProjectDetailsComponent {
         question: this.question,
         vectorId: this.audioDetails?.vectorId ?? ['']
       }
-      this.isLoading = true;
+      this.common.showSpin();
       this.audioServ.sendQueryAI('chat/chatVectorId', payload).subscribe((res: any) => {
-        this.isLoading = false;
+        this.common.hideSpin();
         this.audioServ.messageHistory.next({
           from: 'AI',
           message: res.answer
         });
         this.question = '';
       }, (err: any) => {
-        this.isLoading = false;
+        this.common.hideSpin();
         this.toastr.error('Something Went Wrong!')
       })
     } else {
@@ -195,7 +190,7 @@ export class ProjectDetailsComponent {
     this.isEdit = false;
   }
   updateTranslation() {
-    this.isLoading = true;
+    this.common.showSpin();
     const payload = {
       editData: {
         TGId: this.tgId,
@@ -208,12 +203,12 @@ export class ProjectDetailsComponent {
       if (res.statusCode === 200) {
         this.toastr.success(res.message);
         this.tempAudioData = this.audioDetails.AudioData.map((x: any) => Object.assign({}, x));
-        this.isLoading = false;
+        this.common.hideSpin();
         this.isEdit = false;
       }
     }, (err: any) => {
       this.cancelEdit();
-      this.isLoading = false;
+      this.common.hideSpin();
       this.toastr.error('Something Went Wrong!');
     });
   }
@@ -235,7 +230,7 @@ export class ProjectDetailsComponent {
       this.toastr.error('Current Text is Empty')
       return;
     }
-    this.isLoading = true;
+    this.common.showSpin();
     const regex = new RegExp(`\\b${this.currentText}\\b`, 'gi');
     this.audioDetails.AudioData.forEach((item: any) => {
       if (item.translation) {
@@ -255,13 +250,13 @@ export class ProjectDetailsComponent {
       if (res.statusCode === 200) {
         this.toastr.success(res.message);
         this.tempAudioData = this.audioDetails.AudioData.map((x: any) => Object.assign({}, x));
-        this.isLoading = false;
+        this.common.hideSpin();
         this.currentText = '';
         this.replaceText = '';
       }
     }, (err: any) => {
       this.cancelEdit();
-      this.isLoading = false;
+      this.common.hideSpin();
       this.toastr.error('Something Went Wrong!');
     })
 
@@ -482,7 +477,6 @@ export class ProjectDetailsComponent {
   
     if (index === 0) {
       this.audioDetails = this.combineAudioData(this.allProjectAudioDetails);
-      console.log("onAudioNameChange",this.audioDetails)
     } else {
       this.audioDetails = this.allAudioDetails.AudioData[index - 1] || null;
     }

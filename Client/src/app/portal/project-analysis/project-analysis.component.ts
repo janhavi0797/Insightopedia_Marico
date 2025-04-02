@@ -14,7 +14,6 @@ import { Router } from '@angular/router';
 })
 export class ProjectAnalysisComponent {
   project: any[] = [];
-  isLoading: boolean = false;
   userCode: string = '';
   ELEMENT_DATA: PeriodicElement[] = [];
   filteredProject: any[] = [];
@@ -94,7 +93,7 @@ export class ProjectAnalysisComponent {
   }
 
   getProjectData(param: any) {
-    this.isLoading = true;
+    this.common.showSpin();
     this.common.getAllProject('project/list', param).subscribe((res: any) => {
       this.project = res.data;
       this.mapProjectData(this.project);
@@ -109,9 +108,9 @@ export class ProjectAnalysisComponent {
       );
       this.count = res.count;
       this.userCode = localStorage.getItem('uId') || '';
-      this.isLoading = false;
+      this.common.hideSpin();
     }, (err: any) => {
-      this.isLoading = false;
+      this.common.hideSpin();
       this.toastr.error('Something Went Wrong!')
     });
   }
