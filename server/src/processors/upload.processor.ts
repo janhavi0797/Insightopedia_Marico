@@ -70,8 +70,9 @@ export class UploadProcessor {
 
         // Process the file with FFmpeg (noise cancellation and mono conversion)
         //const ffmpegCommand = `${ffmpegPath} -i ${tempFilePath} -af "highpass=f=300, lowpass=f=3000, afftdn=nf=-25" -ac 1 -ar 16000 ${processedFilePath}`;
-        const ffmpegCommand = `${ffmpegPath} -i "${tempFilePath}" -af "highpass=f=300, lowpass=f=3000, afftdn=nf=-25" -ac 1 -ar 16000 "${processedFilePath}"`;
-        await execAsync(ffmpegCommand);
+        //const ffmpegCommand = `${ffmpegPath} -i "${tempFilePath}" -af "highpass=f=300, lowpass=f=3000, afftdn=nf=-25" -ac 1 -ar 16000 "${processedFilePath}"`;
+        await execAsync(`ffmpeg -i "${tempFilePath}" -af "highpass=f=300, lowpass=f=3000, afftdn=nf=-25" -ac 1 -ar 16000 "${processedFilePath}"`);
+        // await execAsync(ffmpegCommand);
 
         // Read the processed file back into a buffer
         const processedBuffer = fs.readFileSync(processedFilePath);
