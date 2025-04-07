@@ -60,7 +60,7 @@ export class UploadProcessor {
         const baseFileName = file.originalname.replace(/\.[^/.]+$/, '');
         const tempInputPath = join(uploadDir, `${timestamp}-${file.originalname}`);
         const processedOutputPath =
-          originalExt === 'mp4'
+          originalExt === 'mp4' || originalExt === 'm4a'
             ? join(uploadDir, `converted-${timestamp}-${baseFileName}.mp3`)
             : join(uploadDir, `processed-${timestamp}-${file.originalname}`);
         const bufferData = Buffer.isBuffer(file.buffer)
@@ -91,7 +91,7 @@ export class UploadProcessor {
         // }
 
         // MP4 to MP3 conversion
-        if (originalExt === 'mp4') {
+        if (originalExt === 'mp4'|| originalExt === 'm4a') {
           await new Promise<void>((resolve, reject) => {
             ffmpeg(tempInputPath)
               .noVideo()
@@ -127,9 +127,9 @@ export class UploadProcessor {
         
         // Upload processed file (use .mp3 name if converted from mp4)
         const finalBlobName =
-          originalExt === 'mp4'
-            ? `${baseFileName}.mp3`
-            : file.originalname;
+        originalExt === 'mp4' || originalExt === 'm4a'
+        ? `${baseFileName}.mp3`
+        : file.originalname;
         const blockBlobClient = this.containerClient.getBlockBlobClient(
           finalBlobName,
         );
