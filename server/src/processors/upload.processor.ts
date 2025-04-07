@@ -8,7 +8,7 @@ import { promisify } from 'util';
 import { exec } from 'child_process';
 import { BlobServiceClient } from '@azure/storage-blob';
 import { ConfigService } from '@nestjs/config';
-import { InternalServerErrorException, Logger } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { Container } from '@azure/cosmos';
 import { AudioEntity } from 'src/utils/containers';
 import { InjectModel } from '@nestjs/azure-database';
@@ -41,80 +41,93 @@ export class UploadProcessor {
       const sasUrls: {
         fileName: string;
         sasUri: string;
+        originalFileName:string;
       }[] = [];
 
       const uploadDir = join(process.cwd(), 'uploads');
-
-      // Check if the 'uploads' directory exists, if not, create it
       if (!fs.existsSync(uploadDir)) {
         fs.mkdirSync(uploadDir, { recursive: true });
       }
 
       const uploadPromises = files.map(async (file) => {
-        const tempFilePath = join(
-          'uploads',
-          `${Date.now()}-${file.originalname}`,
-        );
-        const processedFilePath = join(
-          'uploads',
-          `processed-${Date.now()}-${file.originalname}`,
-        );
-
-        // Write the uploaded file buffer to disk temporarily
+        const timestamp = Date.now();
+        const originalExt = file.originalname.split('.').pop()?.toLowerCase();
+        const baseFileName = file.originalname.replace(/\.[^/.]+$/, '');
+        const tempInputPath = join(uploadDir, `${timestamp}-${file.originalname}`);
+        const processedOutputPath =
+          originalExt === 'mp4'
+            ? join(uploadDir, `converted-${timestamp}-${baseFileName}.mp3`)
+            : join(uploadDir, `processed-${timestamp}-${file.originalname}`);
         const bufferData = Buffer.isBuffer(file.buffer)
           ? file.buffer
           : Buffer.from(file.buffer.data);
-
-        fs.writeFileSync(tempFilePath, bufferData);
+  
+        fs.writeFileSync(tempInputPath, bufferData);
         const ffmpegPath = 'C:/ffmpeg/ffmpeg.exe'; // Adjust the path
 
-        // Process the file with FFmpeg (noise cancellation and mono conversion)
-        //const ffmpegCommand = `${ffmpegPath} -i ${tempFilePath} -af "highpass=f=300, lowpass=f=3000, afftdn=nf=-25" -ac 1 -ar 16000 ${processedFilePath}`;
-        const ffmpegCommand = `${ffmpegPath} -i "${tempFilePath}" -af "highpass=f=300, lowpass=f=3000, afftdn=nf=-25" -ac 1 -ar 16000 "${processedFilePath}"`;
-        await execAsync(ffmpegCommand);
+        // if (originalExt === 'mp4') {
+        //   // Convert mp4 to mp3 using ffmpeg
+        //   const convertCommand = `${ffmpegPath} -i "${tempInputPath}" -vn -ar 44100 -ac 2 -b:a 192k "${processedOutputPath}"`;
+        //   await execAsync(convertCommand);
+        // } else {
+        //   // Apply audio filters for noise reduction and convert to mono
+        //   const ffmpegCommand = `${ffmpegPath} -i "${tempInputPath}" -af "highpass=f=300, lowpass=f=3000, afftdn=nf=-25" -ac 1 -ar 16000 "${processedOutputPath}"`;
+        //   await execAsync(ffmpegCommand);
+        // }
 
-        // Read the processed file back into a buffer
-        const processedBuffer = fs.readFileSync(processedFilePath);
-
+        if (originalExt === 'mp4') {
+          // Convert mp4 to mp3 with Azure-compatible audio profile
+          const convertCommand = `${ffmpegPath} -i "${tempInputPath}" -vn -ar 16000 -ac 1 -b:a 192k -codec:a libmp3lame "${processedOutputPath}"`;
+          await execAsync(convertCommand);
+        } else {
+          // Apply noise filtering for other audio types
+          const ffmpegCommand = `${ffmpegPath} -i "${tempInputPath}" -af "highpass=f=300, lowpass=f=3000, afftdn=nf=-25" -ac 1 -ar 16000 "${processedOutputPath}"`;
+          await execAsync(ffmpegCommand);
+        }
+        
+       
+        const processedBuffer = fs.readFileSync(processedOutputPath);
+        
+        // Upload processed file (use .mp3 name if converted from mp4)
+        const finalBlobName =
+          originalExt === 'mp4'
+            ? `${baseFileName}.mp3`
+            : file.originalname;
         const blockBlobClient = this.containerClient.getBlockBlobClient(
-          file.originalname,
+          finalBlobName,
         );
-        const uploadBlobResponse =
-          await blockBlobClient.uploadData(processedBuffer);
 
+        const uploadBlobResponse = await blockBlobClient.uploadData(processedBuffer);
+  
         Logger.log(
-          `Blob ${file.originalname} uploaded successfully: ${uploadBlobResponse.requestId}`,
+          `Blob ${finalBlobName} uploaded successfully: ${uploadBlobResponse.requestId}`,
         );
-
-        const sasUri = blockBlobClient.url;
-        const fileName = file.originalname;
-
-        const filePaths = [tempFilePath, processedFilePath];
-
-        filePaths.forEach((filePath) => {
+  
+        sasUrls.push({
+          fileName: finalBlobName,
+          sasUri: blockBlobClient.url,
+          originalFileName:file.originalname,
+        });
+  
+        // Clean up temp files
+        [tempInputPath, processedOutputPath].forEach((filePath) => {
           fs.unlink(filePath, (err) => {
             if (err) {
               Logger.error(`Failed to delete file: ${filePath}`, err);
-              throw new InternalServerErrorException(
-                `Failed to delete file: ${filePath}`,
-              );
             }
           });
         });
-
-        sasUrls.push({ fileName, sasUri });
       });
-
+  
       await Promise.all(uploadPromises);
-
+  
       for (const items of sasUrls) {
-        //   // await this.audioContainer.items.create(items);
-        const audioName = items.fileName;
+        const audioName = items.originalFileName;
         const updateQuerySpec = {
           query: `SELECT * FROM c WHERE c.audioName = @audioName`,
           parameters: [{ name: '@audioName', value: audioName }],
         };
-
+  
         const { resources: audioRecords } = await this.audioContainer.items
           .query(updateQuerySpec)
           .fetchAll();
@@ -122,7 +135,8 @@ export class UploadProcessor {
         if (audioRecords.length > 0) {
           const audioItem = audioRecords[0];
           audioItem.uploadStatus = 1;
-
+          audioItem.audioName=items.fileName;
+          
           await this.audioContainer.items.upsert(audioItem);
           Logger.log(`${audioItem.audioName} status updated successfully.`);
         }

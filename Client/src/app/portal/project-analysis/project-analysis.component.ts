@@ -209,7 +209,7 @@ export class ProjectAnalysisComponent {
       userId: item.userId,
       projectName: item.projectName,
       projectId: item.projectId,
-      createdTime: new Date().toLocaleString(),
+      createdTime: item.projectCreatedAt,
       status: item.status,
       view: ''
     }));

@@ -27,6 +27,7 @@ import {
   GetProjectDetailsDto,
 } from './dtos/get_project_details.dto';
 import { EmailHelper } from 'src/utils';
+import { DateTime } from 'luxon';
 
 @Injectable()
 export class ProjectService {
@@ -237,12 +238,14 @@ export class ProjectService {
         return null;
       }
 
+
       return {
         userId: project.userId,
         userName,
         projectName: project.projectName,
         projectId: project.projectId,
         status: project.isSummaryAndSentimentDone ? 1 : 0,
+        projectCreatedAt:this.formatToIST(project._ts),
       };
     });
 
@@ -339,4 +342,11 @@ export class ProjectService {
   async sendProjectEmail(projectId:string){
     return await this.emailService.sendProjectCreationEmail(projectId)
   }
+     //Date formatting
+      
+   formatToIST = (unixTimestamp: number): string =>
+      DateTime
+        .fromSeconds(unixTimestamp)
+        .setZone('Asia/Kolkata')
+        .toFormat('dd/MM/yyyy hh:mm:ss a');
 }
