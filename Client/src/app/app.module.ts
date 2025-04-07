@@ -60,17 +60,17 @@ const ngxUiLoaderConfig: NgxUiLoaderConfig = {
     //NgxLoadingModule.forRoot({}),
   ],
   providers: [
-    {
-      provide: MSAL_INSTANCE,
-      useFactory: MSALInstanceFactory
-    },
-    MsalService,
-    {
-      provide: APP_INITIALIZER,
-      useFactory: initializeMsal,
-      deps: [MsalService],
-      multi: true
-    },
+    // {
+    //   provide: MSAL_INSTANCE,
+    //   useFactory: MSALInstanceFactory
+    // },
+    // MsalService,
+    // {
+    //   provide: APP_INITIALIZER,
+    //   useFactory: initializeMsal,
+    //   deps: [MsalService],
+    //   multi: true
+    // },
     provideToastr(),
     CommonService,
     { provide: APP_BASE_HREF, useValue: environment.baseHref }

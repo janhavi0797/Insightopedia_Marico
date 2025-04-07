@@ -22,8 +22,8 @@ async function bootstrap() {
   SwaggerModule.setup('api', app, document);
 
   app.enableCors({
-    origin: ['http://localhost:4200'], // Replace with your Angular app's URL
-    //origin: ['https://maricointellivoice.atriina.com'],
+    origin: ['http://10.126.11.23:4200'], // Replace with your Angular app's URL
+   //origin: ['https://maricointellivoice.atriina.com'],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true, // If you are using cookies or authorization headers
   });
