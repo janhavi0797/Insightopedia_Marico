@@ -10,6 +10,7 @@ import { AzureOpenAI } from 'openai';
 import { InjectModel } from '@nestjs/azure-database';
 import { Container } from '@azure/cosmos';
 import {
+  CHAT_PROMPT,
   PROJECT_COMPARE_STATIC_INSTRUCTION,
   STATIC_INSTRUCTION,
 } from 'src/utils';
@@ -177,8 +178,8 @@ export class ChatService {
             messages: [
               {
                 role: 'system',
-                content:
-                  'You are a helpful assistant. Use the provided context to answer the question.',
+                content: CHAT_PROMPT
+                  //'You are a helpful assistant. Use the provided context to answer the question.',
               },
               {
                 role: 'user',
