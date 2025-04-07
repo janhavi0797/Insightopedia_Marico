@@ -70,15 +70,14 @@ export class UploadProcessor {
         fs.writeFileSync(tempInputPath, bufferData);
         const ffmpegPath = 'C:/ffmpeg/ffmpeg.exe'; // Adjust the path
 
-        // if (originalExt === 'mp4') {
-        //   // Convert mp4 to mp3 using ffmpeg
-        //   const convertCommand = `${ffmpegPath} -i "${tempInputPath}" -vn -ar 44100 -ac 2 -b:a 192k "${processedOutputPath}"`;
-        //   await execAsync(convertCommand);
-        // } else {
-        //   // Apply audio filters for noise reduction and convert to mono
-        //   const ffmpegCommand = `${ffmpegPath} -i "${tempInputPath}" -af "highpass=f=300, lowpass=f=3000, afftdn=nf=-25" -ac 1 -ar 16000 "${processedOutputPath}"`;
-        //   await execAsync(ffmpegCommand);
-        // }
+        // Process the file with FFmpeg (noise cancellation and mono conversion)
+        //const ffmpegCommand = `${ffmpegPath} -i ${tempFilePath} -af "highpass=f=300, lowpass=f=3000, afftdn=nf=-25" -ac 1 -ar 16000 ${processedFilePath}`;
+        //const ffmpegCommand = `${ffmpegPath} -i "${tempFilePath}" -af "highpass=f=300, lowpass=f=3000, afftdn=nf=-25" -ac 1 -ar 16000 "${processedFilePath}"`;
+        //await execAsync(`ffmpeg -i "${tempFilePath}" -af "highpass=f=300, lowpass=f=3000, afftdn=nf=-25" -ac 1 -ar 16000 "${processedFilePath}"`);
+        // await execAsync(ffmpegCommand);
+
+        // Read the processed file back into a buffer
+        //const processedBuffer = fs.readFileSync(processedFilePath);
 
         // if (originalExt === 'mp4') {
         //   // Convert mp4 to mp3 with Azure-compatible audio profile

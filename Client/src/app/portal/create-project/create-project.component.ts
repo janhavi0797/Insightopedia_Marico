@@ -55,7 +55,7 @@ export class CreateProjectComponent {
     this.userRole = localStorage.getItem('role') || '';
     this.userCode = localStorage.getItem('uId') || '';
     if (this.userRole === "1") {
-      this.userCode = '';
+      //this.userCode = '';
     }
 
     this.getTagsWiseAudio();
