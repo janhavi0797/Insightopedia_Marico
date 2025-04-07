@@ -8,6 +8,7 @@ import { getQueueToken } from '@nestjs/bull';
 import { createBullBoard } from '@bull-board/api';
 import { BullAdapter } from '@bull-board/api/bullAdapter';
 import { BullQueues } from './utils/enums';
+import * as bodyParser from 'body-parser'; // ← make sure this is here
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -59,10 +60,13 @@ async function bootstrap() {
     serverAdapter,
   });
 
+  
+
   // Mount the Bull-Board UI at '/admin/queues'
   const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.use(bodyParser.json({ limit: '3gb' }));
+expressApp.use(bodyParser.urlencoded({ limit: '3gb', extended: true }));
   expressApp.use('/admin/queues', serverAdapter.getRouter());
-
   await app.listen(3001);
 }
 bootstrap();
