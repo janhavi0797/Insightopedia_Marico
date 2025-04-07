@@ -65,6 +65,10 @@
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "host": "10.126.11.23",
+            "port": 4200
+          },
           "configurations": {
             "production": {
               "browserTarget": "Client:build:production"
