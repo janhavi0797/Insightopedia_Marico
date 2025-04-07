@@ -1,7 +1,6 @@
 import { Process, Processor } from '@nestjs/bull';
 import { Job } from 'bull';
 import { BullQueues, QueueProcess } from 'src/utils/enums';
-import * as ffmpeg from 'fluent-ffmpeg';
 import * as fs from 'fs';
 import { join } from 'path';
 import { promisify } from 'util';
@@ -12,8 +11,14 @@ import { Logger } from '@nestjs/common';
 import { Container } from '@azure/cosmos';
 import { AudioEntity } from 'src/utils/containers';
 import { InjectModel } from '@nestjs/azure-database';
+//import ffmpeg from 'fluent-ffmpeg';
 
-ffmpeg.setFfmpegPath('C:/ffmpeg/ffmpeg.exe');
+
+const ffmpeg = require('fluent-ffmpeg');
+const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
+ffmpeg.setFfmpegPath(ffmpegInstaller.path);
+//ffmpeg.setFfmpegPath('C:/ffmpeg/ffmpeg.exe');
+ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 const execAsync = promisify(exec);
 
 @Processor(BullQueues.UPLOAD)
@@ -75,14 +80,46 @@ export class UploadProcessor {
         //   await execAsync(ffmpegCommand);
         // }
 
+        // if (originalExt === 'mp4') {
+        //   // Convert mp4 to mp3 with Azure-compatible audio profile
+        //   const convertCommand = `${ffmpegPath} -i "${tempInputPath}" -vn -ar 16000 -ac 1 -b:a 192k -codec:a libmp3lame "${processedOutputPath}"`;
+        //   await execAsync(convertCommand);
+        // } else {
+        //   // Apply noise filtering for other audio types
+        //   const ffmpegCommand = `${ffmpegPath} -i "${tempInputPath}" -af "highpass=f=300, lowpass=f=3000, afftdn=nf=-25" -ac 1 -ar 16000 "${processedOutputPath}"`;
+        //   await execAsync(ffmpegCommand);
+        // }
+
+        // MP4 to MP3 conversion
         if (originalExt === 'mp4') {
-          // Convert mp4 to mp3 with Azure-compatible audio profile
-          const convertCommand = `${ffmpegPath} -i "${tempInputPath}" -vn -ar 16000 -ac 1 -b:a 192k -codec:a libmp3lame "${processedOutputPath}"`;
-          await execAsync(convertCommand);
+          await new Promise<void>((resolve, reject) => {
+            ffmpeg(tempInputPath)
+              .noVideo()
+              .audioChannels(1)
+              .audioFrequency(16000)
+              .audioBitrate('192k')
+              .audioCodec('libmp3lame')
+              .output(processedOutputPath)
+              .on('end', () => resolve())
+              .on('error', err => reject(err))
+              .run();
+          });
         } else {
-          // Apply noise filtering for other audio types
-          const ffmpegCommand = `${ffmpegPath} -i "${tempInputPath}" -af "highpass=f=300, lowpass=f=3000, afftdn=nf=-25" -ac 1 -ar 16000 "${processedOutputPath}"`;
-          await execAsync(ffmpegCommand);
+          // Noise filtering + conversion
+          await new Promise<void>((resolve, reject) => {
+            ffmpeg(tempInputPath)
+              .audioFilters([
+                'highpass=f=300',
+                'lowpass=f=3000',
+                'afftdn=nf=-25'
+              ])
+              .audioChannels(1)
+              .audioFrequency(16000)
+              .output(processedOutputPath)
+              .on('end', () => resolve())
+              .on('error', err => reject(err))
+              .run();
+          });
         }
         
        
