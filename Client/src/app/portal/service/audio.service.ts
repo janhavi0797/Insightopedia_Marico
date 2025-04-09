@@ -43,7 +43,7 @@ export class AudioService {
     return this.messageHistory.asObservable();
   }
 
-  getDownload(url: string) {
+  getDownload(url: string, fileName: string) {
     this.http.get(url, { responseType: 'blob' })
       .pipe(
         catchError((error) => {
@@ -56,7 +56,7 @@ export class AudioService {
         const downloadURL = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = downloadURL;
-        link.download = 'file.pdf';
+        link.download = fileName;
         link.click();
       });
   }

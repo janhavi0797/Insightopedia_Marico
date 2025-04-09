@@ -286,7 +286,12 @@ export class ProjectDetailsComponent {
     }
   
     const url = `${environment.BASE_URL}audio/generate-pdf?id=${idParam}&type=${content}&key=${keyParam}`;
-    this.audioServ.getDownload(url);
+
+    let fileName = this.allAudioDetails?.projectName ? `${this.allAudioDetails?.projectName}-${content}` : `${content}`;
+    if (!fileName.endsWith('.pdf')) {
+      fileName += '.pdf';
+    }
+    this.audioServ.getDownload(url, fileName);
   }
   
 
@@ -331,8 +336,14 @@ export class ProjectDetailsComponent {
       const blob = new Blob([res], { type: 'application/pdf' });
       const downloadURL = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
+
+      let fileName = this.allAudioDetails?.projectName ? `${this.allAudioDetails?.projectName}` : 'projectChat.pdf';
+    if (!fileName.endsWith('.pdf')) {
+      fileName += '.pdf';
+    }
+
       link.href = downloadURL;
-      link.download = 'file.pdf';
+      link.download = fileName;
       link.click();
     }, (err) => {
       this.toastr.error('Something Went Wrong!');

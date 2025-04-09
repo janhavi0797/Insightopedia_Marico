@@ -20,6 +20,10 @@ export class InfoComponent {
     this.infoObj = info;
   }
 
+  ngOnInit(): void {
+    this.infoObj = this.info;
+  }
+
   closeInfo() {
     this.infoDialogRef.close();
   }
@@ -29,8 +33,12 @@ export class InfoComponent {
   }
 
   logout() {
-    
-    this.msalService.logout();
-    localStorage.removeItem('User');
+    localStorage.clear();
+    sessionStorage.clear();
+    this.infoDialogRef.close();
+    this.msalService.loginRedirect();
+    // this.msalService.logout();
+    // localStorage.removeItem('User');
   }
+  
 }

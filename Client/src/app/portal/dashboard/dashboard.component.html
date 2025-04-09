@@ -5,7 +5,7 @@
             <div class="upload-box" (drop)="onDrop($event)" (dragover)="onDragOver($event)"
                 (dragleave)="onDragLeave($event)">
                 <input type="file" #fileDropRef id="fileDropRef" (change)="onFileSelected($event)" multiple
-                    accept="audio/*">
+                    accept="audio/*, .mp4">
                 <img [src]="imageBasePath + 'assets/Img/dashboard/upload-file.png'" alt="upload-file">
                 <div class="upload-label">
                     <label for="fileDropRef">Drag your file(s) or <span>browse</span></label>

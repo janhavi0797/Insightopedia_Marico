@@ -79,6 +79,7 @@ export class DashboardComponent implements OnInit {
   }
 
   onFileSelected(event: any): void {
+    debugger
     const files: FileList = event.target.files;
     this.addFile(files);
     event.target.value = null;
@@ -144,6 +145,7 @@ export class DashboardComponent implements OnInit {
   }
 
   addFile(files: FileList): boolean {
+    debugger
     if (this.audioFiles.length + files.length > 4) {
       this.toastr.warning('You can only upload 4 files at a time');
       return false;
@@ -151,18 +153,42 @@ export class DashboardComponent implements OnInit {
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      this.audioFiles.push({
+      const fileUrl = URL.createObjectURL(file);
+
+      const fileData: any = {
         name: file.name,
         size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
         data: file,
-        url: URL.createObjectURL(file),
-        isEdit: false
-      });
+        url: fileUrl,
+        isEdit: false,
+        durationTime: '0:00',  // Placeholder until loaded
+        currentTime: '0:00',
+        seekValue: 0
+      };
 
-      this.addFormFile(file);
+      this.audioFiles.push(fileData);
+
+      const audio = new Audio();
+      audio.src = fileUrl;
+      audio.addEventListener('loadedmetadata', () => {
+        const duration = audio.duration;
+        fileData.durationTime = this.formatTime(duration);
+      })
+
+      // this.audioFiles.push({
+      //   name: file.name,
+      //   size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
+      //   data: file,
+      //   url: URL.createObjectURL(file),
+      //   isEdit: false
+      // });
+
+       this.addFormFile(file);
     }
     return true;
   }
+
+  
 
   addFormFile(file: File) {
     const fileForm = this.fb.group({
