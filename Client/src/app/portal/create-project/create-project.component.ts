@@ -1,10 +1,13 @@
-import { Component, TemplateRef } from '@angular/core';
+import { Component, TemplateRef, ViewChild } from '@angular/core';
 import { environment } from 'src/environments/environment';
 import { CommonService } from '../service/common.service';
 import { ToastrService } from 'ngx-toastr';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { Router } from '@angular/router';
+import { FormControl } from '@angular/forms';
+import { MatSelect } from '@angular/material/select';
+import { MatOption } from '@angular/material/core';
 
 interface AudioFile {
   name: string;
@@ -58,18 +61,23 @@ export class CreateProjectComponent {
       this.userCode = '';
     }
 
+    //this.dbCodeList = this.searchDBCodeList;
+
     this.getTagsWiseAudio();
   }
 
 
   getTagsWiseAudio() {
+    debugger
     let userCode = '';
     userCode = this.userRole === "1" ? '' : this.userCode;
     this.commonServ.showSpin();
     this.commonServ.getTagwiseAudio('audio/all', userCode).subscribe(
       (res: any) => {
+        debugger
         this.commonServ.hideSpin();
         this.tagList = res.data.allUniqueTags;
+        this.searchTagList = this.tagList;
         this.audioNames = res.data.audioData;
 
         this.audioFiles = res.data.audioData.map((audio: any) => ({
@@ -119,28 +127,28 @@ export class CreateProjectComponent {
     return Array.from(audioNameSet);
   }
 
-  getFilteredAudioFiles(): AudioFile[] {
-    let filteredFiles: AudioFile[] = [];
+  // getFilteredAudioFiles(): AudioFile[] {
+  //   let filteredFiles: AudioFile[] = [];
 
-    if (this.filterOption === '1' && this.selectedTags.length) {
-      filteredFiles = this.audioFiles.filter(file =>
-        file.tags?.some(tag => this.selectedTags.includes(tag))
-      );
-    } else if (this.filterOption === '2' && this.selectedAudios.length) {
-      filteredFiles = this.audioFiles.filter(file =>
-        this.selectedAudios.includes(file.name)
-      );
-    } else {
-      filteredFiles = [...this.audioFiles];
-    }
+  //   if (this.filterOption === '1' && this.selectedTags.length) {
+  //     filteredFiles = this.audioFiles.filter(file =>
+  //       file.tags?.some(tag => this.selectedTags.includes(tag))
+  //     );
+  //   } else if (this.filterOption === '2' && this.selectedAudios.length) {
+  //     filteredFiles = this.audioFiles.filter(file =>
+  //       this.selectedAudios.includes(file.name)
+  //     );
+  //   } else {
+  //     filteredFiles = [...this.audioFiles];
+  //   }
 
-    // Ensure previously selected files are included
-    const selectedOnly = this.selectedArr.filter(sel =>
-      !filteredFiles.some(f => f.name === sel.name && f.url === sel.url)
-    );
+  //   // Ensure previously selected files are included
+  //   const selectedOnly = this.selectedArr.filter(sel =>
+  //     !filteredFiles.some(f => f.name === sel.name && f.url === sel.url)
+  //   );
 
-    return [...selectedOnly, ...filteredFiles];
-  }
+  //   return [...selectedOnly, ...filteredFiles];
+  // }
 
   //Media Code
   isPlayingIndexMap: { expansion: number | null; audioFiles: number | null } = {
@@ -301,4 +309,75 @@ export class CreateProjectComponent {
     this.router.navigate(['/portal/project-analysis']);
   }
 
+
+  
+
+  multipleselect: any[] = [];
+  searchTagList: any[] = [];
+  selTag = false;
+  @ViewChild('select') select!: MatSelect;
+  AllDistributor = "";
+  filteredAudioFiles : any[] = [];
+
+  onDistSearchDropdown(id: any) {
+    debugger
+    let searchInput = id.target.value;
+    this.tagList = [];
+    let search = searchInput.toLowerCase();
+    if (search.length > 0) {
+      const temp = this.searchTagList.filter(d => {
+        if (search.includes(d))
+          return d.name?.toLowerCase().indexOf(search) !== 1;
+        else
+          return d.name?.toLowerCase().indexOf(search) !== -1;
+      });
+      this.tagList = temp;
+    }
+    else {
+      this.tagList = this.searchTagList;
+    }
+  }
+
+  toggleAllSelection() {
+    debugger
+    if (this.selTag) {
+      this.select.options.forEach((item: MatOption) => item.select());
+      this.multipleselect = this.tagList.map(tag => tag.name);
+    }
+    else {
+      this.select.options.forEach((item: MatOption) => item.deselect());
+      this.multipleselect = [];
+      this.AllDistributor = "";
+    }
+
+    this.onTagSelectionChange();
+  }
+
+  onTagSelectionChange() {
+    debugger
+    this.selectedTags = [...this.multipleselect];
+    this.filteredAudioFiles = this.getFilteredAudioFiles();
+  }
+
+  getFilteredAudioFiles(): AudioFile[] {
+    let filteredFiles: AudioFile[] = [];
+  
+    if (this.selectedTags && this.selectedTags.length > 0) {
+      filteredFiles = this.audioFiles.filter(file =>
+        file.tags?.some(tag => this.selectedTags.includes(tag))
+      );
+    } else {
+      // No tags selected — return all audio files
+      filteredFiles = [...this.audioFiles];
+    }
+  
+    // Include previously selected files that aren't in the filter result
+    const selectedOnly = this.selectedArr.filter(sel =>
+      !filteredFiles.some(f => f.name === sel.name && f.url === sel.url)
+    );
+  
+    return [...selectedOnly, ...filteredFiles];
+  }
+
+  
 }

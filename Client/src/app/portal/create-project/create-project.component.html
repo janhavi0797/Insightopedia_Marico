@@ -4,7 +4,67 @@
     <div class="top-row">
       <div class="filter-section">
         <div class="sub-filter">
-          <ng-container *ngIf="filterOption === '1'">
+            <ng-container>
+              <mat-form-field class="mat-fullwidth">
+                <mat-label> Select Tag </mat-label>
+                <mat-select [(ngModel)]="multipleselect" #select (selectionChange)="onTagSelectionChange()" multiple required>
+              <!-- formControlName="dbCode" -->
+                  <mat-option>
+                    <ngx-mat-select-search matInput placeholder="Tags"
+                                           [placeholderLabel]="'Find Tag...'"
+                                           (input)="onDistSearchDropdown($event)"
+                                           [noEntriesFoundLabel]="'No Tag found'">
+                      <mat-icon ngxMatSelectSearchClear> clear </mat-icon>
+                    </ngx-mat-select-search>
+                  </mat-option>
+                  <div class="select-all">
+                    <mat-checkbox id="tag" [(ngModel)]="selTag"
+                                  [ngModelOptions]="{standalone: true}"
+                                  (change)="toggleAllSelection()"> Select All </mat-checkbox>
+                  </div>
+                  <mat-option *ngFor="let tag of tagList" [value]="tag.name">
+                    {{ tag.name }}
+                  </mat-option>
+              
+                </mat-select>
+                <!-- <mat-error *ngIf="(form.controls['dbCode'].hasError('required') && form.controls['dbCode'].touched) || (form.controls['dbCode'].hasError('required'))"
+                           class="text-danger">
+                  Please select DB Code
+                </mat-error> -->
+              </mat-form-field>
+            </ng-container>
+  
+            <ng-container>
+              <mat-form-field class="mat-fullwidth">
+                <mat-label> Select Audio </mat-label>
+                <mat-select [(ngModel)]="selectedAudio" #select1 multiple required>
+              <!-- formControlName="dbCode" -->
+                  <mat-option>
+                    <ngx-mat-select-search matInput placeholder="Tags"
+                                           [placeholderLabel]="'Find Tag...'"
+                                           (input)="onDistSearchDropdown($event)"
+                                           [noEntriesFoundLabel]="'No Tag found'">
+                      <mat-icon ngxMatSelectSearchClear> clear </mat-icon>
+                    </ngx-mat-select-search>
+                  </mat-option>
+                  <div class="select-all">
+                    <mat-checkbox id="tag" [(ngModel)]="selTag"
+                                  [ngModelOptions]="{standalone: true}"
+                                  (change)="toggleAllSelection()"> Select All </mat-checkbox>
+                  </div>
+                  <mat-option *ngFor="let audio of filteredAudios()" [value]="audio">
+                    {{ audio }}
+                  </mat-option>
+              
+                </mat-select>
+                <!-- <mat-error *ngIf="(form.controls['dbCode'].hasError('required') && form.controls['dbCode'].touched) || (form.controls['dbCode'].hasError('required'))"
+                           class="text-danger">
+                  Please select DB Code
+                </mat-error> -->
+              </mat-form-field>
+            </ng-container>
+
+          <!-- <ng-container *ngIf="filterOption === '1'">
             <mat-form-field appearance="outline" class="filter-dropdown">
               <mat-label>Select Tag</mat-label>
               <mat-select [(ngModel)]="selectedTag" (selectionChange)="filterByTag()">
@@ -20,14 +80,14 @@
                 <mat-option *ngFor="let audio of filteredAudios()" [value]="audio">{{ audio }}</mat-option>
               </mat-select>
             </mat-form-field>
-          </ng-container>
+          </ng-container> -->
 
-          <mat-radio-group [(ngModel)]="filterOption" class="filter-radio" aria-label="Select Filter Option">
+          <!-- <mat-radio-group [(ngModel)]="filterOption" class="filter-radio" aria-label="Select Filter Option">
             <mat-radio-button value="1">Select by Tag</mat-radio-button>
             <mat-radio-button value="2">Select by Audio</mat-radio-button>
           </mat-radio-group>
-        </div>
-        <div class="sub-filter">
+        </div> -->
+        <!-- <div class="sub-filter">
           <ng-container *ngIf="filterOption === '1'">
             <div class="selected-display">
               <span *ngFor="let tag of selectedTags" class="pill">
@@ -35,16 +95,15 @@
                 <button (click)="removeTag(tag)">×</button>
               </span>
             </div>
-          </ng-container>
-          <ng-container *ngIf="filterOption === '2'">
-            <!-- Selected Audios -->
+          </ng-container> -->
+          <!-- <ng-container *ngIf="filterOption === '2'">
             <div class="selected-display">
               <span *ngFor="let audio of selectedAudios" class="pill">
                 {{ audio }}
                 <button (click)="removeAudio(audio)">×</button>
               </span>
             </div>
-          </ng-container>
+          </ng-container> -->
         </div>
       </div>
 
@@ -117,3 +176,6 @@
     </div>
   </div>
 </ng-template>
+
+
+

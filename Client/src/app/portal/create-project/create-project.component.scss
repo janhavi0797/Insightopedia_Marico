@@ -4,7 +4,7 @@
   width: 100%;
 
   .project-header {
-    height: 23%;
+    height: 18%;
 
     h2 {
       font-size: 22px;
@@ -18,40 +18,51 @@
         .sub-filter {
           display: flex;
           flex-direction: row;
-          margin-bottom: 10px;
-          .filter-radio {
-            display: flex;
-            gap: 12px;
+          //margin-bottom: 10px;
+          gap: 20px;
+
+          .mat-fullwidth{
+            width: 20%;
           }
 
-          .selected-display {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            flex: 2;
-            align-items: center;
-            padding-top: 4px;
+          // .matField {
+          //    display: flex;
+          //    gap: 20px;
+          // }
 
-            .pill {
-              background-color: #e3f2fd;
-              border: 1px solid #64b5f6;
-              border-radius: 14px;
-              padding: 4px 10px;
-              font-size: 13px;
-              display: flex;
-              align-items: center;
+          // .filter-radio {
+          //   display: flex;
+          //   gap: 12px;
+          // }
 
-              button {
-                background: none;
-                border: none;
-                margin-left: 6px;
-                font-size: 14px;
-                color: #1976d2;
-                cursor: pointer;
-                padding: 0;
-              }
-            }
-          }
+          // .selected-display {
+          //   display: flex;
+          //   flex-wrap: wrap;
+          //   gap: 8px;
+          //   flex: 2;
+          //   align-items: center;
+          //   padding-top: 4px;
+
+          //   // .pill {
+          //   //   background-color: #e3f2fd;
+          //   //   border: 1px solid #64b5f6;
+          //   //   border-radius: 14px;
+          //   //   padding: 4px 10px;
+          //   //   font-size: 13px;
+          //   //   display: flex;
+          //   //   align-items: center;
+
+          //   //   // button {
+          //   //   //   background: none;
+          //   //   //   border: none;
+          //   //   //   margin-left: 6px;
+          //   //   //   font-size: 14px;
+          //   //   //   color: #1976d2;
+          //   //   //   cursor: pointer;
+          //   //   //   padding: 0;
+          //   //   // }
+          //   // }
+          // }
         }
       }
     }
@@ -59,7 +70,7 @@
   }
 
   .project-body {
-    height: 65%;
+    height: 70%;
     overflow-y: auto;
 
     .upload-list {
@@ -319,3 +330,4 @@
       }
   }
 }
+
