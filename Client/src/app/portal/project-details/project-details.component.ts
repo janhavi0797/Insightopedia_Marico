@@ -165,9 +165,7 @@ export class ProjectDetailsComponent {
         question: this.question,
         vectorId: this.audioDetails?.vectorId ?? ['']
       }
-      this.common.showSpin();
       this.audioServ.sendQueryAI('chat/chatVectorId', payload).subscribe((res: any) => {
-        this.common.hideSpin();
         this.audioServ.messageHistory.next({
           from: 'AI',
           message: res.answer
