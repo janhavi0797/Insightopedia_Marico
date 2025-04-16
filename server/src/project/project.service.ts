@@ -60,6 +60,7 @@ export class ProjectService {
       projectObj.projectName = project.projectName;
       projectObj.userId = project.userId;
       projectObj.audioIds = project?.audioIds?.map((audio) => audio?.audioId);
+      projectObj.isSummaryAndSentimentDone=false;
 
       const checkExistingProject = await this.projectContainer.items
         .query({
