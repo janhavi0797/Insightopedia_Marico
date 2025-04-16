@@ -12,6 +12,8 @@ import { Container } from '@azure/cosmos';
 import { AudioEntity } from 'src/utils/containers';
 import { InjectModel } from '@nestjs/azure-database';
 //import ffmpeg from 'fluent-ffmpeg';
+import { BlobUploadCommonResponse } from '@azure/storage-blob';
+import { PassThrough } from 'stream';
 
 
 const ffmpeg = require('fluent-ffmpeg');
@@ -42,141 +44,108 @@ export class UploadProcessor {
   async UploadAudioFiles(job: Job) {
     const files = job.data.files;
     const sasUrls: {
-          fileName: string;
-          sasUri: string;
-          originalFileName:string;
-          fileUploadStatus:number;
-        }[] = [];
-
-        const uploadDir = join(process.cwd(), 'uploads');
-        if (!fs.existsSync(uploadDir)) {
-          fs.mkdirSync(uploadDir, { recursive: true });
-        }
-
-        for (const file of files) {
-          const timestamp = Date.now();
-          const originalExt = file.originalname.split('.').pop()?.toLowerCase();
-          const baseFileName = file.originalname.replace(/\.[^/.]+$/, '');
-          const tempInputPath = join(uploadDir, `${timestamp}-${file.originalname}`);
-          const processedOutputPath =
-                    originalExt === 'mp4' || originalExt === 'm4a'
-                      ? join(uploadDir, `converted-${timestamp}-${baseFileName}.mp3`)
-                      : join(uploadDir, `processed-${timestamp}-${file.originalname}`);
-          
-          const bufferData = Buffer.isBuffer(file.buffer)
-          ? file.buffer
-          : Buffer.from(file.buffer.data);
-
-          let finalFileName = '';
-          let sasUri = '';
-          let uploadStatus = 2; // Default to failed
-          
-       try {
-            //const uploadPromises = files.map(async (file) => {
-
-              fs.writeFileSync(tempInputPath, bufferData);
-              const ffmpegPath = 'C:/ffmpeg/ffmpeg.exe'; // Adjust the path
-
-              // Process the file with FFmpeg (noise cancellation and mono conversion)
-              //const ffmpegCommand = `${ffmpegPath} -i ${tempFilePath} -af "highpass=f=300, lowpass=f=3000, afftdn=nf=-25" -ac 1 -ar 16000 ${processedFilePath}`;
-              //const ffmpegCommand = `${ffmpegPath} -i "${tempFilePath}" -af "highpass=f=300, lowpass=f=3000, afftdn=nf=-25" -ac 1 -ar 16000 "${processedFilePath}"`;
-              //await execAsync(`ffmpeg -i "${tempFilePath}" -af "highpass=f=300, lowpass=f=3000, afftdn=nf=-25" -ac 1 -ar 16000 "${processedFilePath}"`);
-              // await execAsync(ffmpegCommand);
-
-              // Read the processed file back into a buffer
-              //const processedBuffer = fs.readFileSync(processedFilePath);
-
-              // if (originalExt === 'mp4') {
-              //   // Convert mp4 to mp3 with Azure-compatible audio profile
-              //   const convertCommand = `${ffmpegPath} -i "${tempInputPath}" -vn -ar 16000 -ac 1 -b:a 192k -codec:a libmp3lame "${processedOutputPath}"`;
-              //   await execAsync(convertCommand);
-              // } else {
-              //   // Apply noise filtering for other audio types
-              //   const ffmpegCommand = `${ffmpegPath} -i "${tempInputPath}" -af "highpass=f=300, lowpass=f=3000, afftdn=nf=-25" -ac 1 -ar 16000 "${processedOutputPath}"`;
-              //   await execAsync(ffmpegCommand);
-              // }
-
-              // MP4 to MP3 conversion
-              if (originalExt === 'mp4'|| originalExt === 'm4a') {
-                await new Promise<void>((resolve, reject) => {
-                  ffmpeg(tempInputPath)
-                    .noVideo()
-                    .audioChannels(1)
-                    .audioFrequency(16000)
-                    .audioBitrate('192k')
-                    .audioCodec('libmp3lame')
-                    .output(processedOutputPath)
-                    .on('end', () => resolve())
-                    .on('error', err => reject(err))
-                    .run();
-                });
-              } else {
-                // Noise filtering + conversion
-                await new Promise<void>((resolve, reject) => {
-                  ffmpeg(tempInputPath)
-                    .audioFilters([
-                      'highpass=f=300',
-                      'lowpass=f=3000',
-                      'afftdn=nf=-25'
-                    ])
-                    .audioChannels(1)
-                    .audioFrequency(16000)
-                    .output(processedOutputPath)
-                    .on('end', () => resolve())
-                    .on('error', err => reject(err))
-                    .run();
-                });
-              }
-              
-            
-              const processedBuffer = fs.readFileSync(processedOutputPath);
-              
-              // Upload processed file (use .mp3 name if converted from mp4)
-              const finalBlobName =
-              originalExt === 'mp4' || originalExt === 'm4a'
-              ? `${baseFileName}.mp3`
-              : file.originalname;
-              const blockBlobClient = this.containerClient.getBlockBlobClient(
-                finalBlobName,
-              );
-
-              const uploadBlobResponse = await blockBlobClient.uploadData(processedBuffer);
-        
-              Logger.log(
-                `Blob ${finalBlobName} uploaded successfully: ${uploadBlobResponse.requestId}`,
-              );
-
-              finalFileName= finalBlobName,
-              uploadStatus = 1; // Success
-              sasUri = blockBlobClient.url;
-
-            } catch (error) {
-              Logger.error(`Failed to process file ${file.originalname}: ${error.message}`);
-            } finally {
-              // Clean up temp files
-              [tempInputPath, processedOutputPath].forEach((filePath) => {
-                fs.unlink(filePath, (err) => {
-                  if (err) {
-                    Logger.error(`Failed to delete file: ${filePath}`, err);
-                  }
-                });
-              });
-              sasUrls.push({
-                fileName: finalFileName || file.originalname,
-                sasUri,
-                originalFileName:file.originalname,
-                fileUploadStatus:uploadStatus
-              });
-          // });
+      fileName: string;
+      sasUri: string;
+      originalFileName: string;
+      fileUploadStatus: number;
+    }[] = [];
+  
+    for (const file of files) {
+      const originalExt = file.originalname.split('.').pop()?.toLowerCase();
+      const baseFileName = file.originalname.replace(/\.[^/.]+$/, '');
+      const isConvertToMp3 = originalExt === 'mp4' || originalExt === 'm4a';
+      //console.log("file buffer before hasAudio",file.originalname)
+      const finalBlobName = isConvertToMp3 ? `${baseFileName}.mp3` : file.originalname;
+  
+      let uploadStatus = 2;
+      let sasUri = '';
+  
+      try {
+       // console.log("file buffer started",finalBlobName)
+        const buffer = Buffer.isBuffer(file.buffer)
+        ? file.buffer
+        : Buffer.from(file.buffer.data);
+//console.log("file buffer before hasAudio",finalBlobName)
+      // ✅ Check for audio stream using ffprobe
+      const hasAudio = await new Promise<boolean>((resolve, reject) => {
+        const probeStream = new PassThrough();
+        probeStream.end(buffer);
+        ffmpeg(probeStream)
+          .ffprobe((err, metadata) => {
+            if (err) {
+              reject(err);
+            } else {
+              const hasAudioStream = metadata.streams?.some(s => s.codec_type === 'audio');
+              resolve(hasAudioStream);
             }
-          }
-  
-      //await Promise.all(uploadPromises);
-  
-      for (const items of sasUrls) {
+          });
+      });
 
-      try{
-        const audioName = items.originalFileName;
+      if (!hasAudio) {
+        uploadStatus = 2;
+        sasUrls.push({
+          fileName: finalBlobName,
+          sasUri,
+          originalFileName: file.originalname,
+          fileUploadStatus: uploadStatus,
+        });
+        throw new Error('No audio stream found in file');
+      }
+
+        const inputStream = new PassThrough();
+        inputStream.end(Buffer.isBuffer(file.buffer) ? file.buffer : Buffer.from(file.buffer.data));
+  
+        const ffmpegStream = new PassThrough();
+  
+        const ffmpegCommand = ffmpeg(inputStream)
+          .inputFormat(originalExt!)
+          .outputOptions([
+            '-ac 1',
+            '-ar 16000',
+            ...(isConvertToMp3
+              ? ['-b:a 192k', '-codec:a libmp3lame']
+              : ['-af highpass=f=300,lowpass=f=3000,afftdn=nf=-25'])
+          ])
+          .format('mp3')
+          .on('error', (err) => {
+            //throw new Error(`FFmpeg processing error: ${err.message}`);
+            Logger.error(`FFmpeg processing error for file ${file.originalname}: ${err.message}`);
+          })
+          .on('end', () => {
+            Logger.log(`FFmpeg processing completed for ${file.originalname}`);
+          });
+  
+        ffmpegCommand.pipe(ffmpegStream);
+  
+        // Upload directly from the FFmpeg output stream
+        const blockBlobClient = this.containerClient.getBlockBlobClient(finalBlobName);
+        const uploadResult: BlobUploadCommonResponse = await blockBlobClient.uploadStream(
+          ffmpegStream,
+          4 * 1024 * 1024, // buffer size (4MB)
+          20,              // max concurrency
+          { blobHTTPHeaders: { blobContentType: 'audio/mpeg' } }
+        );
+  
+        Logger.log(`Blob ${finalBlobName} uploaded successfully: ${uploadResult.requestId}`);
+        uploadStatus = 1;
+        sasUri = blockBlobClient.url;
+      } catch (err) {
+        //console.log("UploadAudioFiles",err)
+        Logger.error(`Failed to process file ${file.originalname}: ${err.message}`);
+      }
+  
+      sasUrls.push({
+        fileName: finalBlobName,
+        sasUri,
+        originalFileName: file.originalname,
+        fileUploadStatus: uploadStatus,
+      });
+    }
+  
+    // Update Cosmos DB
+    for (const item of sasUrls) {
+      try {
+        const audioName = item.originalFileName;
         const updateQuerySpec = {
           query: `SELECT * FROM c WHERE c.audioName = @audioName`,
           parameters: [{ name: '@audioName', value: audioName }],
@@ -185,21 +154,21 @@ export class UploadProcessor {
         const { resources: audioRecords } = await this.audioContainer.items
           .query(updateQuerySpec)
           .fetchAll();
-
+  
         if (audioRecords.length > 0) {
           const audioItem = audioRecords[0];
-          audioItem.uploadStatus = items.fileUploadStatus;
-          audioItem.audioName=items.fileName;
-          
+          audioItem.uploadStatus = item.fileUploadStatus;
+          audioItem.audioName = item.fileName;
+  
           await this.audioContainer.items.upsert(audioItem);
           Logger.log(`${audioItem.audioName} status updated successfully.`);
-        }else {
-        Logger.warn(`No record found in DB for: ${items.originalFileName}`);
-      }
-
+        } else {
+          Logger.warn(`No record found in DB for: ${item.originalFileName}`);
+        }
       } catch (error) {
-      console.error(`Failed to upload audio files: ${error.message}`);
+       // console.log("processAudioFiles-Upload",error);
+        Logger.error(`Failed to update DB for ${item.originalFileName}: ${error.message}`);
+      }
     }
   }
-}
 }

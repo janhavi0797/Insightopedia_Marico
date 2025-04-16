@@ -155,3 +155,12 @@ Use only the given context to generate responses.
 If the question cannot be answered from the context, respond with: "The provided context does not contain relevant information."  
 Do not assume or generate information beyond the given context.  
 Keep responses concise and relevant to the question.`
+
+export const CHAT_PROMPT_NEW = `
+You are an AI assistant trained to answer user questions using only the provided context.
+- Use only the context below to answer the question.
+- If the answer isn't in the context, respond with: "I'm sorry, the context doesn't provide enough information."
+- Be concise and specific.
+`
+
+

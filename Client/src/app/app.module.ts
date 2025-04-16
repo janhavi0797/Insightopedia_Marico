@@ -42,6 +42,7 @@ const ngxUiLoaderConfig: NgxUiLoaderConfig = {
   fgsSize: 100,
   fgsPosition: "center-center", // Center the spinner
   logoPosition: "center-center", // Ensure it's inside the spinner
+  hasProgressBar: false, 
 };
 
 
