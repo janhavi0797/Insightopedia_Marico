@@ -7,7 +7,12 @@
             <ng-container>
               <mat-form-field class="mat-fullwidth">
                 <mat-label> Select Tag </mat-label>
-                <mat-select [(ngModel)]="multipleselect" #select (selectionChange)="onTagSelectionChange()" multiple>
+                <mat-select 
+                  [(ngModel)]="multipleselect" 
+                  #select 
+                  (selectionChange)="onTagSelectionChange()"
+                  (openedChange)="onTagDropdownOpened($event)" 
+                  multiple>
                   <mat-option>
                     <ngx-mat-select-search matInput placeholder="Tags"
                                            [placeholderLabel]="'Find Tag...'"
@@ -32,10 +37,15 @@
             <ng-container>
               <mat-form-field class="mat-fullwidth">
                 <mat-label> Select Audio </mat-label>
-                <mat-select [(ngModel)]="multipleAudioSelect" #select1 (selectionChange)="onAudioSelectionChange()" multiple>
+                <mat-select 
+                  [(ngModel)]="multipleAudioSelect" 
+                  #select1 
+                  (selectionChange)="onAudioSelectionChange()" 
+                  (openedChange)="onAudioDropdownOpened($event)"
+                  multiple>
                   <mat-option>
-                    <ngx-mat-select-search matInput placeholder="Tags"
-                                           [placeholderLabel]="'Find Tag...'"
+                    <ngx-mat-select-search matInput placeholder="Audios"
+                                           [placeholderLabel]="'Find Audio...'"
                                            (input)="onAudioSearchDropdown($event)"
                                            [noEntriesFoundLabel]="'No Tag found'">
                       <mat-icon ngxMatSelectSearchClear> </mat-icon>

@@ -37,7 +37,12 @@
           <ng-container>
             <mat-form-field class="example-full-width">
               <mat-label> Search by Project Name </mat-label>
-              <mat-select [(ngModel)]="multipleProjectSelect" #select1 (selectionChange)="onProjectSelectionChange()" multiple>
+              <mat-select 
+                [(ngModel)]="multipleProjectSelect" 
+                #select1 
+                (selectionChange)="onProjectSelectionChange()"
+                (openedChange)="onProjectDropdownOpened($event)"
+                 multiple>
                 <mat-option>
                   <ngx-mat-select-search matInput placeholder="Projects"
                                          [placeholderLabel]="'Find Projects...'"

@@ -46,6 +46,8 @@ export class CreateProjectComponent {
   @ViewChild('select1') select1!: MatSelect;
   filteredAudioFiles : any[] = [];
   originalAudioFiles: AudioFile[] = [];
+  isTagSelected: boolean = false;
+  tagBasedAudioList: any[] = [];
 
   tagList: any[] = [];
    dialogRef!: MatDialogRef<any>;
@@ -276,6 +278,12 @@ export class CreateProjectComponent {
     }
   }
 
+  onTagDropdownOpened(opened: boolean) {
+    if (opened) {
+      this.tagList = [...this.searchTagList];
+    }
+  }
+
   onAudioSearchDropdown(id: any) {
     let searchInput = id.target.value;
     this.audioNames = [];
@@ -291,6 +299,18 @@ export class CreateProjectComponent {
     }
     else {
       this.audioNames = this.searchAudioList;
+    }
+  }
+
+  onAudioDropdownOpened(opened: boolean) {
+    if (opened) {
+      if (this.isTagSelected) {
+        this.audioNames = [...this.tagBasedAudioList]; 
+      }
+      else {
+        this.audioNames = [...this.searchAudioList];
+      }
+      
     }
   }
 
@@ -321,7 +341,6 @@ export class CreateProjectComponent {
   }
 
   onTagSelectionChange() {
-    debugger
     const selectedTags = [...this.multipleselect];
   
     if (selectedTags.length > 0) {
@@ -331,14 +350,17 @@ export class CreateProjectComponent {
   
       this.audioFiles = [...filtered]; // Update main list
       this.filteredAudioFiles = [...filtered];
+      this.isTagSelected = true;
   
       const audioNameSet = new Set(filtered.map(f => f.name));
       this.audioNames = this.searchAudioList.filter(a => audioNameSet.has(a.audioName));
       this.multipleAudioSelect = this.multipleAudioSelect.filter(name => audioNameSet.has(name));
+      this.tagBasedAudioList = [...this.audioNames];
     } else {
       this.audioFiles = [...this.originalAudioFiles]; // Reset
       this.filteredAudioFiles = [...this.originalAudioFiles];
       this.audioNames = [...this.searchAudioList];
+      this.isTagSelected = false;
     }
   }
   

@@ -41,6 +41,8 @@ export class ProjectAnalysisComponent {
   filteredProjectList : any[] = [];
   projectNames: string[] = [];
   userNames: string[] = [];
+  isUserSelected: boolean = false;
+  userBasedProject: any[] = [];
 
   ngOnInit() {
     let code = localStorage.getItem('uId') || '';
@@ -196,6 +198,8 @@ export class ProjectAnalysisComponent {
       this.filterProjectList = this.searchProjectList.filter(p =>
         projectNameSet.has(p.name)
       );
+      this.isUserSelected = true;
+      this.userBasedProject = [...this.filterProjectList];
   
       // Retain only selected project names that are valid
       this.multipleProjectSelect = this.multipleProjectSelect.filter(name =>
@@ -212,6 +216,7 @@ export class ProjectAnalysisComponent {
       this.projectNames = [...this.searchProjectList];
       this.userNames = [...this.searchUserList];
       this.filterUserList = [...this.searchUserList];
+      this.isUserSelected = false;
     }
   
     this.applyCombinedFilter();
@@ -316,6 +321,16 @@ export class ProjectAnalysisComponent {
     }
   }
 
+  onProjectDropdownOpened(opened: boolean) {
+    if (opened) {
+      if (this.isUserSelected) {
+        this.filterProjectList = [...this.userBasedProject];
+      }
+      else{
+        this.filterProjectList = [...this.searchProjectList];
+      }
+    }
+  }
 
   toggleAllSelection() {
     if (this.selUser) {
