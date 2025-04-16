@@ -10,6 +10,8 @@ import { AzureOpenAI } from 'openai';
 import { InjectModel } from '@nestjs/azure-database';
 import { Container } from '@azure/cosmos';
 import {
+  CHAT_PROMPT,
+  CHAT_PROMPT_NEW,
   PROJECT_COMPARE_STATIC_INSTRUCTION,
   STATIC_INSTRUCTION,
 } from 'src/utils';
@@ -155,6 +157,51 @@ export class ChatService {
     }
   }
 
+  // async generateAnswerFromDocumentsWithChunks(
+  //   question: string,
+  //   relatedDocs: Document[],
+  // ): Promise<string> {
+  //   if (!relatedDocs || relatedDocs.length === 0) {
+  //     this.logger.warn('No related documents provided to generate the answer');
+  //     return 'Sorry, I could not find enough information to answer your question.';
+  //   }
+  //   const context = relatedDocs.map((doc) => doc.metadata).join('\n');
+  //   try {
+  //     this.logger.log(
+  //       'Generating answer from OpenAI based on related documents',
+  //     );
+  //     const chunks = this.splitIntoChunks(context, 3000, 250);
+  //     const responses: string[] = [];
+  //     console.log("openaiClientChat-chunks",chunks);
+  //     for (const chunk of chunks) {
+  //       const completionResponse =
+  //         await this.openaiClientChat.chat.completions.create({
+  //           model: 'gpt-4o', // Chat model for generating responses
+  //           messages: [
+  //             {
+  //               role: 'system',
+  //               content: CHAT_PROMPT
+  //                 //'You are a helpful assistant. Use the provided context to answer the question.',
+  //             },
+  //             {
+  //               role: 'user',
+  //               content: `Context:${chunk}\n\nQuestion:${question}`,
+  //             },
+  //           ],
+  //         });
+  //       const answer = completionResponse.choices[0].message.content;
+  //       responses.push(answer);
+  //       this.logger.log('Answer generated successfully');
+  //     }
+  //   } catch (error) {
+  //     this.logger.error('Error generating answer from OpenAI', error.stack);
+  //     throw new InternalServerErrorException(
+  //       'Failed to generate an answer from OpenAI',
+  //     );
+  //   }
+  //   return responses.join('\n');
+  // }
+
   async generateAnswerFromDocumentsWithChunks(
     question: string,
     relatedDocs: Document[],
@@ -163,41 +210,56 @@ export class ChatService {
       this.logger.warn('No related documents provided to generate the answer');
       return 'Sorry, I could not find enough information to answer your question.';
     }
-    const context = relatedDocs.map((doc) => doc.metadata).join('\n');
+  
+    //const context = relatedDocs.map((doc) => doc.metadata).join('\n');
+    const context = relatedDocs.map((doc) => {
+      try {
+        const meta = JSON.parse(doc.metadata);
+        return meta.text || meta.content || ''; // fallback to '' if missing
+      } catch {
+        return doc.metadata; // fallback if it's not JSON
+      }
+    }).join('\n');
+      
     try {
-      this.logger.log(
-        'Generating answer from OpenAI based on related documents',
-      );
+      this.logger.log('Generating answer from OpenAI based on related documents');
+  
       const chunks = this.splitIntoChunks(context, 3000, 250);
       const responses: string[] = [];
-      for (const chunk of chunks) {
+  
+      //console.log("openaiClientChat-chunks", chunks);
+  
+      //for (const chunk of chunks) {
         const completionResponse =
           await this.openaiClientChat.chat.completions.create({
-            model: 'gpt-4o', // Chat model for generating responses
+            model: 'gpt-4o',
             messages: [
               {
                 role: 'system',
-                content:
-                  'You are a helpful assistant. Use the provided context to answer the question.',
+                content: CHAT_PROMPT_NEW,
               },
               {
                 role: 'user',
-                content: `Context: ${chunk}\n\nQuestion: ${question}`,
+                content: `Context:\n${chunks}\n\nQuestion:\n${question}`,
               },
             ],
           });
+  
         const answer = completionResponse.choices[0].message.content;
         responses.push(answer);
         this.logger.log('Answer generated successfully');
-        return responses.join('\n');
-      }
-    } catch (error) {
+     // }
+  
+      // ✅ Final return after processing all chunks
+      return responses.toString();
+      } catch (error) {
       this.logger.error('Error generating answer from OpenAI', error.stack);
       throw new InternalServerErrorException(
         'Failed to generate an answer from OpenAI',
       );
     }
   }
+  
 
   async getPrompResponse(prompt: string, context: string) {
     try {

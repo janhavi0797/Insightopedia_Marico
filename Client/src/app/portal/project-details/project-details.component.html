@@ -207,11 +207,16 @@
           </div>
           <div class="tab-content-search">
             <div class="input-container">
+              <ng-container *ngIf="!isLoading; else loadingTemplate">
               <input type="text" placeholder="Start Typing Here!..." class="text-input" [(ngModel)]="question"
                 (keyup.enter)="sendQuery()" />
               <button class="send-button" (click)="sendQuery()">
                 <mat-icon>search</mat-icon>
               </button>
+            </ng-container>
+            <ng-template #loadingTemplate>
+              <p class="loading-text">Generating response<span class="dot-anim">.</span></p>
+            </ng-template>
             </div>
             <button class="download-chat-button" (click)="downloadChat(audioDetails?.audioId,allAudioDetails?.projectId)">
               <mat-icon>cloud_download</mat-icon>

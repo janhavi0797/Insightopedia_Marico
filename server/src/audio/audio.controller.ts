@@ -80,12 +80,23 @@ export class AudioController {
     // Log the file details
     Logger.log(`Received request to upload ${files.length} files.`);
 
-    const parsedData = JSON.parse(AudioDto);
+    //const parsedData = JSON.parse(AudioDto);
+
+    let parsedData;
+    try {
+      parsedData = JSON.parse(AudioDto);
+    } catch (error) {
+      throw new BadRequestException('Invalid AudioDto JSON format.');
+    }
+    
 
     // Call the service to process the audio files
     try {
-      return await this.audioService.processAudioFiles(parsedData, files);
+      //return await this.audioService.processAudioFiles(parsedData, files);
+      const response = await this.audioService.processAudioFiles(parsedData, files);
+      return response;
     } catch (err) {
+      //console.log("Upload-Controller",err);
       if (err instanceof BadRequestException) {
         throw new BadRequestException(`${err.message}`);
       }

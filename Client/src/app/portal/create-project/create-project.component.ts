@@ -66,7 +66,7 @@ export class CreateProjectComponent {
     this.userRole = localStorage.getItem('role') || '';
     this.userCode = localStorage.getItem('uId') || '';
     if (this.userRole === "1") {
-      this.userCode = '';
+      //this.userCode = '';
     }
     this.getTagsWiseAudio();
   }
@@ -84,7 +84,9 @@ export class CreateProjectComponent {
         this.audioNames = res.data.audioData;
         this.searchAudioList = this.audioNames;
 
-        this.audioFiles = res.data.audioData.map((audio: any) => ({
+        this.audioFiles = res.data.audioData
+        .filter((audio: any) => audio.uploadStatus === 1)
+        .map((audio: any) => ({
           name: audio.audioName,
           url: audio.audioUrl,
           tags: audio.tags,

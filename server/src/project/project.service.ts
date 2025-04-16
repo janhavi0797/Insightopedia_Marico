@@ -60,6 +60,7 @@ export class ProjectService {
       projectObj.projectName = project.projectName;
       projectObj.userId = project.userId;
       projectObj.audioIds = project?.audioIds?.map((audio) => audio?.audioId);
+      projectObj.isSummaryAndSentimentDone=false;
 
       const checkExistingProject = await this.projectContainer.items
         .query({
@@ -244,8 +245,15 @@ export class ProjectService {
         userName,
         projectName: project.projectName,
         projectId: project.projectId,
-        status: project.isSummaryAndSentimentDone ? 1 : 0,
+        //status: project.isSummaryAndSentimentDone ? 1 : 0,
+        status:
+              project.isSummaryAndSentimentDone === '' || project.isSummaryAndSentimentDone === undefined
+              ? 2
+              : project.isSummaryAndSentimentDone
+                ? 1
+                : 0,
         projectCreatedAt:this.formatToIST(project._ts),
+        Newstatus:project.isSummaryAndSentimentDone
       };
     });
 

@@ -7,7 +7,6 @@ import {
 } from '@nestjs/common';
 import { promisify } from 'util';
 import { exec } from 'child_process';
-import * as ffmpeg from 'fluent-ffmpeg';
 import { InjectModel } from '@nestjs/azure-database';
 import { Container } from '@azure/cosmos';
 import { ConfigService } from '@nestjs/config';
@@ -30,9 +29,20 @@ import { Response } from 'express';
 import { BullQueues, QueueProcess } from 'src/utils/enums';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
+import { PassThrough } from 'stream';
+import * as fs from 'fs';
+import * as tmp from 'tmp';
+
+
+const ffmpeg = require('fluent-ffmpeg');
+const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
+const ffprobeInstaller = require('@ffprobe-installer/ffprobe');
+
+ffmpeg.setFfmpegPath(ffmpegInstaller.path);
+ffmpeg.setFfprobePath(ffprobeInstaller.path);
 
 // const unlinkAsync = promisify(fs.unlink);
-ffmpeg.setFfmpegPath('/home/high.pimatri/Insightopedia/server/ffmpeg/ffmpeg.exe');
+//ffmpeg.setFfmpegPath('/home/high.pimatri/Insightopedia/server/ffmpeg/ffmpeg.exe');
 const execAsync = promisify(exec);
 
 @Injectable()
@@ -55,66 +65,125 @@ export class AudioService {
     );
   }
 
-  async processAudioFiles(uploadAudioDto: any, files: Express.Multer.File[]) {
-    const audioNames = uploadAudioDto.map((audio) => audio.audioName);
-
-    if (audioNames.length === 0) {
-      throw new Error('No audio names provided.');
+  async processAudioFiles(uploadAudioDto: any[], files: Express.Multer.File[]) {
+    if (!uploadAudioDto?.length || !files?.length) {
+      throw new BadRequestException('No audio files or metadata provided.');
     }
-
-    // Query to check if any of these audioNames already exist
+  
+    const audioNames = uploadAudioDto.map(audio => audio.audioName);
+  
+    // Check for duplicates in DB
     const audioQuerySpec = {
-      query: `
-        SELECT * FROM c 
-        WHERE ARRAY_CONTAINS(@audioName, c.audioName)
-      `,
-      parameters: [{ name: '@audioName', value: audioNames }],
+      query: `SELECT * FROM c WHERE ARRAY_CONTAINS(@audioNames, c.audioName)`,
+      parameters: [{ name: '@audioNames', value: audioNames }],
     };
-
+  
     const { resources: existingAudios } = await this.audioContainer.items
       .query(audioQuerySpec)
       .fetchAll();
-
+  
     if (existingAudios.length > 0) {
-      const existingNames = existingAudios
-        .map((audio) => audio.audioName)
-        .join(', ');
-      throw new BadRequestException(
-        `Audio name already exist: ${existingNames}`,
-      );
+      const existingNames = existingAudios.map(a => a.audioName).join(', ');
+      throw new BadRequestException(`Audio name(s) already exist: ${existingNames}`);
     }
-
-    await this.uploadQueue.add(QueueProcess.UPLOAD_AUDIO, {
-      files,
-      uploadAudioDto,
-    });
-
-    const processedData = uploadAudioDto.map((audioObj) => ({
-      audioId: uuidv4(),
-      audioName: audioObj.audioName,
-      audioDate: audioObj.audioDate,
-      userId: audioObj.userId,
-      uploadStatus: 0,
-      noOfSpek: audioObj.noOfSpek,
-      primaryLang: audioObj.primary_lang,
-      secondaryLang: audioObj.secondary_lang,
-      tags: audioObj.tags,
-    }));
-
-    try {
-      for (const items of processedData) {
-        await this.audioContainer.items.create(items);
+  
+    const filteredUploadFiles: {
+      file: Express.Multer.File;
+      uploadAudioDto: any;
+      fileUploadStatus: number;
+    }[] = [];
+  
+   // console.log("before uploadQueue");
+  
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const audioDto = uploadAudioDto[i];
+  
+      let buffer: Buffer;
+      try {
+        if (Buffer.isBuffer(file.buffer)) {
+          buffer = file.buffer;
+        } else if ((file.buffer as any)?.data) {
+          buffer = Buffer.from((file.buffer as any).data);
+        } else {
+          throw new Error(`Unsupported buffer format for file: ${file.originalname}`);
+        }
+  
+        const ext = file.originalname.split('.').pop() || 'mp4';
+        const tempFile = tmp.fileSync({ postfix: `.${ext}` });
+        fs.writeFileSync(tempFile.name, buffer);
+  
+        const hasAudio = await new Promise<boolean>((resolve, reject) => {
+          ffmpeg.ffprobe(tempFile.name, (err, metadata) => {
+            tempFile.removeCallback(); // Clean up
+            if (err) {
+              console.error(`ffprobe error for ${file.originalname}:`, err.message);
+              resolve(false);
+            } else {
+              const audioStream = metadata.streams?.some(stream => stream.codec_type === 'audio');
+              resolve(audioStream);
+            }
+          });
+        });
+  
+        filteredUploadFiles.push({
+          file,
+          uploadAudioDto: audioDto,
+          fileUploadStatus: hasAudio ? 1 : 0,
+        });
+  
+      } catch (error) {
+        console.error(`Error processing file ${file.originalname}:`, error);
+        filteredUploadFiles.push({
+          file,
+          uploadAudioDto: audioDto,
+          fileUploadStatus: 0, // Mark as failed
+        });
       }
+    }
+  
+    const validFilesToUpload = filteredUploadFiles
+      .filter(f => f.fileUploadStatus === 1)
+      .map(f => ({
+        file: f.file,
+        uploadAudioDto: { ...f.uploadAudioDto }
+      }));
+  
+    // Background upload
+     this.runBackgroundUpload({
+      files: validFilesToUpload.map(f => f.file),
+      uploadAudioDto: validFilesToUpload.map(f => f.uploadAudioDto),
+    });
+  
+    //console.log("after uploadQueue");
+  
+    const processedData = filteredUploadFiles.map(item => ({
+      audioId: uuidv4(),
+      audioName: item.uploadAudioDto.audioName,
+      audioDate: item.uploadAudioDto.audioDate,
+      userId: item.uploadAudioDto.userId,
+      uploadStatus: item.fileUploadStatus === 0 ? 2 : 0, // 2 = invalid, 0 = uploaded
+      noOfSpek: item.uploadAudioDto.noOfSpek,
+      primaryLang: item.uploadAudioDto.primary_lang,
+      secondaryLang: item.uploadAudioDto.secondary_lang,
+      tags: item.uploadAudioDto.tags,
+    }));
+  
+    try {
+      for (const item of processedData) {
+        await this.audioContainer.items.create(item);
+      }
+  
       return {
         statusCode: 200,
-        message: 'File Uploaded successfully.',
+        message: 'Files processed successfully.',
       };
     } catch (err) {
-      Logger.error(`${err.message}`);
-      throw new InternalServerErrorException(`${err.message}`);
+      Logger.error(`Failed to insert metadata: ${err.message}`);
+      throw new InternalServerErrorException('Audio metadata insertion failed.');
     }
   }
-
+  
   // Get Audio ALL and User with unique tag
   async getAudio(userId?: string) {
     try {
@@ -707,4 +776,24 @@ export class AudioService {
       };
     }
   }
+
+  async runBackgroundUpload({
+    uploadAudioDto,
+    files,
+  }: {
+    uploadAudioDto: any;
+    files: Express.Multer.File[];
+  }) {
+    Logger.log('Enqueuing audio transcription job...');
+    try {
+      await this.uploadQueue.add(QueueProcess.UPLOAD_AUDIO, {
+        files,
+        uploadAudioDto,
+      });
+    } catch (error) {
+      Logger.error(`Failed to enqueue transcription job: ${error.message}`);
+      throw new InternalServerErrorException('Failed to enqueue transcription job');
+    }
+  }
+  
 }
