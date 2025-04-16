@@ -2,10 +2,8 @@ import { Component, TemplateRef, ViewChild } from '@angular/core';
 import { environment } from 'src/environments/environment';
 import { CommonService } from '../service/common.service';
 import { ToastrService } from 'ngx-toastr';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { Router } from '@angular/router';
-import { FormControl } from '@angular/forms';
 import { MatSelect } from '@angular/material/select';
 import { MatOption } from '@angular/material/core';
 
@@ -33,13 +31,21 @@ export class CreateProjectComponent {
   userRole: any; projectName = '';
   audioNames: string[] = [];
   selectedTags: string[] = [];
-  selectedTag: string = '';
   audioFiles: AudioFile[] = [];
-  filterOption: string = '1';
-  selectedAudio: string = '';
   selectedAudios: string[] = [];
   imageBasePath: string = environment.imageBasePath;
   isShowFooter: boolean = false;
+
+  multipleselect: any[] = [];
+  multipleAudioSelect: any[] = [];
+  searchTagList: any[] = [];
+  searchAudioList: any[] = [];
+  selTag = false;
+  selAudioTag = false;
+  @ViewChild('select') select!: MatSelect;
+  @ViewChild('select1') select1!: MatSelect;
+  filteredAudioFiles : any[] = [];
+  originalAudioFiles: AudioFile[] = [];
 
   tagList: any[] = [];
    dialogRef!: MatDialogRef<any>;
@@ -60,25 +66,21 @@ export class CreateProjectComponent {
     if (this.userRole === "1") {
       this.userCode = '';
     }
-
-    //this.dbCodeList = this.searchDBCodeList;
-
     this.getTagsWiseAudio();
   }
 
 
   getTagsWiseAudio() {
-    debugger
     let userCode = '';
     userCode = this.userRole === "1" ? '' : this.userCode;
     this.commonServ.showSpin();
     this.commonServ.getTagwiseAudio('audio/all', userCode).subscribe(
       (res: any) => {
-        debugger
         this.commonServ.hideSpin();
         this.tagList = res.data.allUniqueTags;
         this.searchTagList = this.tagList;
         this.audioNames = res.data.audioData;
+        this.searchAudioList = this.audioNames;
 
         this.audioFiles = res.data.audioData.map((audio: any) => ({
           name: audio.audioName,
@@ -90,6 +92,8 @@ export class CreateProjectComponent {
           durationTime: '0:00',
           audioId: audio.audioId,
         }));
+
+        this.originalAudioFiles = this.audioFiles;
       },
       (err: any) => {
         this.commonServ.hideSpin();
@@ -98,57 +102,12 @@ export class CreateProjectComponent {
     );
   }
 
-  filterByTag() {
-    if (this.selectedTag && !this.selectedTags.includes(this.selectedTag)) {
-      this.selectedTags.push(this.selectedTag);
-    }
-    this.selectedTag = '';
-  }
-
-  filterByAudio() {
-    if (this.selectedAudio && !this.selectedAudios.includes(this.selectedAudio)) {
-      this.selectedAudios.push(this.selectedAudio);
-    }
-    this.selectedAudio = '';
-  }
-
-  removeTag(tag: string) {
-    this.selectedTags = this.selectedTags.filter(t => t !== tag);
-  }
-
-  removeAudio(audio: string) {
-    this.selectedAudios = this.selectedAudios.filter(t => t !== audio);
-  }
-
   filteredAudios(): string[] {
     if (!this.audioNames) return [];
 
     const audioNameSet = new Set(this.audioNames.map((audio: any) => audio.audioName));
     return Array.from(audioNameSet);
   }
-
-  // getFilteredAudioFiles(): AudioFile[] {
-  //   let filteredFiles: AudioFile[] = [];
-
-  //   if (this.filterOption === '1' && this.selectedTags.length) {
-  //     filteredFiles = this.audioFiles.filter(file =>
-  //       file.tags?.some(tag => this.selectedTags.includes(tag))
-  //     );
-  //   } else if (this.filterOption === '2' && this.selectedAudios.length) {
-  //     filteredFiles = this.audioFiles.filter(file =>
-  //       this.selectedAudios.includes(file.name)
-  //     );
-  //   } else {
-  //     filteredFiles = [...this.audioFiles];
-  //   }
-
-  //   // Ensure previously selected files are included
-  //   const selectedOnly = this.selectedArr.filter(sel =>
-  //     !filteredFiles.some(f => f.name === sel.name && f.url === sel.url)
-  //   );
-
-  //   return [...selectedOnly, ...filteredFiles];
-  // }
 
   //Media Code
   isPlayingIndexMap: { expansion: number | null; audioFiles: number | null } = {
@@ -198,14 +157,6 @@ export class CreateProjectComponent {
   isPlaying(index: number, section: 'expansion' | 'audioFiles'): boolean {
     return this.isPlayingIndexMap[section] === index;
   }
-
-  // Delete file functionality
-  //  deleteFile(index: number): void {
-  //   this.audioFiles.splice(index, 1);
-  //   if (this.isPlayingIndex === index) {
-  //     this.isPlayingIndex = null;
-  //   }
-  // }
 
   seekAudio(event: any, index: number, audioList: any[]): void {
     const audio = document.querySelectorAll('audio')[index] as HTMLAudioElement;
@@ -299,8 +250,6 @@ export class CreateProjectComponent {
     this.selectedArr = [];
     this.selectedTags = [];
     this.selectedAudios = [];
-    this.selectedAudio = '';
-    this.selectedTag = '';
     this.dialogRef.close();
   }
 
@@ -309,18 +258,7 @@ export class CreateProjectComponent {
     this.router.navigate(['/portal/project-analysis']);
   }
 
-
-  
-
-  multipleselect: any[] = [];
-  searchTagList: any[] = [];
-  selTag = false;
-  @ViewChild('select') select!: MatSelect;
-  AllDistributor = "";
-  filteredAudioFiles : any[] = [];
-
-  onDistSearchDropdown(id: any) {
-    debugger
+  onTagSearchDropdown(id: any) {
     let searchInput = id.target.value;
     this.tagList = [];
     let search = searchInput.toLowerCase();
@@ -338,8 +276,25 @@ export class CreateProjectComponent {
     }
   }
 
+  onAudioSearchDropdown(id: any) {
+    let searchInput = id.target.value;
+    this.audioNames = [];
+    let search = searchInput.toLowerCase();
+    if (search.length > 0) {
+      const temp = this.searchAudioList.filter(d => {
+        if (search.includes(d))
+          return d.audioName?.toLowerCase().indexOf(search) !== 1;
+        else
+          return d.audioName?.toLowerCase().indexOf(search) !== -1;
+      });
+      this.audioNames = temp;
+    }
+    else {
+      this.audioNames = this.searchAudioList;
+    }
+  }
+
   toggleAllSelection() {
-    debugger
     if (this.selTag) {
       this.select.options.forEach((item: MatOption) => item.select());
       this.multipleselect = this.tagList.map(tag => tag.name);
@@ -347,37 +302,87 @@ export class CreateProjectComponent {
     else {
       this.select.options.forEach((item: MatOption) => item.deselect());
       this.multipleselect = [];
-      this.AllDistributor = "";
     }
 
     this.onTagSelectionChange();
   }
 
+  toggleAllAudioSelection() {
+    if (this.selAudioTag) {
+      this.select1.options.forEach((item: MatOption) => item.select());
+      this.multipleAudioSelect = [...this.audioNames];
+    }
+    else {
+      this.select.options.forEach((item: MatOption) => item.deselect());
+      this.multipleAudioSelect = [];
+    }
+
+    this.onAudioSelectionChange();
+  }
+
   onTagSelectionChange() {
     debugger
-    this.selectedTags = [...this.multipleselect];
-    this.filteredAudioFiles = this.getFilteredAudioFiles();
+    const selectedTags = [...this.multipleselect];
+  
+    if (selectedTags.length > 0) {
+      const filtered = this.originalAudioFiles.filter(file =>
+        file.tags?.some(tag => selectedTags.includes(tag))
+      );
+  
+      this.audioFiles = [...filtered]; // Update main list
+      this.filteredAudioFiles = [...filtered];
+  
+      const audioNameSet = new Set(filtered.map(f => f.name));
+      this.audioNames = this.searchAudioList.filter(a => audioNameSet.has(a.audioName));
+      this.multipleAudioSelect = this.multipleAudioSelect.filter(name => audioNameSet.has(name));
+    } else {
+      this.audioFiles = [...this.originalAudioFiles]; // Reset
+      this.filteredAudioFiles = [...this.originalAudioFiles];
+      this.audioNames = [...this.searchAudioList];
+    }
+  }
+  
+  onAudioSelectionChange() {
+    const selectedAudioNames = [...this.multipleAudioSelect];
+  
+    if (selectedAudioNames.length > 0) {
+      const selectedAudioObjs = this.originalAudioFiles.filter(file =>
+        selectedAudioNames.includes(file.name)
+      );
+  
+      this.audioFiles = [...selectedAudioObjs]; // Update main list
+      this.filteredAudioFiles = [...selectedAudioObjs];
+  
+      const tagSet = new Set(selectedAudioObjs.flatMap(audio => audio.tags));
+      this.tagList = this.searchTagList.filter(tag => tagSet.has(tag.name));
+      this.multipleselect = this.multipleselect.filter(tag => tagSet.has(tag));
+    } else {
+      this.audioFiles = [...this.originalAudioFiles]; // Reset
+      this.filteredAudioFiles = [...this.originalAudioFiles];
+      this.tagList = [...this.searchTagList];
+    }
   }
 
   getFilteredAudioFiles(): AudioFile[] {
-    let filteredFiles: AudioFile[] = [];
+    const tagsSelected = this.multipleselect.length > 0;
+    const audiosSelected = this.multipleAudioSelect.length > 0;
   
-    if (this.selectedTags && this.selectedTags.length > 0) {
-      filteredFiles = this.audioFiles.filter(file =>
-        file.tags?.some(tag => this.selectedTags.includes(tag))
+    if (tagsSelected && audiosSelected) {
+      return this.audioFiles.filter(file =>
+        this.multipleAudioSelect.includes(file.name) &&
+        file.tags?.some(tag => this.multipleselect.includes(tag))
       );
-    } else {
-      // No tags selected — return all audio files
-      filteredFiles = [...this.audioFiles];
+    } else if (tagsSelected) {
+      return this.audioFiles.filter(file =>
+        file.tags?.some(tag => this.multipleselect.includes(tag))
+      );
+    } else if (audiosSelected) {
+      return this.audioFiles.filter(file =>
+        this.multipleAudioSelect.includes(file.name)
+      );
     }
   
-    // Include previously selected files that aren't in the filter result
-    const selectedOnly = this.selectedArr.filter(sel =>
-      !filteredFiles.some(f => f.name === sel.name && f.url === sel.url)
-    );
-  
-    return [...selectedOnly, ...filteredFiles];
+    return [...this.audioFiles];
   }
-
   
 }

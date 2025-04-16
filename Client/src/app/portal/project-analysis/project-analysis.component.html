@@ -9,28 +9,54 @@
               files</span></button>
         </div>
         <div class="allfiles-container-header-search">
-          <form class="example-form">
+          
+          <ng-container>
             <mat-form-field class="example-full-width">
-              <mat-label>Search by User Name</mat-label>
-              <input type="text" placeholder="Search User Name" aria-label="UserName" matInput [formControl]="myUserControl"
-                [matAutocomplete]="autoUser" (keyup)="emptyUser()">
-              <mat-autocomplete #autoUser="matAutocomplete" (optionSelected)="onOptionSelectedUser($event)">
-                <mat-option *ngFor="let option of filteredOptionsUser | async;"
-                  [value]="option?.userName">{{option?.userName}}</mat-option>
-              </mat-autocomplete>
-            </mat-form-field>
-          </form>
-          <form class="example-form">
+              <mat-label> Search by User Name </mat-label>
+              <mat-select [(ngModel)]="multipleselect" #select (selectionChange)="onUserSelectionChange()" multiple>
+                <mat-option>
+                  <ngx-mat-select-search matInput placeholder="Users"
+                                         [placeholderLabel]="'Find Users...'"
+                                         (input)="onUserSearchDropdown($event)"
+                                         [noEntriesFoundLabel]="'No User found'">
+                    <mat-icon ngxMatSelectSearchClear> </mat-icon>
+                  </ngx-mat-select-search>
+                </mat-option>
+                <div class="select-all">
+                  <mat-checkbox id="user" [(ngModel)]="selUser"
+                                [ngModelOptions]="{standalone: true}"
+                                (change)="toggleAllSelection()"> Select All </mat-checkbox>
+                </div>
+                <mat-option *ngFor="let option of filterUserList" [value]="option?.name">
+                  {{option?.name}}
+                </mat-option>
+              </mat-select>
+             </mat-form-field>
+          </ng-container>
+
+          <ng-container>
             <mat-form-field class="example-full-width">
-              <mat-label>Search by Project Name</mat-label>
-              <input type="text" placeholder="Search Project Name" aria-label="projectName" matInput [formControl]="myControl"
-                [matAutocomplete]="auto" (keyup)="emptyProject()">
-              <mat-autocomplete #auto="matAutocomplete" (optionSelected)="onOptionSelectedProject($event)">
-                <mat-option *ngFor="let option of filteredOptionsProject | async;"
-                  [value]="option?.projectName">{{option?.projectName}}</mat-option>
-              </mat-autocomplete>
-            </mat-form-field>
-          </form>
+              <mat-label> Search by Project Name </mat-label>
+              <mat-select [(ngModel)]="multipleProjectSelect" #select1 (selectionChange)="onProjectSelectionChange()" multiple>
+                <mat-option>
+                  <ngx-mat-select-search matInput placeholder="Projects"
+                                         [placeholderLabel]="'Find Projects...'"
+                                         (input)="onProjectSearchDropdown($event)"
+                                         [noEntriesFoundLabel]="'No Project found'">
+                    <mat-icon ngxMatSelectSearchClear> </mat-icon>
+                  </ngx-mat-select-search>
+                </mat-option>
+                <div class="select-all">
+                  <mat-checkbox id="project" [(ngModel)]="selProject"
+                                [ngModelOptions]="{standalone: true}"
+                                (change)="toggleAllProjectSelection()"> Select All </mat-checkbox>
+                </div>
+                <mat-option *ngFor="let option of filterProjectList" [value]="option?.name">
+                  {{option?.name}}
+                </mat-option>
+              </mat-select>
+             </mat-form-field>
+          </ng-container>
         </div>
       </div>   
 
