@@ -72,7 +72,9 @@ export class CreateProjectComponent {
         this.tagList = res.data.allUniqueTags;
         this.audioNames = res.data.audioData;
 
-        this.audioFiles = res.data.audioData.map((audio: any) => ({
+        this.audioFiles = res.data.audioData
+        .filter((audio: any) => audio.uploadStatus === 1)
+        .map((audio: any) => ({
           name: audio.audioName,
           url: audio.audioUrl,
           tags: audio.tags,
@@ -82,6 +84,7 @@ export class CreateProjectComponent {
           durationTime: '0:00',
           audioId: audio.audioId,
         }));
+      
       },
       (err: any) => {
         this.commonServ.hideSpin();

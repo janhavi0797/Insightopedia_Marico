@@ -21,6 +21,7 @@ export class ProjectDetailsComponent {
   seekValue: number = 0;
   tgId: string = '';
   tgName: string = ''
+  isLoading: boolean = false;
 
   isPlaying = false;
   audioDetails: any;
@@ -165,16 +166,19 @@ export class ProjectDetailsComponent {
         question: this.question,
         vectorId: this.audioDetails?.vectorId ?? ['']
       }
-      this.common.showSpin();
+      //this.common.showSpin();
+      this.isLoading = true;
       this.audioServ.sendQueryAI('chat/chatVectorId', payload).subscribe((res: any) => {
-        this.common.hideSpin();
+        //this.common.hideSpin();
+        this.isLoading = false;
         this.audioServ.messageHistory.next({
           from: 'AI',
           message: res.answer
         });
         this.question = '';
       }, (err: any) => {
-        this.common.hideSpin();
+       // this.common.hideSpin();
+       this.isLoading = false;
         this.toastr.error('Something Went Wrong!')
       })
     } else {
