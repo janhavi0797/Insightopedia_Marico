@@ -48,6 +48,8 @@ export class CreateProjectComponent {
   originalAudioFiles: AudioFile[] = [];
   isTagSelected: boolean = false;
   tagBasedAudioList: any[] = [];
+  switchToggle: boolean = true;
+  toggleValue: string = 'all';
 
   tagList: any[] = [];
    dialogRef!: MatDialogRef<any>;
@@ -344,26 +346,69 @@ export class CreateProjectComponent {
 
   onTagSelectionChange() {
     const selectedTags = [...this.multipleselect];
+
+    if (selectedTags.length > 0) {
+      this.switchToggle = true;
+    }
+    else {
+      this.switchToggle = false;
+      this.toggleValue = 'all'; 
+    }
+  
+    if (this.toggleValue === 'all' && this.switchToggle === false) {
+      this.toggleValue = 'all';
+
+          this.audioFiles = [...this.originalAudioFiles]; // Reset
+          this.filteredAudioFiles = [...this.originalAudioFiles];
+          this.audioNames = [...this.searchAudioList];
+          this.isTagSelected = false;
+          return;
+    }
   
     if (selectedTags.length > 0) {
-      const filtered = this.originalAudioFiles.filter(file =>
-        file.tags?.some(tag => selectedTags.includes(tag))
-      );
+      let filtered: AudioFile[] = [];
   
-      this.audioFiles = [...filtered]; // Update main list
+      if (this.toggleValue === 'and') {
+          if (selectedTags.length === 1) {
+            filtered = this.originalAudioFiles.filter(file =>
+              Array.isArray(file.tags) &&
+              file.tags.length === 1 &&
+              file.tags[0] === selectedTags[0]
+            );
+          }
+          else {
+            filtered = this.originalAudioFiles.filter(file =>
+              Array.isArray(file.tags) &&
+              selectedTags.every(tag => file.tags.includes(tag))
+            );
+          }
+
+      } else if (this.toggleValue === 'or') {
+        filtered = this.originalAudioFiles.filter(file =>
+          file.tags?.some(tag => selectedTags.includes(tag))
+        );
+      } else if (this.toggleValue === 'all' && this.switchToggle === true) {
+        filtered = this.originalAudioFiles.filter(file =>
+          file.tags?.some(tag => selectedTags.includes(tag))
+        );
+        this.toggleValue = 'or';
+      }
+    
+      this.audioFiles = [...filtered];
       this.filteredAudioFiles = [...filtered];
       this.isTagSelected = true;
-  
+    
       const audioNameSet = new Set(filtered.map(f => f.name));
       this.audioNames = this.searchAudioList.filter(a => audioNameSet.has(a.audioName));
       this.multipleAudioSelect = this.multipleAudioSelect.filter(name => audioNameSet.has(name));
       this.tagBasedAudioList = [...this.audioNames];
-    } else {
-      this.audioFiles = [...this.originalAudioFiles]; // Reset
-      this.filteredAudioFiles = [...this.originalAudioFiles];
-      this.audioNames = [...this.searchAudioList];
-      this.isTagSelected = false;
     }
+    else {
+          this.audioFiles = [...this.originalAudioFiles]; // Reset
+          this.filteredAudioFiles = [...this.originalAudioFiles];
+          this.audioNames = [...this.searchAudioList];
+          this.isTagSelected = false;
+        }    
   }
   
   onAudioSelectionChange() {
@@ -407,6 +452,27 @@ export class CreateProjectComponent {
     }
   
     return [...this.audioFiles];
+  }
+
+  onToggleChange(event: any) {
+    const selectedToggle = event.value;
+
+    if (this.multipleselect.length === 0 && selectedToggle !== 'all') {
+      this.toastr.warning('Kindly select at least one tag to filter audio files.');
+      setTimeout(() => {
+        this.toggleValue = 'all';
+      });
+      return; 
+    }
+    else if (selectedToggle === 'all') {
+        this.multipleselect = [];
+        this.switchToggle = false;
+        this.onTagSelectionChange();
+    }
+    else {
+      this.toggleValue = selectedToggle;
+      this.onTagSelectionChange();
+    }
   }
   
 }

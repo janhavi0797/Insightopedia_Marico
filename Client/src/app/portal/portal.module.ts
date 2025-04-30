@@ -40,6 +40,7 @@ import { FormatTextPipe } from '../shared/format-text.pipe';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatChipsModule } from '@angular/material/chips';
 import { NgxMatSelectSearchModule } from 'ngx-mat-select-search';
+import {MatButtonToggleModule} from '@angular/material/button-toggle';
 
 @NgModule({
   declarations: [
@@ -84,7 +85,8 @@ import { NgxMatSelectSearchModule } from 'ngx-mat-select-search';
     MatRadioModule,
     MatSnackBarModule,
     MatChipsModule,
-    NgxMatSelectSearchModule
+    NgxMatSelectSearchModule,
+    MatButtonToggleModule
   ],
   providers: [AudioService]
 })
