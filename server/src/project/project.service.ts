@@ -13,7 +13,7 @@ import { v4 as uuid } from 'uuid';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { BullQueues, QueueProcess, ResponseStatus } from 'src/utils/enums';
-import { ITranscriptionProcessor } from 'src/utils/interfaces';
+import { ISummaryProcessor, ITranscriptionProcessor } from 'src/utils/interfaces';
 import {
   BlobSASPermissions,
   BlobServiceClient,
@@ -28,17 +28,21 @@ import {
 } from './dtos/get_project_details.dto';
 import { EmailHelper } from 'src/utils';
 import { DateTime } from 'luxon';
+import { AudioUtils } from 'src/utils';
 
 @Injectable()
 export class ProjectService {
   private blobServiceClient: BlobServiceClient;
   private containerClient: any;
+  private readonly audioService:AudioUtils;
   private readonly config = new ConfigService();
   constructor(
     @InjectModel(ProjectEntity) private readonly projectContainer: Container,
     @InjectModel(AudioEntity) private readonly audioContainer: Container,
     @InjectQueue(BullQueues.TRANSCRIPTION)
     private readonly transcriptionQueue: Queue,
+    @InjectQueue(BullQueues.SUMMARY) 
+    private readonly summaryQueue: Queue,
     @Inject('RedisService') private readonly redisService,
     @InjectModel(User) private readonly userContainer: Container,
     private readonly emailService:EmailHelper
@@ -61,6 +65,7 @@ export class ProjectService {
       projectObj.userId = project.userId;
       projectObj.audioIds = project?.audioIds?.map((audio) => audio?.audioId);
       projectObj.isSummaryAndSentimentDone=false;
+      projectObj.projectStatus=0;
 
       const checkExistingProject = await this.projectContainer.items
         .query({
@@ -102,26 +107,59 @@ export class ProjectService {
             })
             .fetchAll();
 
-          const sasToken = await this.generateBlobSasUrl(
-            audioResult?.resources[0]?.audioName,
-          );
+            audioResult?.resources?.forEach(async (element,index) => {
+              if(element.combinedTranslation){
+                const summaryJob: ISummaryProcessor = {
+                  updatedTextArray:audioResult?.resources[index]?.audiodata,
+                  combinedTranslation:audioResult?.resources[index]?.combinedTranslation,
+                  audioId:audioResult?.resources[index]?.audioId,
+                  fileName:audioResult?.resources[index]?.fileName,
+                  projectId:projectObj.projectId,
+                };
+                await this.summaryQueue.add(QueueProcess.SUMMARY_AUDIO, summaryJob);
+              }
+              else{
+                const sasToken = await this.generateBlobSasUrl(
+                  audioResult?.resources[0]?.audioName,
+                );
+      
+                const audioData: Partial<ITranscriptionProcessor> = {
+                  audioId: audioResult.resources[index]?.audioId,
+                  primaryLang: audioResult.resources[index]?.primaryLang,
+                  secondaryLang: audioResult.resources[index]?.secondaryLang,
+                  noOfSpek: audioResult.resources[index]?.noOfSpek,
+                  fileName: audioResult?.resources[index]?.audioName,
+                  sasToken: sasToken,
+                };
+                this.transcriptionQueue.add(QueueProcess.TRANSCRIPTION_AUDIO, {
+                  ...audioData,
+                  projectId: projectObj.projectId,
+                });
+                Logger.log(
+                  `Transcription job for ${audio.audioId} enqueued successfully`,
+                );
+              }
+            });
 
-          const audioData: Partial<ITranscriptionProcessor> = {
-            audioId: audioResult.resources[0]?.audioId,
-            primaryLang: audioResult.resources[0]?.primaryLang,
-            secondaryLang: audioResult.resources[0]?.secondaryLang,
-            noOfSpek: audioResult.resources[0]?.noOfSpek,
-            fileName: audioResult?.resources[0]?.audioName,
-            sasToken: sasToken,
-          };
-          this.transcriptionQueue.add(QueueProcess.TRANSCRIPTION_AUDIO, {
-            ...audioData,
-            projectId: projectObj.projectId,
-          });
+             
+          // const sasToken = await this.generateBlobSasUrl(
+          //   audioResult?.resources[0]?.audioName,
+          // );
 
-          Logger.log(
-            `Transcription job for ${audio.audioId} enqueued successfully`,
-          );
+          // const audioData: Partial<ITranscriptionProcessor> = {
+          //   audioId: audioResult.resources[0]?.audioId,
+          //   primaryLang: audioResult.resources[0]?.primaryLang,
+          //   secondaryLang: audioResult.resources[0]?.secondaryLang,
+          //   noOfSpek: audioResult.resources[0]?.noOfSpek,
+          //   fileName: audioResult?.resources[0]?.audioName,
+          //   sasToken: sasToken,
+          // };
+          // this.transcriptionQueue.add(QueueProcess.TRANSCRIPTION_AUDIO, {
+          //   ...audioData,
+          //   projectId: projectObj.projectId,
+          // });
+
+        
         });
         Promise.all(audioPromises).then(() => {
           Logger.log(`Transcription jobs enqueued successfully`);
@@ -246,12 +284,7 @@ export class ProjectService {
         projectName: project.projectName,
         projectId: project.projectId,
         //status: project.isSummaryAndSentimentDone ? 1 : 0,
-        status:
-              project.isSummaryAndSentimentDone === '' || project.isSummaryAndSentimentDone === undefined
-              ? 2
-              : project.isSummaryAndSentimentDone
-                ? 1
-                : 0,
+        status: project.projectStatus,
         projectCreatedAt:this.formatToIST(project._ts),
         Newstatus:project.isSummaryAndSentimentDone
       };

@@ -27,7 +27,8 @@ export class FormatTextPipe implements PipeTransform {
   // Convert headings only if markdown is present
   if (!containsMarkdown) {
  // Ensure proper sentence-based bullet points
- value = value.replace(/([^.?!]+[.?!])\s*/g, '<p>• $1</p>\n');
+//  value = value.replace(/([^.?!]+[.?!])\s*/g, '<p>• $1</p>\n'); 
+value = value.replace(/\n\n/g, '<br/><br/>');
   }
    // Remove Markdown symbols (### -> <h1> and ** -> <h2>)
    value = value.replace(/###\s*(.*)/g, '<h1>$1</h1>');

@@ -23,7 +23,7 @@ import { BullQueues, QueueProcess } from './enums';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { EmailHelper } from './email.helper';
-
+const pLimit = require('p-limit');
 export interface Document {
   id: string; // Document ID
   metadata: string; // The text content of the document
@@ -251,82 +251,159 @@ export class AudioUtils {
   }
 
   async getSummaryAndSentiments(purpose: string, text: string) {
-    const deployment = this.AZURE_OPENAI_DEPLOYMENT;
-    const apiVersion = this.AZURE_OPEN_AI_VERSION;
-    const apiKey = this.AZURE_OPENAI_API_KEY;
-    const endpoint = this.AZURE_OPENAI_ENDPOINT;
-
-    const options = { endpoint, apiKey, apiVersion, deployment };
-    const client = new AzureOpenAI(options);
-
-    // 1️⃣ **Split text into chunks using existing method**
-    const chunkSize = 10897; // Adjust based on model token limits
-    const chunks = this.getChunks(text, chunkSize);
-
-    const chunkSummaries: string[] = [];
-
-    // 2️⃣ **Summarize Each Chunk**
-    for (const chunk of chunks) {
-      const prompt = (() => {
-        switch (purpose) {
-          case 'Summary':
-            return this.generateSummarizationPrompt(chunk);
-          case 'SA':
-            return this.generateSentimenAnalysisPrompt(chunk);
-          case 'project_summary':
-            return this.generateProjectSummarizationPrompt(chunk); // Assuming multiple texts
-          case 'project_sentiment':
-            return this.generateProjectSentimenAnalysisPrompt(chunk); // Assuming multiple texts
-          default:
-            throw new Error(`Invalid purpose: ${purpose}`);
-        }
-      })();
-
-      const messages: ChatCompletionMessageParam[] = [
-        { role: 'user', content: prompt },
-      ];
-
+    const client = new AzureOpenAI({
+      endpoint: this.AZURE_OPENAI_ENDPOINT,
+      apiKey: this.AZURE_OPENAI_API_KEY,
+      apiVersion: this.AZURE_OPEN_AI_VERSION,
+      deployment: this.AZURE_OPENAI_DEPLOYMENT,
+    });
+    const MAX_CONCURRENT_REQUESTS = 5;
+    const CHUNK_SIZE = 8000;
+    const CHUNK_OVERLAP = 500;
+ 
+    const chunks = this.getChunksWithOverlap(text, CHUNK_SIZE, CHUNK_OVERLAP);
+    const limit = pLimit(MAX_CONCURRENT_REQUESTS);
+    const summaries: string[] = [];
+ //console.log("Chunk",chunks)
+    const summarizeChunk = async (chunk: string, index: number): Promise<void> => {
+      const prompt = this.getPromptByPurpose(purpose, chunk);
+      const messages: ChatCompletionMessageParam[] = [{ role: 'user', content: prompt }];
+ 
       try {
-        const response = await client.chat.completions.create({
-          messages,
-          model: deployment,
-          max_tokens: 500,
-        });
-
-        chunkSummaries.push(response.choices[0].message.content);
+        const response = await this.retryWithBackoff(() =>
+          client.chat.completions.create({
+            messages,
+            model: this.AZURE_OPENAI_DEPLOYMENT,
+            temperature: 0,
+            frequency_penalty: 0,
+            presence_penalty: 0, 
+            max_tokens: 500,
+          }), 3
+        );
+        const summary = response.choices?.[0]?.message?.content ?? '';
+        //console.log(`✅ Chunk ${index + 1}/${chunks.length} summarized`);
+        summaries[index] = summary;
       } catch (error) {
-        console.error('Error summarizing chunk:', error);
+        console.error(`❌ Chunk ${index + 1} failed`, error.message);
+        summaries[index] = '';
+      }
+    };
+ 
+    await Promise.all(chunks.map((chunk, i) => limit(() => summarizeChunk(chunk, i))));
+ 
+    const combined = summaries.join('\n\n');
+    //console.log("combined",combined);
+    let finalOutput;
+  if(purpose.includes('project_summary') || purpose.includes('Summary')){
+     finalOutput = purpose.includes('project_summary') || purpose.includes('Summary')
+    ? await this.combineSummaries(combined, client)
+    : combined;
+  }else{
+     finalOutput = purpose.includes('project_sentiment') || purpose.includes('SA')
+    ? await this.combineSentiments(combined, client)
+    : combined;
+  }
+   
+ 
+    return finalOutput;
+  }
+
+  
+  
+  
+    private getPromptByPurpose(purpose: string, chunk: string): string {
+      switch (purpose) {
+        case 'Summary':
+          return this.generateSummarizationPrompt(chunk);
+        case 'SA':
+          return this.generateSentimenAnalysisPrompt(chunk);
+        case 'project_summary':
+          return this.generateProjectSummarizationPrompt(chunk);
+        case 'project_sentiment':
+          return this.generateProjectSentimenAnalysisPrompt(chunk);
+        default:
+          throw new Error(`Invalid purpose: ${purpose}`);
       }
     }
-
-    // 3️⃣ **Generate Final Summary from Chunk Summaries**
-    const finalSummary = await this.refineFinalSummary(
-      chunkSummaries.join(' '),
-      client,
-    );
-    return finalSummary;
-  }
-
-  private async refineFinalSummary(mergedSummary: string, client: AzureOpenAI) {
-    const refinementPrompt = `Refine the following summary to be more concise while preserving key details:\n\n${mergedSummary}`;
-
-    const messages: ChatCompletionMessageParam[] = [
-      { role: 'user', content: refinementPrompt },
-    ];
-
-    try {
-      const response = await client.chat.completions.create({
-        messages,
-        model: this.AZURE_OPENAI_DEPLOYMENT,
-        max_tokens: 500,
-      });
-
-      return response.choices[0].message.content;
-    } catch (error) {
-      console.error('Error refining summary:', error);
-      return mergedSummary; // Fallback to raw merged summary
+   
+    private async retryWithBackoff<T>(
+      fn: () => Promise<T>,
+      retries = 3,
+      delay = 1000
+    ): Promise<T> {
+      for (let i = 0; i < retries; i++) {
+        try {
+          return await fn();
+        } catch (err: any) {
+          if (i === retries - 1) throw err;
+          console.warn(`Retry ${i + 1} due to: ${err.message}`);
+          await new Promise((res) => setTimeout(res, delay * Math.pow(2, i)));
+        }
+      }
+      throw new Error('All retries failed');
     }
-  }
+  
+  
+  
+  
+   
+    private async combineSummaries(summaryText: string, client: AzureOpenAI): Promise<string> {
+      const prompt = `Combine the following section-wise summaries into one cohesive, non-repetitive and realistic summary. Preserve all key insights and ensure smooth flow:\n\n${summaryText}`;
+   
+      const response = await client.chat.completions.create({
+        messages: [{ role: 'user', content: prompt }],
+        model: this.AZURE_OPENAI_DEPLOYMENT,
+        temperature: 0,
+        frequency_penalty: 0,
+        presence_penalty: 0,  
+        max_tokens: 1000,
+      });
+   
+      return response.choices?.[0]?.message?.content ?? '';
+    }
+
+    private async combineSentiments(summaryText: string, client: AzureOpenAI): Promise<string> {
+      const prompt = `
+        You are an expert in sentiment analyzer.
+       
+        Combine the following section-wise sentiments into one cohesive, non-repetitive, and realistic sentiment.
+       
+        - Preserve all key insights and important details.
+        - Ensure smooth logical flow.
+        - Unify the tone and sentiment of the entire sentiment (e.g., optimistic, concerned, neutral) based on the dominant feeling across sections.
+        - Reflect a clear and accurate overall impression.
+   
+        Section sentiments:
+        ${summaryText}
+      `;
+//       const prompt = `
+// You are an expert in project-level sentiment analysis.
+
+
+// Analyze the following section-wise summaries and determine the **overall sentiment** of the entire project.
+
+
+// - Classify the sentiment as one of: Positive, Negative, or Neutral.
+// - Base your decision on the dominant tone and emotional content across all sections.
+// - Consider key themes, concerns, successes, or risks reflected in the summaries.
+// - Provide a **one-line explanation** of your reasoning.
+// - Return the result in this format: "Sentiment: [Positive|Negative|Neutral]".
+
+
+// Section Summaries:
+// ${summaryText}
+// `;
+   
+      const response = await client.chat.completions.create({
+        messages: [{ role: 'user', content: prompt }],
+        model: this.AZURE_OPENAI_DEPLOYMENT,
+        max_tokens: 1500,  // Increase a bit if your final summary is big
+      });
+   
+      return response.choices?.[0]?.message?.content ?? '';
+    }
+
+  
 
   async saveTranscriptionDocument(transcriptionDocument: Partial<AudioEntity>) {
     try {
@@ -515,7 +592,7 @@ export class AudioUtils {
     return chunks;
   }
 
-  async markStageCompleted(
+ async markStageCompleted(
     audioId: string,
     stage: QueueProcess,
     projectId: string,
@@ -523,9 +600,36 @@ export class AudioUtils {
     const key = `project:${projectId}:audioStages`;
     const audioStages = JSON.parse((await this.redisService.get(key)) || '{}');
 
+    const checkExistingProject = await this.ProjectContainer.items
+      .query({
+        query: 'SELECT * FROM c WHERE c.projectId = @projectId',
+        parameters: [{ name: '@projectId', value: projectId }],
+      })
+      .fetchAll();
+
+ //console.log("audioStages",audioStages);
     // Update the stage completion status for the current audio
     if (!audioStages[audioId]) {
+      const audioResult = await this.AudioContainer.items
+      .query({
+        query: 'SELECT * FROM c WHERE c.audioId = @audioId',
+        parameters: [{ name: '@audioId', value: audioId }],
+      })
+      .fetchAll();
+      //console.log("Not audioStages",audioId);
+      //console.log("Not audioStages audioId",audioStages);
+        // Initialize audioStages[audioId] as an object
       audioStages[audioId] = {};
+
+      audioResult?.resources?.forEach(async (element,index) => {
+        if(element.combinedTranslation){
+          //console.log("Not audioStages element",element.audioId);
+          audioStages[audioId]['transcribe-audio'] = true;
+          audioStages[audioId]['translate-audio'] = true;
+          audioStages[audioId]['embedding-audio'] = true;
+          audioStages[audioId][stage] = true;
+        }
+    });
     }
     audioStages[audioId][stage] = true;
 
@@ -551,31 +655,34 @@ export class AudioUtils {
         QueueProcess.EMBEDDING_AUDIO,
       ].every((requiredStage) => audio[requiredStage]),
     );
+    //console.log("check allAudiosCompleted",allAudiosCompleted);
     // Check if all stages are completed for this audio
-    if (allAudiosCompleted) {
+    //if (allAudiosCompleted) {
       this.logger.log(`All stages completed for the project ${projectId}`);
       // Trigger the project audio process
       await this.projectSummaryQueue.add(QueueProcess.PROJECT_SUMMARY_AUDIO, {
         projectId,
       });
       this.logger.log(`Combined Audio Project job enqueued`);
-    }
+    //}
   }
+  
 
   async makeCombineSummaryOfAllAudios(projectId: string) {
+    const query = {
+      query: 'SELECT * FROM c WHERE c.projectId = @projectId',
+      parameters: [{ name: '@projectId', value: projectId }],
+    };
+
+    const { resources: projectDocument } = await this.ProjectContainer.items
+      .query(query)
+      .fetchAll();
+    if (projectDocument.length === 0) {
+      throw new Error('Project not found');
+    }
+    
     try {
-      const query = {
-        query: 'SELECT * FROM c WHERE c.projectId = @projectId',
-        parameters: [{ name: '@projectId', value: projectId }],
-      };
-
-      const { resources: projectDocument } = await this.ProjectContainer.items
-        .query(query)
-        .fetchAll();
-      if (projectDocument.length === 0) {
-        throw new Error('Project not found');
-      }
-
+     
       const audioIds = (projectDocument[0] as ProjectEntity).audioIds;
 
       const audioQueue = {
@@ -610,11 +717,17 @@ export class AudioUtils {
       existingProjectDocument.sentiment_analysis = combinedSentiment;
       existingProjectDocument.isSummaryAndSentimentDone = true;
       existingProjectDocument.vectorIds = projectVecIds;
+      existingProjectDocument.projectStatus=1;
 
       return await this.saveProjectSummary(existingProjectDocument);
     } catch (error) {
       console.error(error);
-      throw new Error('Failed to make combined summary');
+     // const projectItems = checkExistingProject.resources;
+      const projectItem = projectDocument[0];
+      projectItem.projectStatus = 2;
+        await this.ProjectContainer.items.upsert(projectItem);
+  
+      //throw new Error('Failed to make combined summary');
     }
   }
   async saveProjectSummary(projectDocument: ProjectEntity) {

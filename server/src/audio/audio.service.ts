@@ -488,7 +488,9 @@ export class AudioService {
       sentimentLines.forEach((line) => {
         line = line
           .replace(/^#+\s*/, '')
+          .replace(/\*\*(.*?)\*\*/g, '$1')
           .replace(/^\*\*(.*?)\*\*$/, '$1')
+          .replace(/\*/g, '') 
           .trim();
         if (line.includes('Overall Sentiment Analysis:')) {
           doc

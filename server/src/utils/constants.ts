@@ -4,6 +4,7 @@ export const SUMMARIZATION_PROMPT_TEMPLATE = (
 ) => `
   You are an expert summarizer. Your task is to summarize the following text.
   Aim for a summary that is approximately ${summaryLength} words long.
+  If any **key individuals** are mentioned, ensure their **roles and contributions** are appropriately reflected in the summary.
   Incorporate main ideas and essential information by eliminating extraneous language and focusing on critical aspects.
   Identify all the topics or aspects and create a proper and precise conclusion from the discussion.
   Put the clear summary; do not put unconcluded thoughts in the answer.
@@ -14,23 +15,50 @@ export const SUMMARIZATION_PROMPT_TEMPLATE = (
   Provide a summary based on the given guidelines.
 `;
 
-export const SENTIMENT_ANALYSIS_PROMPT = (text: string) => `
-You are an expert in sentiment analysis. Given multiple sentiment summaries, your task is to
-                            combine them into a cohesive sentiment analysis.
+// export const SENTIMENT_ANALYSIS_PROMPT = (text: string) => `
+// You are an expert in sentiment analysis. Given multiple sentiment summaries, your task is to
+//                             combine them into a cohesive sentiment analysis.
                             
-                            List out all the positive, negative and neutral sentiments with proper explanation.
-                            Also provide an overall sentiment of the sentiment and analysis with reason of the sentiment.
+//                             List out all the positive, negative and neutral sentiments with proper explanation.
+//                             Also provide an overall sentiment of the sentiment and analysis with reason of the sentiment.
                             
                             
-                            Context: {context}
+//                             Context: {context}
  
-                            Here are the text to combine:
-                            ${text}
+//                             Here are the text to combine:
+//                             ${text}
  
-                            Based on these, create a comprehensive sentiment analysis and provide breakdown of positive, negative and neutral sentiments with reasons.
-                            If there are conflicting sentiments, indicate the dominant sentiment and provide an explanation.
-                            In case of conflicts answer proper which of sentiment can be considered.
+//                             Based on these, create a comprehensive sentiment analysis and provide breakdown of positive, negative and neutral sentiments with reasons.
+//                             If there are conflicting sentiments, indicate the dominant sentiment and provide an explanation.
+//                             In case of conflicts answer proper which of sentiment can be considered.
+// `;
+
+
+export const SENTIMENT_ANALYSIS_PROMPT = (text: string) => 
+`You are a domain expert in sentiment analysis, specializing in customer conversation reviews for FMCG products.
+ Your task is to conduct a structured and insightful sentiment analysis across multiple conversation summaries derived from audio transcriptions.
+Objective:
+Extract actionable sentiment insights that reflect customer opinions, product experience, and emotional tone. Ensure all key aspects of the conversation (such as product quality, price sensitivity, packaging, service, and brand perception) are considered.
+Guidelines:
+Aggregate and categorize all sentiments across the transcripts into Positive, Negative, and Neutral.
+For each sentiment, provide a short justification—referencing specific phrases or themes from the text.
+Identify repeated concerns or praises, and detect trends across different audios (e.g., increasing dissatisfaction with pricing, consistent praise for flavor, etc.).
+Highlight conflicting sentiments within or across summaries, and assess the overall dominant sentiment with supporting evidence.
+Assign an overall sentiment score for the project using a clear label: Positive, Neutral, or Negative.
+Provide recommendations based on sentiment trends (e.g., improve packaging, reinforce messaging around quality, etc.).
+Input:
+Below is the set of conversation summaries (transcribed from audio):
+${text}
+Output:
+Provide a structured sentiment report that includes:
+Categorized sentiment list (Positive / Negative / Neutral) with short explanations.
+Overall sentiment evaluation with reasoning.
+Cross-audio sentiment patterns and customer mood trends.
+Actionable recommendations to inform product, marketing, or service improvements.
 `;
+
+
+
 
 export const SUMMARY = 'Summary';
 export const SENTIMENT_ANALYSIS = 'SA';
@@ -103,51 +131,114 @@ export const MODERATOR_RECOGNITION = `You are an expert at analyzing textual con
                         on their role and actions within the discussion.            
                         Provide a brief explanation for your choice.`;
 
+// export const PROJECT_SUMMARIZATION_PROMPT_TEMPLATE = (
+//   summaryLength: number,
+//   texts: string,
+// ) => `
+//                         You are an expert summarizer. Your task is to create a comprehensive project-level summary based on multiple audio transcriptions. 
+                        
+//                         ### Guidelines:
+//                         - Aim for a summary that is approximately **${summaryLength} words** long.
+//                         - **Synthesize key ideas and insights** across all the provided transcriptions.
+//                         - Identify **common themes, important points, and recurring topics**.
+//                         - Focus on capturing the essence of the discussions without unnecessary details.
+//                         - Provide a **cohesive and well-structured summary** that reflects the overall conversation.
+//                         - End the summary with a clear and concise **conclusion** that reflects the primary takeaways.
+                        
+//                         ### Audio Transcriptions:
+//                         ${texts}
+                        
+//                         ### Deliverable:
+//                         Provide a single, clear, and accurate project-level summary based on the above guidelines.
+//   `;
+
 export const PROJECT_SUMMARIZATION_PROMPT_TEMPLATE = (
   summaryLength: number,
   texts: string,
-) => `
-                        You are an expert summarizer. Your task is to create a comprehensive project-level summary based on multiple audio transcriptions. 
-                        
-                        ### Guidelines:
-                        - Aim for a summary that is approximately **${summaryLength} words** long.
-                        - **Synthesize key ideas and insights** across all the provided transcriptions.
-                        - Identify **common themes, important points, and recurring topics**.
-                        - Focus on capturing the essence of the discussions without unnecessary details.
-                        - Provide a **cohesive and well-structured summary** that reflects the overall conversation.
-                        - End the summary with a clear and concise **conclusion** that reflects the primary takeaways.
-                        
-                        ### Audio Transcriptions:
-                        ${texts}
-                        
-                        ### Deliverable:
-                        Provide a single, clear, and accurate project-level summary based on the above guidelines.
-                        `;
+) =>
+`
+You are an expert summarizer. Your task is to produce a comprehensive, high-level summary of the following audio transcriptions from a single project.
 
-export const PROJECT_SENTIMENT_ANALYSIS_PROMPT = (texts: string) => `
-You are an expert in sentiment analysis. Your task is to perform a comprehensive sentiment analysis across multiple audio transcriptions for a project.
+### Summary Guidelines:
+- Target length: **approximately ${summaryLength} words**.
+- Focus on **key ideas, main insights, and overarching themes**.
+- If any **key individuals** are mentioned, ensure their **roles and contributions** are appropriately reflected in the summary.
+- Incorporate main ideas and essential information by eliminating extraneous language and focusing on critical aspects.
+- Identify all the topics or aspects and create a proper and precise conclusion from the discussion.
+- Highlight any **recurring topics or patterns** discussed across audios.
+- Avoid irrelevant details.
+- Structure the summary into a **cohesive narrative** that reflects the full project scope.
+- End with a **strong conclusion** that captures the primary takeaways or recommendations.
 
-### Guidelines:
-- **Aggregate and analyze** the sentiments from all the provided texts.
-- Identify and list all the **positive, negative, and neutral sentiments**.
-- Provide a detailed **explanation** for each sentiment and why it is categorized as such.
-- Detect any **patterns or trends** in the sentiments across the different audios.
-- If there are **conflicting sentiments**, determine the overall sentiment that is most dominant and explain why.
-- Provide a clear **sentiment score** for the project as a whole (e.g., Positive, Negative, or Neutral).
-- Offer **recommendations or insights** based on the sentiment trends.
 
-### Context:
-These are the multiple audio transcriptions:
+### Audio Transcriptions:
+"""
 ${texts}
+"""
+
 
 ### Deliverable:
-Provide a detailed sentiment analysis including:
-1. **List of positive, negative, and neutral sentiments** with explanations.
-2. **Overall sentiment** for the project with justification.
-3. **Sentiment trends** observed across the audios.
-4. **Recommendations or insights** based on the analysis.
+Return a single, well-written project-level summary following the above instructions.
 `;
+                 
+// export const PROJECT_SENTIMENT_ANALYSIS_PROMPT = (texts: string) => `
+// You are an expert in sentiment analysis. Your task is to perform a comprehensive sentiment analysis across multiple audio transcriptions for a project.
 
+// ### Guidelines:
+// - **Aggregate and analyze** the sentiments from all the provided texts.
+// - Identify and list all the **positive, negative, and neutral sentiments**.
+// - Provide a detailed **explanation** for each sentiment and why it is categorized as such.
+// - Detect any **patterns or trends** in the sentiments across the different audios.
+// - If there are **conflicting sentiments**, determine the overall sentiment that is most dominant and explain why.
+// - Provide a clear **sentiment score** for the project as a whole (e.g., Positive, Negative, or Neutral).
+// - Offer **recommendations or insights** based on the sentiment trends.
+
+// ### Context:
+// These are the multiple audio transcriptions:
+// ${texts}
+
+// ### Deliverable:
+// Provide a detailed sentiment analysis including:
+// 1. **List of positive, negative, and neutral sentiments** with explanations.
+// 2. **Overall sentiment** for the project with justification.
+// 3. **Sentiment trends** observed across the audios.
+// 4. **Recommendations or insights** based on the analysis.
+// `;
+
+export const PROJECT_SENTIMENT_ANALYSIS_PROMPT = (texts: string) =>
+`You are an expert in sentiment analysis. Analyze the following audio transcriptions and deliver a clear, insight-focused sentiment report for business stakeholders.
+
+### Your Task:
+Analyze the transcriptions holistically and provide:
+Categorized **sentiment highlights** (Positive / Negative / Neutral)
+For each sentiment:
+   - Provide a **summary**.
+   - Offer a **justification** for the classification.
+**Remember: Include direct examples/quotes from the transcription.**
+**Trends or shifts** in sentiment across the dataset
+A **final sentiment summary** (Positive, Negative, or Neutral)
+**Actionable recommendations** based on the sentiment findings
+
+### What to Avoid:
+Do NOT include technical objectives or generic methodology in the output.
+Focus on clarity, insight, and business relevance.
+
+### Input:
+Audio transcriptions:
+${texts}
+
+### Expected Output:
+1. **Sentiment Highlights**  
+   - Grouped into **Positive**, **Negative**, and **Neutral**  
+   - Include a **brief explanation** and **relevant direct quotes**  
+
+2. **Overall Sentiment Summary**  
+   - Concise statement of the dominant sentiment with justification  
+
+3. **Sentiment Trends & Shifts**  
+   - Notable changes in tone, emotion, or opinion across audios  
+
+4. **Actionable recommendations or takeaways** based on the sentiment analysis.`;
 
 export const CHAT_PROMPT=`You are an AI assistant trained to provide answers strictly based on the provided context.  
 ### Guidelines:  
