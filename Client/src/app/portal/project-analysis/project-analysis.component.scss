@@ -54,10 +54,17 @@
         .allfiles-container-header-search {
             display: flex;
             align-items: center;
+            //display: flex;
+            flex-direction: row;
+            gap: 20px;
 
-            form {
-                margin-right: 10px;
+            .mat-fullwidth{
+              width: 20%;
             }
+
+            // form {
+            //     margin-right: 10px;
+            // }
         }
     }
 

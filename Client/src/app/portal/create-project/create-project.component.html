@@ -4,57 +4,90 @@
     <div class="top-row">
       <div class="filter-section">
         <div class="sub-filter">
-          <ng-container *ngIf="filterOption === '1'">
-            <mat-form-field appearance="outline" class="filter-dropdown">
-              <mat-label>Select Tag</mat-label>
-              <mat-select [(ngModel)]="selectedTag" (selectionChange)="filterByTag()">
-                <mat-option *ngFor="let tag of tagList" [value]="tag.name">{{ tag.name }}</mat-option>
-              </mat-select>
-            </mat-form-field>
-          </ng-container>
-
-          <ng-container *ngIf="filterOption === '2'">
-            <mat-form-field appearance="outline" class="filter-dropdown">
-              <mat-label>Select Audio</mat-label>
-              <mat-select [(ngModel)]="selectedAudio" (selectionChange)="filterByAudio()">
-                <mat-option *ngFor="let audio of filteredAudios()" [value]="audio">{{ audio }}</mat-option>
-              </mat-select>
-            </mat-form-field>
-          </ng-container>
-
-          <mat-radio-group [(ngModel)]="filterOption" class="filter-radio" aria-label="Select Filter Option">
-            <mat-radio-button value="1">Select by Tag</mat-radio-button>
-            <mat-radio-button value="2">Select by Audio</mat-radio-button>
-          </mat-radio-group>
-        </div>
-        <div class="sub-filter">
-          <ng-container *ngIf="filterOption === '1'">
-            <div class="selected-display">
-              <span *ngFor="let tag of selectedTags" class="pill">
-                {{ tag }}
-                <button (click)="removeTag(tag)">×</button>
-              </span>
-            </div>
-          </ng-container>
-          <ng-container *ngIf="filterOption === '2'">
-            <!-- Selected Audios -->
-            <div class="selected-display">
-              <span *ngFor="let audio of selectedAudios" class="pill">
+          <div class="filter-label"> Filter By: </div>
+          <mat-button-toggle-group [(ngModel)]="toggleValue" (change)="onToggleChange($event)" class="pill-toggle" exclusive>
+            <mat-button-toggle value="all">
+              <mat-icon *ngIf="toggleValue === 'all'" class="check-icon">check</mat-icon>
+              All
+            </mat-button-toggle>
+        
+            <mat-button-toggle value="and">
+              <mat-icon *ngIf="toggleValue === 'and'" class="check-icon">check</mat-icon>
+              Match All Tags
+            </mat-button-toggle>
+        
+            <mat-button-toggle value="or">
+              <mat-icon *ngIf="toggleValue === 'or'" class="check-icon">check</mat-icon>
+              Match Any Tag
+            </mat-button-toggle>
+          </mat-button-toggle-group>
+      
+          <mat-form-field class="mat-fullwidth">
+            <mat-label>Select Tag</mat-label>
+            <mat-select [(ngModel)]="multipleselect" #select multiple
+                        (selectionChange)="onTagSelectionChange()"
+                        (openedChange)="onTagDropdownOpened($event)">
+              <mat-option>
+                <ngx-mat-select-search matInput placeholder="Tags"
+                                       [placeholderLabel]="'Find Tag...'"
+                                       (input)="onTagSearchDropdown($event)"
+                                       [noEntriesFoundLabel]="'No Tag found'">
+                  <mat-icon ngxMatSelectSearchClear></mat-icon>
+                </ngx-mat-select-search>
+              </mat-option>
+              <div class="select-all">
+                <mat-checkbox id="tag" [(ngModel)]="selTag"
+                              [ngModelOptions]="{standalone: true}"
+                              (change)="toggleAllSelection()">Select All</mat-checkbox>
+              </div>
+              <mat-option *ngFor="let tag of tagList" [value]="tag.name">
+                {{ tag.name }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+      
+          <mat-form-field class="mat-fullwidth">
+            <mat-label>Select Audio</mat-label>
+            <mat-select [(ngModel)]="multipleAudioSelect" #select1 multiple
+                        (selectionChange)="onAudioSelectionChange()"
+                        (openedChange)="onAudioDropdownOpened($event)">
+              <mat-option>
+                <ngx-mat-select-search matInput placeholder="Audios"
+                                       [placeholderLabel]="'Find Audio...'"
+                                       (input)="onAudioSearchDropdown($event)"
+                                       [noEntriesFoundLabel]="'No Audio found'">
+                  <mat-icon ngxMatSelectSearchClear></mat-icon>
+                </ngx-mat-select-search>
+              </mat-option>
+              <div class="select-all">
+                <mat-checkbox id="audio" [(ngModel)]="selAudioTag"
+                              [ngModelOptions]="{standalone: true}"
+                              (change)="toggleAllAudioSelection()">Select All</mat-checkbox>
+              </div>
+              <mat-option *ngFor="let audio of filteredAudios()" [value]="audio">
                 {{ audio }}
-                <button (click)="removeAudio(audio)">×</button>
-              </span>
-            </div>
-          </ng-container>
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+      
         </div>
       </div>
-
-      <!-- Filter Options -->
+      
 
     </div>
   </div>
   <div class="project-body">
     <div class="upload-list">
       <ul class="audio-files-section">
+        
+        <li *ngIf="getFilteredAudioFiles().length === 0" class="no-audio-message">
+          <mat-icon class="info-icon">info</mat-icon>
+          <div class="message-text">
+            <strong> 🎵 No audios found</strong><br />
+            Try adjusting your tag selection or switching the match mode (All / Match All Tags / Match Any Tag).
+          </div>
+        </li>
+
         <li *ngFor="let file of getFilteredAudioFiles(); let i = index">
           <input type="checkbox" [checked]="isFileSelected(file)" (change)="toggleSelectFile(file, $event)" />
           <div class="upload-player">
@@ -117,3 +150,6 @@
     </div>
   </div>
 </ng-template>
+
+
+

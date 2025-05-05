@@ -1,10 +1,11 @@
-import { Component, TemplateRef } from '@angular/core';
+import { Component, TemplateRef, ViewChild } from '@angular/core';
 import { environment } from 'src/environments/environment';
 import { CommonService } from '../service/common.service';
 import { ToastrService } from 'ngx-toastr';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { Router } from '@angular/router';
+import { MatSelect } from '@angular/material/select';
+import { MatOption } from '@angular/material/core';
 
 interface AudioFile {
   name: string;
@@ -30,13 +31,25 @@ export class CreateProjectComponent {
   userRole: any; projectName = '';
   audioNames: string[] = [];
   selectedTags: string[] = [];
-  selectedTag: string = '';
   audioFiles: AudioFile[] = [];
-  filterOption: string = '1';
-  selectedAudio: string = '';
   selectedAudios: string[] = [];
   imageBasePath: string = environment.imageBasePath;
   isShowFooter: boolean = false;
+
+  multipleselect: any[] = [];
+  multipleAudioSelect: any[] = [];
+  searchTagList: any[] = [];
+  searchAudioList: any[] = [];
+  selTag = false;
+  selAudioTag = false;
+  @ViewChild('select') select!: MatSelect;
+  @ViewChild('select1') select1!: MatSelect;
+  filteredAudioFiles : any[] = [];
+  originalAudioFiles: AudioFile[] = [];
+  isTagSelected: boolean = false;
+  tagBasedAudioList: any[] = [];
+  switchToggle: boolean = true;
+  toggleValue: string = 'all';
 
   tagList: any[] = [];
    dialogRef!: MatDialogRef<any>;
@@ -57,7 +70,6 @@ export class CreateProjectComponent {
     if (this.userRole === "1") {
       //this.userCode = '';
     }
-
     this.getTagsWiseAudio();
   }
 
@@ -70,7 +82,9 @@ export class CreateProjectComponent {
       (res: any) => {
         this.commonServ.hideSpin();
         this.tagList = res.data.allUniqueTags;
+        this.searchTagList = this.tagList;
         this.audioNames = res.data.audioData;
+        this.searchAudioList = this.audioNames;
 
         this.audioFiles = res.data.audioData
         .filter((audio: any) => audio.uploadStatus === 1)
@@ -84,7 +98,8 @@ export class CreateProjectComponent {
           durationTime: '0:00',
           audioId: audio.audioId,
         }));
-      
+
+        this.originalAudioFiles = this.audioFiles;
       },
       (err: any) => {
         this.commonServ.hideSpin();
@@ -93,56 +108,11 @@ export class CreateProjectComponent {
     );
   }
 
-  filterByTag() {
-    if (this.selectedTag && !this.selectedTags.includes(this.selectedTag)) {
-      this.selectedTags.push(this.selectedTag);
-    }
-    this.selectedTag = '';
-  }
-
-  filterByAudio() {
-    if (this.selectedAudio && !this.selectedAudios.includes(this.selectedAudio)) {
-      this.selectedAudios.push(this.selectedAudio);
-    }
-    this.selectedAudio = '';
-  }
-
-  removeTag(tag: string) {
-    this.selectedTags = this.selectedTags.filter(t => t !== tag);
-  }
-
-  removeAudio(audio: string) {
-    this.selectedAudios = this.selectedAudios.filter(t => t !== audio);
-  }
-
   filteredAudios(): string[] {
     if (!this.audioNames) return [];
 
     const audioNameSet = new Set(this.audioNames.map((audio: any) => audio.audioName));
     return Array.from(audioNameSet);
-  }
-
-  getFilteredAudioFiles(): AudioFile[] {
-    let filteredFiles: AudioFile[] = [];
-
-    if (this.filterOption === '1' && this.selectedTags.length) {
-      filteredFiles = this.audioFiles.filter(file =>
-        file.tags?.some(tag => this.selectedTags.includes(tag))
-      );
-    } else if (this.filterOption === '2' && this.selectedAudios.length) {
-      filteredFiles = this.audioFiles.filter(file =>
-        this.selectedAudios.includes(file.name)
-      );
-    } else {
-      filteredFiles = [...this.audioFiles];
-    }
-
-    // Ensure previously selected files are included
-    const selectedOnly = this.selectedArr.filter(sel =>
-      !filteredFiles.some(f => f.name === sel.name && f.url === sel.url)
-    );
-
-    return [...selectedOnly, ...filteredFiles];
   }
 
   //Media Code
@@ -193,14 +163,6 @@ export class CreateProjectComponent {
   isPlaying(index: number, section: 'expansion' | 'audioFiles'): boolean {
     return this.isPlayingIndexMap[section] === index;
   }
-
-  // Delete file functionality
-  //  deleteFile(index: number): void {
-  //   this.audioFiles.splice(index, 1);
-  //   if (this.isPlayingIndex === index) {
-  //     this.isPlayingIndex = null;
-  //   }
-  // }
 
   seekAudio(event: any, index: number, audioList: any[]): void {
     const audio = document.querySelectorAll('audio')[index] as HTMLAudioElement;
@@ -294,8 +256,6 @@ export class CreateProjectComponent {
     this.selectedArr = [];
     this.selectedTags = [];
     this.selectedAudios = [];
-    this.selectedAudio = '';
-    this.selectedTag = '';
     this.dialogRef.close();
   }
 
@@ -304,4 +264,215 @@ export class CreateProjectComponent {
     this.router.navigate(['/portal/project-analysis']);
   }
 
+  onTagSearchDropdown(id: any) {
+    let searchInput = id.target.value;
+    this.tagList = [];
+    let search = searchInput.toLowerCase();
+    if (search.length > 0) {
+      const temp = this.searchTagList.filter(d => {
+        if (search.includes(d))
+          return d.name?.toLowerCase().indexOf(search) !== 1;
+        else
+          return d.name?.toLowerCase().indexOf(search) !== -1;
+      });
+      this.tagList = temp;
+    }
+    else {
+      this.tagList = this.searchTagList;
+    }
+  }
+
+  onTagDropdownOpened(opened: boolean) {
+    if (opened) {
+      this.tagList = [...this.searchTagList];
+    }
+  }
+
+  onAudioSearchDropdown(id: any) {
+    let searchInput = id.target.value;
+    this.audioNames = [];
+    let search = searchInput.toLowerCase();
+    if (search.length > 0) {
+      const temp = this.searchAudioList.filter(d => {
+        if (search.includes(d))
+          return d.audioName?.toLowerCase().indexOf(search) !== 1;
+        else
+          return d.audioName?.toLowerCase().indexOf(search) !== -1;
+      });
+      this.audioNames = temp;
+    }
+    else {
+      this.audioNames = this.searchAudioList;
+    }
+  }
+
+  onAudioDropdownOpened(opened: boolean) {
+    if (opened) {
+      if (this.isTagSelected) {
+        this.audioNames = [...this.tagBasedAudioList]; 
+      }
+      else {
+        this.audioNames = [...this.searchAudioList];
+      }
+      
+    }
+  }
+
+  toggleAllSelection() {
+    if (this.selTag) {
+      this.select.options.forEach((item: MatOption) => item.select());
+      this.multipleselect = this.tagList.map(tag => tag.name);
+    }
+    else {
+      this.select.options.forEach((item: MatOption) => item.deselect());
+      this.multipleselect = [];
+    }
+
+    this.onTagSelectionChange();
+  }
+
+  toggleAllAudioSelection() {
+    if (this.selAudioTag) {
+      this.select1.options.forEach((item: MatOption) => item.select());
+      this.multipleAudioSelect = [...this.audioNames];
+    }
+    else {
+      this.select.options.forEach((item: MatOption) => item.deselect());
+      this.multipleAudioSelect = [];
+    }
+
+    this.onAudioSelectionChange();
+  }
+
+  onTagSelectionChange() {
+    const selectedTags = [...this.multipleselect];
+
+    if (selectedTags.length > 0) {
+      this.switchToggle = true;
+    }
+    else {
+      this.switchToggle = false;
+      this.toggleValue = 'all'; 
+    }
+  
+    if (this.toggleValue === 'all' && this.switchToggle === false) {
+      this.toggleValue = 'all';
+
+          this.audioFiles = [...this.originalAudioFiles]; // Reset
+          this.filteredAudioFiles = [...this.originalAudioFiles];
+          this.audioNames = [...this.searchAudioList];
+          this.isTagSelected = false;
+          return;
+    }
+  
+    if (selectedTags.length > 0) {
+      let filtered: AudioFile[] = [];
+  
+      if (this.toggleValue === 'and') {
+          if (selectedTags.length === 1) {
+            filtered = this.originalAudioFiles.filter(file =>
+              Array.isArray(file.tags) &&
+              file.tags.length === 1 &&
+              file.tags[0] === selectedTags[0]
+            );
+          }
+          else {
+            filtered = this.originalAudioFiles.filter(file =>
+              Array.isArray(file.tags) &&
+              selectedTags.every(tag => file.tags.includes(tag))
+            );
+          }
+
+      } else if (this.toggleValue === 'or') {
+        filtered = this.originalAudioFiles.filter(file =>
+          file.tags?.some(tag => selectedTags.includes(tag))
+        );
+      } else if (this.toggleValue === 'all' && this.switchToggle === true) {
+        filtered = this.originalAudioFiles.filter(file =>
+          file.tags?.some(tag => selectedTags.includes(tag))
+        );
+        this.toggleValue = 'or';
+      }
+    
+      this.audioFiles = [...filtered];
+      this.filteredAudioFiles = [...filtered];
+      this.isTagSelected = true;
+    
+      const audioNameSet = new Set(filtered.map(f => f.name));
+      this.audioNames = this.searchAudioList.filter(a => audioNameSet.has(a.audioName));
+      this.multipleAudioSelect = this.multipleAudioSelect.filter(name => audioNameSet.has(name));
+      this.tagBasedAudioList = [...this.audioNames];
+    }
+    else {
+          this.audioFiles = [...this.originalAudioFiles]; // Reset
+          this.filteredAudioFiles = [...this.originalAudioFiles];
+          this.audioNames = [...this.searchAudioList];
+          this.isTagSelected = false;
+        }    
+  }
+  
+  onAudioSelectionChange() {
+    const selectedAudioNames = [...this.multipleAudioSelect];
+  
+    if (selectedAudioNames.length > 0) {
+      const selectedAudioObjs = this.originalAudioFiles.filter(file =>
+        selectedAudioNames.includes(file.name)
+      );
+  
+      this.audioFiles = [...selectedAudioObjs]; // Update main list
+      this.filteredAudioFiles = [...selectedAudioObjs];
+  
+      const tagSet = new Set(selectedAudioObjs.flatMap(audio => audio.tags));
+      this.tagList = this.searchTagList.filter(tag => tagSet.has(tag.name));
+      this.multipleselect = this.multipleselect.filter(tag => tagSet.has(tag));
+    } else {
+      this.audioFiles = [...this.originalAudioFiles]; // Reset
+      this.filteredAudioFiles = [...this.originalAudioFiles];
+      this.tagList = [...this.searchTagList];
+    }
+  }
+
+  getFilteredAudioFiles(): AudioFile[] {
+    const tagsSelected = this.multipleselect.length > 0;
+    const audiosSelected = this.multipleAudioSelect.length > 0;
+  
+    if (tagsSelected && audiosSelected) {
+      return this.audioFiles.filter(file =>
+        this.multipleAudioSelect.includes(file.name) &&
+        file.tags?.some(tag => this.multipleselect.includes(tag))
+      );
+    } else if (tagsSelected) {
+      return this.audioFiles.filter(file =>
+        file.tags?.some(tag => this.multipleselect.includes(tag))
+      );
+    } else if (audiosSelected) {
+      return this.audioFiles.filter(file =>
+        this.multipleAudioSelect.includes(file.name)
+      );
+    }
+  
+    return [...this.audioFiles];
+  }
+
+  onToggleChange(event: any) {
+    const selectedToggle = event.value;
+
+    if (this.multipleselect.length === 0 && selectedToggle !== 'all') {
+      this.toastr.warning('Kindly select at least one tag to filter audio files.');
+      setTimeout(() => {
+        this.toggleValue = 'all';
+      });
+      return; 
+    }
+    else if (selectedToggle === 'all') {
+        this.multipleselect = [];
+        this.switchToggle = false;
+        this.onTagSelectionChange();
+    }
+    else {
+      this.toggleValue = selectedToggle;
+      this.onTagSelectionChange();
+    }
+  }
+  
 }
