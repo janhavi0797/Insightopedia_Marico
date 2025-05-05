@@ -6,7 +6,7 @@ import { ProjectEntity, AudioEntity, User } from 'src/utils/containers';
 import { BullModule } from '@nestjs/bull';
 import { BullQueues, ContainersEnum } from 'src/utils/enums';
 import { createClient } from 'redis';
-import { EmailHelper } from 'src/utils';
+import { AudioUtils, EmailHelper } from 'src/utils';
 
 @Module({
   imports: [
@@ -29,6 +29,12 @@ import { EmailHelper } from 'src/utils';
     }),
     BullModule.registerQueue({
       name: BullQueues.TRANSCRIPTION,
+    }),
+    BullModule.registerQueue({
+      name: BullQueues.SUMMARY,
+    }),
+    BullModule.registerQueue({
+      name: BullQueues.PROJECT_SUMMARY,
     }),
   ],
   controllers: [ProjectController],

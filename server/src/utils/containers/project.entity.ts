@@ -11,4 +11,5 @@ export class ProjectEntity {
   sentiment_analysis: string;
   id: string;
   vectorIds: string[];
+  projectStatus:Number;
 }
