@@ -23,14 +23,111 @@ export class DashboardComponent implements OnInit {
   today: Date = new Date();
   filteredTags: any[] = [];
   isLoading: boolean = true;
+  errorDisplay: boolean = false;
   constructor(private toastr: ToastrService, private fb: FormBuilder, private commonServ: CommonService) { }
 
   ngOnInit() {
+    this.addUserDetails();
+
     this.userRole = localStorage.getItem('role') || '';
     this.userCode = localStorage.getItem('uId') || '';
     this.initializeAudioForm();
     this.getMaster();
     this.getTags();
+  }
+
+  // listenForMessage() {
+  //   debugger
+  //   window.addEventListener('message', (event) => {
+  //   debugger
+  //     if (event.origin == '') {
+  //       return;
+  //     }
+
+  //     const data = event.data;
+  //     const { userId, userName, email } = data;
+
+  //     if (!userId || !userName || !email) {
+  //       if (!this.errorDisplay) {
+  //         this.toastr.error('Invalid user data received from superapp application!');
+  //         this.errorDisplay = true;
+  //       }
+  //       return;
+  //     }
+
+  //     const storedUserId = localStorage.getItem('uId');
+  //     const storedUserName = localStorage.getItem('userName');
+  //     const storedEmail = localStorage.getItem('User');
+
+  //     const isUserChanged =
+  //       storedUserId !== userId ||
+  //       storedUserName !== userName ||
+  //       storedEmail !== email;
+
+  //     if (isUserChanged) {
+  //       // Update localStorage
+  //       localStorage.setItem('User', email);
+  //       localStorage.setItem('uId', userId);
+  //       localStorage.setItem('userName', userName);
+  //     }
+  //     // this.messageProcessed = true;
+  //     //  // Store details in localStorage
+  //     //   localStorage.setItem('User', email);
+  //     //  localStorage.setItem('uId', userId);
+  //     //  localStorage.setItem('userName', userName);
+  //     //localStorage.setItem('role', roleCode);
+  //     //localStorage.setItem('LoginTime', new Date().getTime().toString());
+
+  //     this.addUserDetails(userId, userName, email);
+
+  //   })
+  // }
+
+  // addUserDetails(userId: string, userName: string, email: string) {
+  //   //debugger
+  //   const payload = {
+  //     "userid": userId,
+  //     "userName": userName,
+  //     "email": email,
+  //     "rolecode": 3
+  //   }
+  //   this.commonServ.postAPI('users/create', payload).subscribe((res: any) => {
+  //     //debugger
+  //     localStorage.setItem('userName', res.existingUser.userName);
+  //     localStorage.setItem('role', res.existingUser.rolecode)
+  //     if (res.existingUser.rolecode === "3") {
+  //       //this.router.navigate(['/portal/all-files'])
+  //     } else {
+  //       //this.router.navigate(['/portal/dashboard'])
+  //     }
+  //   }, (err: any) => {
+  //     this.toastr.error('Something Went Wrong!');
+  //   })
+  // }
+
+  addUserDetails() {
+    const userId = localStorage.getItem('uId');
+    const userName = localStorage.getItem('userName');
+    const email = localStorage.getItem('User');
+    //debugger
+    const payload = {
+      "userid": userId,
+      "userName": userName,
+      "email": email,
+      "rolecode": 3
+    }
+    this.commonServ.postAPI('users/create', payload).subscribe((res: any) => {
+      //debugger
+      localStorage.setItem('userName', res.existingUser.userName);
+      localStorage.setItem('role', res.existingUser.rolecode)
+      if (res.existingUser.rolecode === "3") {
+        //this.router.navigate(['/portal/all-files'])
+      } else {
+        //this.router.navigate(['/portal/dashboard'])
+      }
+    }, (err: any) => {
+      this.toastr.error('Something Went Wrong!');
+    })
   }
 
   getMaster() {

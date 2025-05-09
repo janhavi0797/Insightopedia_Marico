@@ -4,7 +4,7 @@ import { LoginPageComponent } from './auth/login-page/login-page.component';
 
 const routes: Routes = [
   {path:'',  pathMatch:'full', redirectTo:'/portal/dashboard' },
-  {path:'login',component:LoginPageComponent},
+  //{path:'login',component:LoginPageComponent},
   {
     path:'portal',
     loadChildren: () => import('../app/portal/portal.module').then((m) => m.PortalModule),

@@ -2,6 +2,8 @@ import { Component } from '@angular/core';
 import { InfoComponent } from '../info/info.component';
 import { MatDialog } from '@angular/material/dialog';
 import { environment } from 'src/environments/environment';
+import { ToastrService } from 'ngx-toastr';
+import { CommonService } from '../service/common.service';
 
 @Component({
   selector: 'app-layout',
@@ -12,13 +14,15 @@ export class LayoutComponent {
   imageBasePath: string = environment.imageBasePath;
   roleCode: string = '';
   userName: string = '';
-  constructor(private dialog: MatDialog) {
-    if(localStorage.getItem('uId') == null) {
-      localStorage.setItem('uId', '8e540e96-dfc0-4b4f-b80e-dc26e7291054');
-      localStorage.setItem('role','1');
-      localStorage.setItem('User','janhavi.parte@atriina.com');
-      localStorage.setItem('userName','Janhavi Parte');
-    }
+  errorDisplay: boolean = false;
+  constructor(private dialog: MatDialog, private toastr: ToastrService, private commonServ: CommonService) {
+    // if(localStorage.getItem('uId') == null) {
+    //   localStorage.setItem('uId', '8e540e96-dfc0-4b4f-b80e-dc26e7291054');
+    //   localStorage.setItem('role','1');
+    //   localStorage.setItem('User','janhavi.parte@atriina.com');
+    //   localStorage.setItem('userName','Janhavi Parte');
+    // }
+
     this.roleCode = localStorage.getItem('role') || '';
     this.userName = localStorage.getItem('userName') || '';
     
@@ -38,4 +42,5 @@ export class LayoutComponent {
       data: info
     });
   }
+  
 }
