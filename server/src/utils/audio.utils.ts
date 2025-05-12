@@ -403,8 +403,6 @@ export class AudioUtils {
       return response.choices?.[0]?.message?.content ?? '';
     }
 
-  
-
   async saveTranscriptionDocument(transcriptionDocument: Partial<AudioEntity>) {
     try {
       // Update the  Audio Container with the audioId
@@ -592,7 +590,7 @@ export class AudioUtils {
     return chunks;
   }
 
- async markStageCompleted(
+  async markStageCompleted(
     audioId: string,
     stage: QueueProcess,
     projectId: string,
@@ -600,15 +598,6 @@ export class AudioUtils {
     const key = `project:${projectId}:audioStages`;
     const audioStages = JSON.parse((await this.redisService.get(key)) || '{}');
 
-    const checkExistingProject = await this.ProjectContainer.items
-      .query({
-        query: 'SELECT * FROM c WHERE c.projectId = @projectId',
-        parameters: [{ name: '@projectId', value: projectId }],
-      })
-      .fetchAll();
-
- //console.log("audioStages",audioStages);
-    // Update the stage completion status for the current audio
     if (!audioStages[audioId]) {
       const audioResult = await this.AudioContainer.items
       .query({
@@ -655,18 +644,16 @@ export class AudioUtils {
         QueueProcess.EMBEDDING_AUDIO,
       ].every((requiredStage) => audio[requiredStage]),
     );
-    //console.log("check allAudiosCompleted",allAudiosCompleted);
     // Check if all stages are completed for this audio
-    //if (allAudiosCompleted) {
+    if (allAudiosCompleted) {
       this.logger.log(`All stages completed for the project ${projectId}`);
       // Trigger the project audio process
       await this.projectSummaryQueue.add(QueueProcess.PROJECT_SUMMARY_AUDIO, {
         projectId,
       });
       this.logger.log(`Combined Audio Project job enqueued`);
-    //}
+    }
   }
-  
 
   async makeCombineSummaryOfAllAudios(projectId: string) {
     const query = {
@@ -680,9 +667,19 @@ export class AudioUtils {
     if (projectDocument.length === 0) {
       throw new Error('Project not found');
     }
-    
     try {
-     
+      const query = {
+        query: 'SELECT * FROM c WHERE c.projectId = @projectId',
+        parameters: [{ name: '@projectId', value: projectId }],
+      };
+
+      const { resources: projectDocument } = await this.ProjectContainer.items
+        .query(query)
+        .fetchAll();
+      if (projectDocument.length === 0) {
+        throw new Error('Project not found');
+      }
+
       const audioIds = (projectDocument[0] as ProjectEntity).audioIds;
 
       const audioQueue = {
@@ -722,7 +719,6 @@ export class AudioUtils {
       return await this.saveProjectSummary(existingProjectDocument);
     } catch (error) {
       console.error(error);
-     // const projectItems = checkExistingProject.resources;
       const projectItem = projectDocument[0];
       projectItem.projectStatus = 2;
         await this.ProjectContainer.items.upsert(projectItem);

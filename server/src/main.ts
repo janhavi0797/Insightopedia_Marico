@@ -17,20 +17,21 @@ async function bootstrap() {
     .setTitle('Insightopedia Marico')
     .setDescription('The Median API description')
     .setVersion('0.1')
+    .addServer('/audioanalytics/backend')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
   app.enableCors({
-    origin: 'http://localhost:4200', // Replace with your Angular app's URL
+    origin: ['https://ai.maricoapps.biz/audioanalytics'], // Replace with your Angular app's URL
    //origin: ['https://maricointellivoice.atriina.com'],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true, // If you are using cookies or authorization headers
   });
 
   const serverAdapter = new ExpressAdapter();
-  serverAdapter.setBasePath('/admin/queues');
+  serverAdapter.setBasePath('/audioanalytics/backend/admin/queues');
 
   // Use ValidationPipe globally to automatically validate incoming requests
   app.useGlobalPipes(new ValidationPipe());
@@ -66,7 +67,8 @@ async function bootstrap() {
   const expressApp = app.getHttpAdapter().getInstance();
   expressApp.use(bodyParser.json({ limit: '3gb' }));
 expressApp.use(bodyParser.urlencoded({ limit: '3gb', extended: true }));
-  expressApp.use('/admin/queues', serverAdapter.getRouter());
-  await app.listen(3001);
+  expressApp.use('/audioanalytics/backend/admin/queues', serverAdapter.getRouter());
+  app.setGlobalPrefix('audioanalytics/backend');
+  await app.listen(3004);
 }
 bootstrap();
