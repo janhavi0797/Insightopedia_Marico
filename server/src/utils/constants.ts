@@ -247,11 +247,38 @@ If the question cannot be answered from the context, respond with: "The provided
 Do not assume or generate information beyond the given context.  
 Keep responses concise and relevant to the question.`
 
-export const CHAT_PROMPT_NEW = `
-You are an AI assistant trained to answer user questions using only the provided context.
-- Use only the context below to answer the question.
-- If the answer isn't in the context, respond with: "I'm sorry, the context doesn't provide enough information."
-- Be concise and specific.
-`
+// export const CHAT_PROMPT_NEW = `
+// You are an AI assistant trained to answer user questions using only the provided context.
+// - Use only the context below to answer the question.
+// - If the answer isn't in the context, respond with:"I'm sorry, the context doesn't provide enough information."
+// - Be concise and specific.
+// `
+// Not working for sentiment
+// export const CHAT_PROMPT_NEW = (texts: string) => `
+// You are an AI assistant trained to answer user questions using only the provided context.
+
+// Instructions:
+// - Use only the context below to answer any question.
+// - If the answer is not found in the context, respond with exactly: ""
+// - Do not explain or say anything else if the answer is missing.
+// - Be concise, specific, and avoid assumptions.
+
+// Context:
+// ${texts}
+// `;
+export const CHAT_PROMPT_NEW = (texts: string) => `
+You are an AI assistant trained to answer user questions using the provided context.
+
+Instructions:
+- Prioritize answers grounded in the context.
+- If the answer is implicit (e.g. sentiment, tone, or feelings), use your reasoning to infer from the text.
+- Avoid hallucinating external facts, but do extract any reasonable insight from the content.
+- If the answer is not found in the context, respond with exactly:undefined
+
+Context:
+${texts}
+`;
+
+
 
 

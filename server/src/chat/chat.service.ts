@@ -97,6 +97,7 @@ export class ChatService {
 
       // Fetch documents for each vector ID
       for (const vectorId of vectorIds.filter((Item) => Item !== null)) {
+        //console.log("vectorId",vectorId);
         const document = await this.azureSearchClient.getDocument(vectorId);
         if (document) {
           documents.push(document); // Only push if document exists
@@ -202,6 +203,65 @@ export class ChatService {
   //   return responses.join('\n');
   // }
 
+  // async generateAnswerFromDocumentsWithChunks(
+  //   question: string,
+  //   relatedDocs: Document[],
+  // ): Promise<string> {
+  //   if (!relatedDocs || relatedDocs.length === 0) {
+  //     this.logger.warn('No related documents provided to generate the answer');
+  //     return 'Sorry, I could not find enough information to answer your question.';
+  //   }
+  
+  //   //const context = relatedDocs.map((doc) => doc.metadata).join('\n');
+  //   const context = relatedDocs.map((doc) => {
+  //     try {
+  //       const meta = JSON.parse(doc.metadata);
+  //       return meta.text || meta.content || ''; // fallback to '' if missing
+  //     } catch {
+  //       return doc.metadata; // fallback if it's not JSON
+  //     }
+  //   }).join('\n');
+      
+  //   try {
+  //     this.logger.log('Generating answer from OpenAI based on related documents');
+  
+  //     const chunks = this.splitIntoChunks(context, 3000, 250);
+  //     const responses: string[] = [];
+  
+  //     //console.log("openaiClientChat-chunks", chunks);
+  
+  //     //for (const chunk of chunks) {
+  //       const completionResponse =
+  //         await this.openaiClientChat.chat.completions.create({
+  //           model: 'gpt-4o',
+  //           messages: [
+  //             {
+  //               role: 'system',
+  //               content: CHAT_PROMPT_NEW,
+  //             },
+  //             {
+  //               role: 'user',
+  //               content: `Context:\n${chunks}\n\nQuestion:\n${question}`,
+  //             },
+  //           ],
+  //         });
+  
+  //       const answer = completionResponse.choices[0].message.content;
+  //       responses.push(answer);
+  //       this.logger.log('Answer generated successfully');
+  //    // }
+  
+  //     // ✅ Final return after processing all chunks
+  //     return responses.toString();
+  //     } catch (error) {
+  //     this.logger.error('Error generating answer from OpenAI', error.stack);
+  //     throw new InternalServerErrorException(
+  //       'Failed to generate an answer from OpenAI',
+  //     );
+  //   }
+  // }
+
+
   async generateAnswerFromDocumentsWithChunks(
     question: string,
     relatedDocs: Document[],
@@ -211,54 +271,126 @@ export class ChatService {
       return 'Sorry, I could not find enough information to answer your question.';
     }
   
-    //const context = relatedDocs.map((doc) => doc.metadata).join('\n');
-    const context = relatedDocs.map((doc) => {
-      try {
-        const meta = JSON.parse(doc.metadata);
-        return meta.text || meta.content || ''; // fallback to '' if missing
-      } catch {
-        return doc.metadata; // fallback if it's not JSON
-      }
-    }).join('\n');
-      
-    try {
-      this.logger.log('Generating answer from OpenAI based on related documents');
+    const context = relatedDocs
+      .map((doc) => {  
+        try {
+          const meta = JSON.parse(doc.metadata);
+          return meta.text || meta.content || '';
+        } catch {
+          return doc.metadata;
+        }
+      })
+      .join('\n');
   
-      const chunks = this.splitIntoChunks(context, 3000, 250);
+    try {
+      this.logger.log('Generating answer from OpenAI based on related document chunks');
+  
+      const chunks = this.splitIntoChunksBySentence(context, 3000, 250);
       const responses: string[] = [];
   
-      //console.log("openaiClientChat-chunks", chunks);
-  
-      //for (const chunk of chunks) {
-        const completionResponse =
-          await this.openaiClientChat.chat.completions.create({
-            model: 'gpt-4o',
-            messages: [
-              {
-                role: 'system',
-                content: CHAT_PROMPT_NEW,
-              },
-              {
-                role: 'user',
-                content: `Context:\n${chunks}\n\nQuestion:\n${question}`,
-              },
-            ],
-          });
-  
+      for (const chunk of chunks) {
+        const systemPrompt = CHAT_PROMPT_NEW(chunk);
+        const completionResponse = await this.openaiClientChat.chat.completions.create({
+          model: 'gpt-4o',
+          messages: [
+            {
+              role: 'system',
+              content: systemPrompt,
+            },
+            {
+              role: 'user',
+              content: `Question:\n${question}`,
+            },
+          ],
+        });
+        
         const answer = completionResponse.choices[0].message.content;
-        responses.push(answer);
-        this.logger.log('Answer generated successfully');
-     // }
-  
-      // ✅ Final return after processing all chunks
-      return responses.toString();
-      } catch (error) {
+        if (answer !== 'undefined') {
+          responses.push(answer);
+        }
+        //console.log("answer",responses);
+      }
+     // console.log("answer",responses.length);
+      if (responses.length === 0) {
+        return "I'm sorry, the context doesn't provide enough information.";
+      }else{
+        const combinedAnswer = responses.join('\n');
+        let finalOutput;
+        finalOutput =  await this.combineChat(combinedAnswer);
+        this.logger.log('Combined answer generated successfully');
+        return finalOutput;
+      }
+    } catch (error) {
       this.logger.error('Error generating answer from OpenAI', error.stack);
       throw new InternalServerErrorException(
         'Failed to generate an answer from OpenAI',
       );
     }
   }
+  
+
+
+  private splitIntoChunksBySentence(text: string, maxChunkLength: number, overlap: number): string[] {
+    const sentences = text.match(/[^\.!\?]+[\.!\?]+/g) || [text]; // naive sentence splitter
+    const chunks: string[] = [];
+  
+    let currentChunk = "";
+  
+    for (let i = 0; i < sentences.length; i++) {
+      const sentence = sentences[i].trim();
+  
+      if ((currentChunk + " " + sentence).length <= maxChunkLength) {
+        currentChunk += (currentChunk ? " " : "") + sentence;
+      } else {
+        if (currentChunk) {
+          chunks.push(currentChunk);
+        }
+  
+        // Overlap logic: add overlap from the end of last chunk
+        if (overlap > 0 && chunks.length > 0) {
+          const lastChunk = chunks[chunks.length - 1];
+          const overlapStart = Math.max(0, lastChunk.length - overlap);
+          currentChunk = lastChunk.slice(overlapStart).trim();
+        } else {
+          currentChunk = "";
+        }
+  
+        currentChunk += (currentChunk ? " " : "") + sentence;
+      }
+    }
+  
+    if (currentChunk) {
+      chunks.push(currentChunk);
+    }
+  
+    return chunks;
+  }
+
+  private async combineChat(summaryText: string): Promise<string> {
+    //const prompt = `Combine the following text into one cohesive, non-repetitive and realistic. Preserve all key insights and ensure smooth flow:\n\n${summaryText}`;
+    const prompt = `
+    You are given a set of summarized chunks from a conversation. Combine them into a single, cohesive and realistic summary.
+    Avoid repetition, but ensure all **personal details**, **interests**, and **background information** are preserved — especially names, occupations, family status, hobbies, or preferences.
+    
+    Ensure the result flows naturally like a well-written paragraph.
+    
+    Here is the input:
+    
+    ${summaryText}
+    `;
+    const response = await this.openaiClientChat.chat.completions.create({
+      messages: [{ role: 'user', content: prompt }],
+      model: 'gpt-4o',
+      temperature: 0,
+      frequency_penalty: 0,
+      presence_penalty: 0,  
+      max_tokens: 3000,
+    });
+ 
+    return response.choices?.[0]?.message?.content ?? '';
+  }
+  
+  
   
 
   async getPrompResponse(prompt: string, context: string) {
