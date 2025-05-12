@@ -14,5 +14,6 @@ export const environment = {
   //BASE_URL: 'https://intellivoice.atriina.com/',
   baseHref: '/audioanalytics/',
   redirectUrl: 'https://ai.maricoapps.biz/audioanalytics',
-  imageBasePath: 'https://ai.maricoapps.biz/audioanalytics/'
+  imageBasePath: 'https://ai.maricoapps.biz/audioanalytics/',
+  allowedOrigin: 'https://your-react-app-domain.com'
 };
