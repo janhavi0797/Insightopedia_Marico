@@ -9,8 +9,12 @@ import { createBullBoard } from '@bull-board/api';
 import { BullAdapter } from '@bull-board/api/bullAdapter';
 import { BullQueues } from './utils/enums';
 import * as bodyParser from 'body-parser'; // ← make sure this is here
+import { FileLogger } from './utils/file-logger.utils';
 
 async function bootstrap() {
+
+  FileLogger.cleanOldLogs(30);
+  
   const app = await NestFactory.create(AppModule);
 
   const config = new DocumentBuilder()

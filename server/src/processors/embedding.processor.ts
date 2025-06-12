@@ -4,6 +4,7 @@ import { InternalServerErrorException, Logger } from '@nestjs/common';
 import { AudioUtils, EmailHelper } from 'src/utils';
 import { BullQueues, QueueProcess } from 'src/utils/enums';
 import nodemailer from 'nodemailer';
+import { FileLogger } from 'src/utils/file-logger.utils';
 
 @Processor(BullQueues.EMBEDDING)
 export class EmbeddingProcessor {
@@ -33,12 +34,14 @@ export class EmbeddingProcessor {
         projectId,
       );
 
+      FileLogger.logSuccessToFile(projectId, 'Audio embedding generated successfully.');
       await job.log('Stage completed successfully');
     } catch (error) {
       await this.emailHelper.sendProjectCreationFailureEmail(projectId);
       await job.log('Project creation failed email sent successfully');
 
       this.logger.error(`Translation job failed: ${error.message}`);
+      FileLogger.logErrorToFile(projectId, error.stack || error.message);
       throw error;
     }
   }

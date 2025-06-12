@@ -8,6 +8,7 @@ import { ToastrService } from 'ngx-toastr';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { CommonService } from '../service/common.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-all-files',
@@ -35,20 +36,37 @@ export class AllFilesComponent {
   tempTagArr: any[] = [];
   currentAudioId: string = '';
   currentIndex!: number;
+  userCode: any;
+  userRole: any;
   constructor(private audioServ: AudioService, private toastr: ToastrService, private dialog: MatDialog,
-    private fb: FormBuilder, private commonServ: CommonService
+    private fb: FormBuilder, private commonServ: CommonService, private router: Router
   ) { }
 
   ngOnInit() {
-    this.getAllAudioList();
     this.audioForm = this.fb.group({
       mapUnmapUsers: [[], Validators.required]
     });
+    this.userRole = localStorage.getItem('role') || '';
+    this.userCode = localStorage.getItem('uId') || '';
+    this.addUserDetails();
   }
 
-  getAllAudioList() {
+  getAllAudio() {
+    this.userRole = localStorage.getItem('role') || '';
+    console.log("this.userRole",this.userRole);
+    var code = ''
+      if (this.userRole == 1) {
+        this.getAllAudioList();
+      } else {
+        code = localStorage.getItem('uId') || '';
+    console.log("param",code);
+    this.getAllAudioList(code);
+      }
+  }
+
+  getAllAudioList(param?: any) {
     this.commonServ.showSpin();
-    this.audioServ.getAllAudioList('audio/allFiles').subscribe((res: any) => {
+    this.audioServ.getAllAudioList('audio/allFiles',param).subscribe((res: any) => {
       this.commonServ.hideSpin();
       this.audioList = res?.data?.audioData || [];
       this.dataSource = new MatTableDataSource(this.audioList);
@@ -202,6 +220,33 @@ export class AllFilesComponent {
       }
     }, (err: any) => {
       this.commonServ.hideSpin();
+      this.toastr.error('Something Went Wrong!');
+    })
+  }
+
+  addUserDetails() {
+    const userId = localStorage.getItem('uId');
+    const userName = localStorage.getItem('userName');
+    const email = localStorage.getItem('User');
+    //debugger
+    const payload = {
+      "userid": userId,
+      "userName": userName,
+      "email": email,
+      "rolecode": ""
+    }
+    this.commonServ.postAPI('users/create', payload).subscribe((res: any) => {
+      //debugger
+      localStorage.setItem('userName', res.existingUser.userName);
+      localStorage.setItem('role', res.existingUser.rolecode)
+      if (res.existingUser.rolecode === "3") {
+        this.router.navigate(['/portal/project-analysis'])
+      } else{
+        this.getAllAudio();
+      }
+      
+    }, (err: any) => {
+      this.getAllAudio();
       this.toastr.error('Something Went Wrong!');
     })
   }

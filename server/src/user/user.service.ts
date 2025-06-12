@@ -156,7 +156,7 @@ export class UserService {
       // Step 4: Update only provided fields (Preserve existing values)
       existingUser.userName = payload.name || existingUser.userName;
       existingUser.email = payload.email || existingUser.email;
-      existingUser.rolecode = payload.role || existingUser.rolecode;
+      existingUser.rolecode = payload.role? payload.role:existingUser.rolecode;
       existingUser.mapUser = payload.mapUser;
 
       // Step 5: Upsert the updated user back into CosmosDB

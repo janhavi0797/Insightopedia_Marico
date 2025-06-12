@@ -51,6 +51,7 @@ export class ProjectAnalysisComponent {
       isAllFile: 1
     }
     this.getProjectData(param);
+    this.addUserDetails();
   }
   ngAfterViewInit() {
     this.dataSource.paginator = this.paginator;
@@ -354,6 +355,29 @@ export class ProjectAnalysisComponent {
       this.multipleProjectSelect = [];
     }
     this.onProjectSelectionChange();
+  }
+
+  addUserDetails() {
+    const userId = localStorage.getItem('uId');
+    const userName = localStorage.getItem('userName');
+    const email = localStorage.getItem('User');
+    //debugger
+    const payload = {
+      "userid": userId,
+      "userName": userName,
+      "email": email,
+      "rolecode": ""
+    }
+    this.common.postAPI('users/create', payload).subscribe((res: any) => {
+      //debugger
+      localStorage.setItem('userName', res.existingUser.userName);
+      localStorage.setItem('role', res.existingUser.rolecode)
+      if (res.existingUser.rolecode === "3") {
+        this.router.navigate(['/portal/project-analysis'])
+      } 
+    }, (err: any) => {
+      this.toastr.error('Something Went Wrong!');
+    })
   }
 
 }

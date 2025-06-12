@@ -7,6 +7,7 @@ import {
   ISummaryProcessor,
   ITransalationAudioProcessor,
 } from 'src/utils/interfaces';
+import { FileLogger } from 'src/utils/file-logger.utils';
 
 @Processor(BullQueues.TRANSLATION)
 export class TranslationProcessor {
@@ -34,6 +35,7 @@ export class TranslationProcessor {
       const { updatedTextArray, combinedTranslation } =
         await this.audioUtils.translateText(transcriptionData);
       this.logger.log('Translation job completed:', audioId);
+      FileLogger.logSuccessToFile(projectId, 'Audio translation generated successfully.');
       await job.log('Translation job completed');
 
       await this.audioUtils.markStageCompleted(
@@ -57,6 +59,7 @@ export class TranslationProcessor {
       await this.emailHelper.sendProjectCreationFailureEmail(projectId);
 
       this.logger.error(`Translation job failed: ${error.message}`);
+      FileLogger.logErrorToFile(projectId, error.stack || error.message);
       throw error;
     }
   }

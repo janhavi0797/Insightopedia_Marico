@@ -3,6 +3,7 @@ import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
 import { environment } from 'src/environments/environment';
 import { CommonService } from '../service/common.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-dashboard',
@@ -24,7 +25,7 @@ export class DashboardComponent implements OnInit {
   filteredTags: any[] = [];
   isLoading: boolean = true;
   errorDisplay: boolean = false;
-  constructor(private toastr: ToastrService, private fb: FormBuilder, private commonServ: CommonService) { }
+  constructor(private toastr: ToastrService, private fb: FormBuilder, private commonServ: CommonService,private router: Router) { }
 
   ngOnInit() {
     this.addUserDetails();
@@ -114,16 +115,16 @@ export class DashboardComponent implements OnInit {
       "userid": userId,
       "userName": userName,
       "email": email,
-      "rolecode": 3
+      "rolecode": "2"
     }
     this.commonServ.postAPI('users/create', payload).subscribe((res: any) => {
       //debugger
       localStorage.setItem('userName', res.existingUser.userName);
       localStorage.setItem('role', res.existingUser.rolecode)
       if (res.existingUser.rolecode === "3") {
-        //this.router.navigate(['/portal/all-files'])
+        this.router.navigate(['/portal/project-analysis'])
       } else {
-        //this.router.navigate(['/portal/dashboard'])
+        this.router.navigate(['/portal/dashboard'])
       }
     }, (err: any) => {
       this.toastr.error('Something Went Wrong!');

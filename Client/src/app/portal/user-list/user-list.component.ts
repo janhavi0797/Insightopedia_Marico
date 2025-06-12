@@ -20,11 +20,11 @@ export class UserListComponent {
   userForm!: FormGroup;
   roles: any[] = [
     {
-      name: "Base User",
+      name: "Admin User",
       code: "1"
     },
     {
-      name: "Admin User",
+      name: "Base User",
       code: "2"
     },
     {

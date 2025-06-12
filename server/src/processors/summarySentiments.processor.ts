@@ -8,6 +8,7 @@ import { AudioEntity, ProjectEntity } from 'src/utils/containers';
 import { EmailHelper } from 'src/utils';
 import { InjectModel } from '@nestjs/azure-database';
 import { Container } from '@azure/cosmos';
+import { FileLogger } from 'src/utils/file-logger.utils';
 
 @Processor(BullQueues.SUMMARY)
 export class SummarySentimentsProcessor {
@@ -42,6 +43,7 @@ export class SummarySentimentsProcessor {
         SENTIMENT_ANALYSIS,
         combinedTranslation,
       );
+      FileLogger.logSuccessToFile(projectId, 'Audio sentiments generated successfully.');
       await job.log('Sentiment Analysis fetched');
 
       const transcriptionDocument: Partial<AudioEntity> = {
@@ -79,6 +81,7 @@ export class SummarySentimentsProcessor {
       return { transcriptionDocument };
     } catch (error) {
       this.logger.error(`Transcription job failed: ${error.message}`);
+      FileLogger.logErrorToFile(projectId, error.stack || error.message);
       const checkExistingProject = await this.ProjectContainer.items
       .query({
         query: 'SELECT * FROM c WHERE c.projectId = @projectId',

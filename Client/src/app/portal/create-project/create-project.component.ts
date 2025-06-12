@@ -70,15 +70,17 @@ export class CreateProjectComponent {
     if (this.userRole === "1") {
       //this.userCode = '';
     }
-    this.getTagsWiseAudio();
+    //this.getTagsWiseAudio();
+    this.addUserDetails()
   }
 
 
   getTagsWiseAudio() {
-    let userCode = '';
-    userCode = this.userRole === "1" ? '' : this.userCode;
+    let userCodeNew = '';
+    this.userRole = localStorage.getItem('role') || '';
+    userCodeNew = this.userRole === "1" ? '' : this.userCode;
     this.commonServ.showSpin();
-    this.commonServ.getTagwiseAudio('audio/all', userCode).subscribe(
+    this.commonServ.getTagwiseAudio('audio/all', userCodeNew).subscribe(
       (res: any) => {
         this.commonServ.hideSpin();
         this.tagList = res.data.allUniqueTags;
@@ -473,6 +475,32 @@ export class CreateProjectComponent {
       this.toggleValue = selectedToggle;
       this.onTagSelectionChange();
     }
+  }
+  addUserDetails() {
+    const userId = localStorage.getItem('uId');
+    const userName = localStorage.getItem('userName');
+    const email = localStorage.getItem('User');
+    //debugger
+    const payload = {
+      "userid": userId,
+      "userName": userName,
+      "email": email,
+      "rolecode": ""
+    }
+    this.commonServ.postAPI('users/create', payload).subscribe((res: any) => {
+      //debugger
+      localStorage.setItem('userName', res.existingUser.userName);
+      localStorage.setItem('role', res.existingUser.rolecode)
+      if (res.existingUser.rolecode === "3") {
+        this.router.navigate(['/portal/project-analysis'])
+      } else{
+        this.getTagsWiseAudio();
+      }
+      
+    }, (err: any) => {
+      this.getTagsWiseAudio();
+      this.toastr.error('Something Went Wrong!');
+    })
   }
   
 }

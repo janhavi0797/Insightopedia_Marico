@@ -7,6 +7,7 @@ import {
   ITransalationAudioProcessor,
   ITranscriptionProcessor,
 } from 'src/utils/interfaces';
+import { FileLogger } from 'src/utils/file-logger.utils';
 
 @Processor(BullQueues.TRANSCRIPTION)
 export class TranscriptionProcessor {
@@ -50,6 +51,7 @@ export class TranscriptionProcessor {
       job.log(
         `Transcription job for audioId ${audioId} completed - Stage: Transcription Completed`,
       );
+      FileLogger.logSuccessToFile(projectId, 'Audio transcription generated successfully.');
 
       const translationJob: ITransalationAudioProcessor = {
         transcriptionData: transcriptionResults.transcriptionResult,
@@ -69,6 +71,7 @@ export class TranscriptionProcessor {
       job.log(
         `Transcription job for audioId ${audioId} failed - Stage: Error: ${error.message}`,
       );
+      FileLogger.logErrorToFile(projectId, error.stack || error.message);
       await this.emailHelper.sendProjectCreationFailureEmail(projectId);
 
       throw error;

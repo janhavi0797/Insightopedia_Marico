@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component,OnInit } from '@angular/core';
 import { InfoComponent } from '../info/info.component';
 import { MatDialog } from '@angular/material/dialog';
 import { environment } from 'src/environments/environment';
@@ -10,7 +10,7 @@ import { CommonService } from '../service/common.service';
   templateUrl: './layout.component.html',
   styleUrls: ['./layout.component.scss']
 })
-export class LayoutComponent {
+export class LayoutComponent implements OnInit {
   imageBasePath: string = environment.imageBasePath;
   roleCode: string = '';
   userName: string = '';
@@ -25,7 +25,16 @@ export class LayoutComponent {
 
     this.roleCode = localStorage.getItem('role') || '';
     this.userName = localStorage.getItem('userName') || '';
+    this.getRoleCode();
     
+  }
+
+  ngOnInit(): void {
+    this.getRoleCode();
+  }
+
+  getRoleCode(): string {
+    return localStorage.getItem('role') || '';
   }
 
   logoutModel(event: MouseEvent) {

@@ -24,17 +24,37 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private messageHandler = (event: MessageEvent) => {
-    if (event.origin !== this.allowedOrigin) {
+    // if (event.origin !== this.allowedOrigin) {
+    //   return;
+    // }
+
+     if (event.origin == '') {
       return;
     }
+    
+    // const data = event.data;
+    // if (typeof data !== 'object' || data === null || data === 'undefined') {
+    //   return;
+    // }
+   
+    // const { userId, userName, email } = data;
 
-    const data = event.data;
-    if (typeof data !== 'object' || data === null) {
-      return;
-    }
+    // if (event.data?.type === 'webpackClose' || event.data?.type === 'webpackInvalid') {
+    //   return; // Ignore dev events
+    // }
 
-    const { userId, userName, email } = data;
+     // Avoid dev server events like webpack invalidation
+  if (event.data?.type === 'webpackClose' || event.data?.type === 'webpackInvalid') return;
 
+  console.log("Received event:", event);
+  console.log("App component",localStorage.getItem('role'));
+
+  // Ensure message has valid user data
+  if (!event.data || typeof event.data !== 'object') return;
+
+  const { userId, userName, email } = event.data;
+
+    
     if (!userId || !userName || !email) {
       if (!this.errorDisplay) {
         this.toastr.error('Invalid user data received from superapp application!');
@@ -56,6 +76,7 @@ export class AppComponent implements OnInit, OnDestroy {
       localStorage.setItem('User', email);
       localStorage.setItem('uId', userId);
       localStorage.setItem('userName', userName);
+      localStorage.setItem('role','2');
     }
   };
 }
